@@ -18,7 +18,7 @@ class LoginPage extends StatelessWidget {
   void _handleEmail(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const EmailLoginPage()),
+      MaterialPageRoute(builder: (_) => const EmailSignupPage()),
     );
   }
 

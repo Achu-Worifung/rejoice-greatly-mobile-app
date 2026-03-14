@@ -1,18 +1,23 @@
+import 'package:church_app/pages/email_login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class EmailLoginPage extends StatefulWidget {
-  const EmailLoginPage({super.key});
+import 'package:church_app/pages/login_page.dart';
+
+class EmailSignupPage extends StatefulWidget {
+  const EmailSignupPage({super.key});
 
   @override
-  State<EmailLoginPage> createState() => _EmailLoginPageState();
+  State<EmailSignupPage> createState() => _EmailLoginPageState();
 }
 
-class _EmailLoginPageState extends State<EmailLoginPage> {
+class _EmailLoginPageState extends State<EmailSignupPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _error;
+
   bool _obscurePassword = true;
   bool _termsAccepted = false;
   bool _privacyAccepted = false;
@@ -26,6 +31,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   }
 
   void _submit() {
+    if (!_termsAccepted || !_privacyAccepted) {
+      setState(() {
+        _error = "You must accept all policies and terms to continue.";
+      });
+      return;
+    }
     if (_formKey.currentState!.validate()) {
       // TODO: handle submission
       print("Name: ${_nameController.text}");
@@ -106,8 +117,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       icon: Icons.email_outlined,
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty)
+                      if (v == null || v.isEmpty) {
                         return "Please enter your email";
+                      }
                       if (!v.contains("@")) return "Please enter a valid email";
                       return null;
                     },
@@ -151,26 +163,49 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     style: TextStyle(color: Colors.black, fontSize: 12),
                   ),
                   const SizedBox(height: 10),
-                  CheckboxListTile(
-                    title: const Text(
-                      "By Signing up, you agree to the Terms of Service and Privacy Policy",
-                      style: TextStyle(color: Colors.black, fontSize: 12),
-                    ),
-                    value: _termsAccepted,
-                    onChanged: (val) => setState(() => _termsAccepted = val!),
-                    activeColor: const Color(0xFF5286FF),
-                    controlAffinity: ListTileControlAffinity.leading,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CheckboxListTile(
+                        title: const Text(
+                          "By Signing up, you agree to the Terms of Service and Privacy Policy",
+                          style: TextStyle(color: Colors.black, fontSize: 12),
+                        ),
+                        value: _termsAccepted,
+                        onChanged: (val) =>
+                            setState(() => _termsAccepted = val!),
+                        activeColor: const Color(0xFF5286FF),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+
+                      CheckboxListTile(
+                        title: const Text(
+                          "I consent to the use of biometric and/or Bluetooth technology to record my church attendance",
+                          style: TextStyle(color: Colors.black, fontSize: 12),
+                        ),
+                        value: _privacyAccepted,
+                        onChanged: (val) =>
+                            setState(() => _privacyAccepted = val!),
+                        activeColor: const Color(0xFF5286FF),
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+
+                      if (_error != null)
+                        SizedBox(
+                          width: double.infinity,
+                          child: Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                  CheckboxListTile(
-                    title: const Text(
-                      "I consent to the use of biometric and/or Bluetooth technology to record my church attendance",
-                      style: TextStyle(color: Colors.black, fontSize: 12),
-                    ),
-                    value: _privacyAccepted,
-                    onChanged: (val) => setState(() => _privacyAccepted = val!),
-                    activeColor: const Color(0xFF5286FF),
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
+
                   const SizedBox(height: 32),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -240,7 +275,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                   SizedBox(
+                  SizedBox(
                     height: 16,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -251,7 +286,12 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                         ),
                         SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => Navigator.pop(context),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const EmailLoginPage(),
+                            ),
+                          ),
                           child: Text(
                             "Login",
                             style: TextStyle(
