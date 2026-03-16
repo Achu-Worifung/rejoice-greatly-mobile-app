@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'email_signup_page.dart';
+import 'email_login_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -18,7 +18,7 @@ class LoginPage extends StatelessWidget {
   void _handleEmail(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const EmailSignupPage()),
+      MaterialPageRoute(builder: (_) => const EmailLoginPage()),
     );
   }
 

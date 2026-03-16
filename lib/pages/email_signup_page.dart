@@ -1,8 +1,11 @@
 import 'package:church_app/pages/email_login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 import 'package:church_app/pages/login_page.dart';
+
 
 class EmailSignupPage extends StatefulWidget {
   const EmailSignupPage({super.key});
@@ -30,20 +33,41 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
     super.dispose();
   }
 
-  void _submit() {
-    if (!_termsAccepted || !_privacyAccepted) {
-      setState(() {
-        _error = "You must accept all policies and terms to continue.";
-      });
-      return;
-    }
-    if (_formKey.currentState!.validate()) {
-      // TODO: handle submission
-      print("Name: ${_nameController.text}");
-      print("Email: ${_emailController.text}");
-      print("Password: ${_passwordController.text}");
+  void _submit() async {
+  if (!_termsAccepted || !_privacyAccepted) {
+    setState(() {
+      _error = "You must accept all policies and terms to continue.";
+    });
+    return;
+  }
+  print("we are here");
+
+  if (_formKey.currentState!.validate()) {
+    final url = Uri.parse("http://localhost:8080/auth/signup");
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: jsonEncode({
+        "provider": "email",
+        "email": _emailController.text,
+        "password": _passwordController.text,
+        "name": _nameController.text,
+      }),
+    );
+
+    print("here is the response: ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      print("Success");
+      print(response.body);
+    } else {
+      print("Failed: ${response.statusCode}");
     }
   }
+}
+
 
   void _googleSignUp() {}
 
@@ -59,7 +83,7 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
         ),
       ),
       body: Container(

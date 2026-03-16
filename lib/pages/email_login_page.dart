@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'package:church_app/pages/login_page.dart';
+import 'package:church_app/pages/email_signup_page.dart';
 
 class EmailLoginPage extends StatefulWidget {
   const EmailLoginPage({super.key});
@@ -46,7 +47,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
         ),
       ),
 
@@ -68,7 +69,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
             ),
             const SizedBox(height: 6),
             const Text(
-              "Create your account",
+              "Sign in to your account",
               style: TextStyle(
                 color: Colors.black,
                 fontSize: 12,
@@ -98,6 +99,21 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     },
                   ),
                   const SizedBox(height: 16),
+                   SizedBox(
+                    width: double.infinity,
+                    child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginPage(),
+                      ),
+                    ),
+                    child: Text(
+                      "Forgot Password?",
+                      textAlign: TextAlign.right,
+                      style: TextStyle(color: Colors.black, fontSize: 12),
+                  )),
+                   ),
 
                   // Password
                   TextFormField(
@@ -219,7 +235,8 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                         ),
                         SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => Navigator.pop(context),
+                          onTap: () => Navigator.push(context, 
+                          MaterialPageRoute(builder: (context) => const EmailSignupPage())),
                           child: Text(
                             "Sign up",
                             style: TextStyle(
