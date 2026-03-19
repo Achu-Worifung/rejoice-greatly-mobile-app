@@ -1,20 +1,22 @@
 import 'package:church_app/pages/email_login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter/gestures.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import 'package:church_app/pages/privacy_page.dart';
+import 'package:church_app/pages/terms_page.dart';
 import 'package:church_app/pages/login_page.dart';
-
+import 'package:church_app/pages/admin_page.dart'; //cheat navigation remove later
 
 class EmailSignupPage extends StatefulWidget {
   const EmailSignupPage({super.key});
 
   @override
-  State<EmailSignupPage> createState() => _EmailLoginPageState();
+  State<EmailSignupPage> createState() => _EmailSignupPageState();
 }
 
-class _EmailLoginPageState extends State<EmailSignupPage> {
+class _EmailSignupPageState extends State<EmailSignupPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -34,40 +36,39 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
   }
 
   void _submit() async {
-  if (!_termsAccepted || !_privacyAccepted) {
-    setState(() {
-      _error = "You must accept all policies and terms to continue.";
-    });
-    return;
-  }
-  print("we are here");
+    if (!_termsAccepted || !_privacyAccepted) {
+      setState(() {
+        _error = "You must accept all policies and terms to continue.";
+      });
+      return;
+    }
 
-  if (_formKey.currentState!.validate()) {
-    final url = Uri.parse("http://localhost:8080/auth/signup");
-    final response = await http.post(
-      url,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: jsonEncode({
-        "provider": "email",
-        "email": _emailController.text,
-        "password": _passwordController.text,
-        "name": _nameController.text,
-      }),
-    );
+    if (_formKey.currentState!.validate()) {
+      final url = Uri.parse("http://localhost:8080/auth/signup");
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "provider": "email",
+          "email": _emailController.text,
+          "password": _passwordController.text,
+          "name": _nameController.text,
+        }),
+      );
 
-    print("here is the response: ${response.body}");
+      print("Response: ${response.body}");
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      print("Success");
-      print(response.body);
-    } else {
-      print("Failed: ${response.statusCode}");
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print("Signup successful");
+        // TODO: Navigate to next screen or show success message
+      } else {
+        print("Signup failed: ${response.statusCode}");
+        // TODO: Show error to user
+      }
     }
   }
-}
-
 
   void _googleSignUp() {}
 
@@ -79,11 +80,13 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        // title: const Text("Sign Up", style: TextStyle(color: Colors.black)),
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+          ),
         ),
       ),
       body: Container(
@@ -125,9 +128,8 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                       label: "Name",
                       icon: Icons.person_3_outlined,
                     ),
-                    validator: (v) => v == null || v.isEmpty
-                        ? "Please enter your name"
-                        : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? "Please enter your name" : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -141,9 +143,7 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                       icon: Icons.email_outlined,
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) {
-                        return "Please enter your email";
-                      }
+                      if (v == null || v.isEmpty) return "Please enter your email";
                       if (!v.contains("@")) return "Please enter a valid email";
                       return null;
                     },
@@ -155,65 +155,97 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     style: const TextStyle(color: Colors.black),
-                    decoration:
-                        _inputDecoration(
-                          label: "Password",
-                          icon: Icons.lock_outline,
-                        ).copyWith(
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_outlined
-                                  : Icons.visibility_outlined,
-                              color: Colors.black,
-                            ),
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                          ),
+                    decoration: _inputDecoration(
+                      label: "Password",
+                      icon: Icons.lock_outline,
+                    ).copyWith(
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: Colors.black,
                         ),
+                        onPressed: () =>
+                            setState(() => _obscurePassword = !_obscurePassword),
+                      ),
+                    ),
                     validator: (v) {
-                      if (v == null || v.isEmpty)
-                        return "Please enter your password";
-                      if (v.length < 6)
-                        return "Password must be at least 6 characters";
+                      if (v == null || v.isEmpty) return "Please enter your password";
+                      if (v.length < 6) return "Password must be at least 6 characters";
                       return null;
                     },
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Atleast 8 characters, 1 uppercas, 1 number & 1 symbol",
+                    "At least 8 characters, 1 uppercase, 1 number & 1 symbol",
                     textAlign: TextAlign.left,
                     style: TextStyle(color: Colors.black, fontSize: 12),
                   ),
                   const SizedBox(height: 10),
+
+                  // Terms, Privacy, and Consent checkboxes
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CheckboxListTile(
-                        title: const Text(
-                          "By Signing up, you agree to the Terms of Service and Privacy Policy",
-                          style: TextStyle(color: Colors.black, fontSize: 12),
+                        title: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(color: Colors.black),
+                            children: [
+                              const TextSpan(text: "By signing up, you agree to the "),
+                              TextSpan(
+                                text: "Terms of Service",
+                                style: const TextStyle(
+                                  color: Color(0xFF5286FF),
+                                  decoration: TextDecoration.underline,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const TermsPage(),
+                                      ),
+                                    );
+                                  },
+                                 
+                              ),
+                              const TextSpan(text: " and "),
+                              TextSpan(
+                                text: "Privacy Policy",
+                                style: const TextStyle(
+                                  color: Color(0xFF5286FF),
+                                  decoration: TextDecoration.underline,
+                                ),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap = () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const PrivacyPage(),
+                                      ),
+                                    );
+                                  },
+                              ),
+                            ],
+                          ),
                         ),
                         value: _termsAccepted,
-                        onChanged: (val) =>
-                            setState(() => _termsAccepted = val!),
+                        onChanged: (val) => setState(() => _termsAccepted = val!),
                         activeColor: const Color(0xFF5286FF),
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
-
                       CheckboxListTile(
                         title: const Text(
                           "I consent to the use of biometric and/or Bluetooth technology to record my church attendance",
                           style: TextStyle(color: Colors.black, fontSize: 12),
                         ),
                         value: _privacyAccepted,
-                        onChanged: (val) =>
-                            setState(() => _privacyAccepted = val!),
+                        onChanged: (val) => setState(() => _privacyAccepted = val!),
                         activeColor: const Color(0xFF5286FF),
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
-
                       if (_error != null)
                         SizedBox(
                           width: double.infinity,
@@ -231,12 +263,13 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                   ),
 
                   const SizedBox(height: 32),
+
+                  // Social sign‑up buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-
                         child: SizedBox(
                           width: 56,
                           height: 56,
@@ -247,7 +280,6 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                                 color: Color.fromARGB(179, 234, 231, 231),
                                 width: 1,
                               ),
-
                               backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(49),
@@ -278,7 +310,6 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                                 color: Color.fromARGB(179, 234, 231, 231),
                                 width: 1,
                               ),
-
                               backgroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(52),
@@ -299,16 +330,18 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                     ],
                   ),
                   const SizedBox(height: 8),
+
+                  // Login link
                   SizedBox(
                     height: 16,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
+                        const Text(
                           "Already have an account?",
                           style: TextStyle(color: Colors.black, fontSize: 12),
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
@@ -316,7 +349,13 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                               builder: (_) => const EmailLoginPage(),
                             ),
                           ),
-                          child: Text(
+                          onDoubleTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BottomNavigationBarExample(),
+                            )
+                          ),
+                          child: const Text(
                             "Login",
                             style: TextStyle(
                               color: Color(0xFF5286FF),
@@ -328,6 +367,7 @@ class _EmailLoginPageState extends State<EmailSignupPage> {
                     ),
                   ),
                   const SizedBox(height: 32),
+
                   // Submit button
                   SizedBox(
                     width: double.infinity,
