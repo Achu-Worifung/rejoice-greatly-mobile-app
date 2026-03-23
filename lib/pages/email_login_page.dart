@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import 'package:church_app/pages/login_page.dart';
-import 'package:church_app/pages/email_signup_page.dart';
-
 class EmailLoginPage extends StatefulWidget {
   const EmailLoginPage({super.key});
 
@@ -47,7 +44,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginPage())),
+          onPressed: () => Navigator.pushNamed(context, '/login'),
         ),
       ),
 
@@ -102,12 +99,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                    SizedBox(
                     width: double.infinity,
                     child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginPage(),
-                      ),
-                    ),
+                    onTap: () => Navigator.pushNamed(context, '/login'),
                     child: Text(
                       "Forgot Password?",
                       textAlign: TextAlign.right,
@@ -235,8 +227,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                         ),
                         SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => Navigator.push(context, 
-                          MaterialPageRoute(builder: (context) => const EmailSignupPage())),
+                          onTap: () => Navigator.pushNamed(context, '/email-signup'),
                           child: Text(
                             "Sign up",
                             style: TextStyle(

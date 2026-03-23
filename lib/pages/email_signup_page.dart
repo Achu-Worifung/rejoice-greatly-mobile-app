@@ -1,13 +1,8 @@
-import 'package:church_app/pages/email_login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/gestures.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:church_app/pages/privacy_page.dart';
-import 'package:church_app/pages/terms_page.dart';
-import 'package:church_app/pages/login_page.dart';
-import 'package:church_app/pages/admin_page.dart'; //cheat navigation remove later
 
 class EmailSignupPage extends StatefulWidget {
   const EmailSignupPage({super.key});
@@ -83,10 +78,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginPage()),
-          ),
+          onPressed: () => Navigator.pushNamed(context, '/login'),
         ),
       ),
       body: Container(
@@ -202,12 +194,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const TermsPage(),
-                                      ),
-                                    );
+                                    Navigator.pushNamed(context, '/terms');
                                   },
                                  
                               ),
@@ -220,12 +207,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const PrivacyPage(),
-                                      ),
-                                    );
+                                    Navigator.pushNamed(context, '/privacy');
                                   },
                               ),
                             ],
@@ -343,18 +325,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const EmailLoginPage(),
-                            ),
-                          ),
-                          onDoubleTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const BottomNavigationBarExample(),
-                            )
-                          ),
+                          onTap: () => Navigator.pushNamed(context, '/email-login'),
                           child: const Text(
                             "Login",
                             style: TextStyle(
