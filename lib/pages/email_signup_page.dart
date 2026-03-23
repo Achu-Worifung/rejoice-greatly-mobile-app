@@ -3,6 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/gestures.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class EmailSignupPage extends StatefulWidget {
   const EmailSignupPage({super.key});
@@ -53,7 +55,6 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
         }),
       );
 
-      print("Response: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print("Signup successful");

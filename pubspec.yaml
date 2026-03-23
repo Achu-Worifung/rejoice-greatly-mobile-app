@@ -33,6 +33,7 @@ dependencies:
   flutter_svg: ^2.0.10 # for svg icons
   font_awesome_flutter: ^10.7.0 # for icons
   http: ^1.2.0 #for http requests
+  shared_preferences: ^2.2.2
 
   
 

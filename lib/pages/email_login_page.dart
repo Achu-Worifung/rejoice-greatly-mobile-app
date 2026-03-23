@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EmailLoginPage extends StatefulWidget {
   const EmailLoginPage({super.key});
@@ -13,6 +16,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _error;
 
   @override
   void dispose() {
@@ -26,6 +30,51 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       // TODO: handle submission
       print("Email: ${_emailController.text}");
       print("Password: ${_passwordController.text}");
+    }
+  }
+
+  Future<void> _emailLogin() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _error = null);
+      
+      try {
+        final url = Uri.parse("http://localhost:8080/auth/signin");
+        final response = await http.post(
+          url,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode({
+            "provider": "email",
+            "email": _emailController.text,
+            "password": _passwordController.text,
+          }),
+        );
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          //saving user data to shared preferences
+          final prefs = await SharedPreferences.getInstance();
+          String role = jsonDecode(response.body)["role"] == "admin" ? "Admin" : "User";
+          bool signupComplete = jsonDecode(response.body)["signupComplete"];
+          prefs.setString("account_id", jsonDecode(response.body)["account_id"]);
+          prefs.setString("name", jsonDecode(response.body)["name"]);
+          prefs.setBool("signupComplete", signupComplete);
+          prefs.setString("role", role);
+          if (!signupComplete) {
+            //navigate to complete signup page
+            Navigator.pushNamed(context, '/complete-signup');
+          } else {
+            //navigate to home page
+            Navigator.pushNamed(context, '/home');
+          }
+        } else {
+          setState(() => _error = "Login failed. Please check your credentials.");
+          print("Login failed: ${response.statusCode}");
+        }
+      } catch (e) {
+        setState(() => _error = "An error occurred. Please try again.");
+        print("Error: $e");
+      }
     }
   }
 
@@ -74,7 +123,26 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 letterSpacing: 1,
               ),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
+            if (_error != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  border: Border.all(color: Colors.red.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Colors.red.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            if (_error != null) const SizedBox(height: 14),
+            const SizedBox(height: 8),
             Form(
               key: _formKey,
               child: Column(
@@ -245,7 +313,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _emailLogin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF5286FF),
                         shape: RoundedRectangleBorder(
