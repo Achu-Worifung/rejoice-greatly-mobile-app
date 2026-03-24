@@ -176,16 +176,17 @@ void _retake() {
 
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse("http://localhost:8080/auth/complete-signup"),
+        Uri.parse("http://localhost:8080/profile/picture-upload"),
       );
+      
 
       request.fields['account_id'] = accountId;
       request.files.add(
         http.MultipartFile.fromBytes(
-          'profile_picture',
+          'Image',
           _capturedBytes!,
-          filename: 'profile.jpg',
-        ),
+          filename: '$accountId' + 'profile.jpg',       
+           ),
       );
 
       final response = await request.send();
