@@ -6,6 +6,7 @@ import 'pages/privacy_page.dart';
 import 'pages/terms_page.dart';
 import 'pages/admin_page.dart';
 import 'pages/complete_signup.dart';
+import 'pages/dashboard.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -15,6 +16,7 @@ class AppRoutes {
   static const String terms = '/terms';
   static const String admin = '/admin';
   static const String completeSignup = '/complete-signup';
+  static const String dashboard = '/dashboard';
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -25,6 +27,7 @@ class AppRoutes {
       terms: (context) => const TermsPage(),
       admin: (context) => const BottomNavigationBarExample(),
       completeSignup: (context) => const CompleteSignup(),
+      dashboard: (context) => const Dashboard(),
     };
   }
 }
