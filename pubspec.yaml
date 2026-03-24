@@ -34,6 +34,9 @@ dependencies:
   font_awesome_flutter: ^10.7.0 # for icons
   http: ^1.2.0 #for http requests
   shared_preferences: ^2.2.2
+  permission_handler: ^11.3.0
+  image_picker: ^1.0.0 # for camera and gallery
+  camera: ^0.10.5+9
 
   
 
