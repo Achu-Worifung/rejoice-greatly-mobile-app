@@ -32,6 +32,7 @@ class _BottomNavigationBarExampleState
     Text('Index 0: Home', style: optionStyle),
     Text('Index 1: Business', style: optionStyle),
     Text('Index 2: School', style: optionStyle),
+    Text('Index 2: reports', style: optionStyle),
   ];
 
   void _onItemTapped(int index) {
@@ -46,17 +47,31 @@ class _BottomNavigationBarExampleState
       // appBar: AppBar(title: const Text('BottomNavigationBar Sample')),
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.business),
-            label: 'Business',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'School'),
-        ],
+        type: BottomNavigationBarType.fixed, // ✅ important
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.black, // now this works
+        enableFeedback: false,
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
         onTap: _onItemTapped,
+
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Overview',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.format_list_bulleted),
+            label: 'Attendance',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_none),
+            label: 'Reminders',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.show_chart),
+            label: 'Reports',
+          ),
+        ],
       ),
     );
   }
