@@ -58,7 +58,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print("Signup successful");
-        // TODO: Navigate to next screen or show success message
+        Navigator.pushNamed(context, '/complete-signup');
       } else {
         print("Signup failed: ${response.statusCode}");
         // TODO: Show error to user

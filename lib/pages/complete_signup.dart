@@ -193,6 +193,8 @@ void _retake() {
       final responseBody = await response.stream.bytesToString();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        //release camera and navigate to admin
+        _mediaStream?.getTracks().forEach((t) => t.stop());
         if (mounted) Navigator.pushNamed(context, '/admin');
       } else {
         setState(
