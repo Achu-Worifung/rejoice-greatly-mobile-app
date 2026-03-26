@@ -47,9 +47,9 @@ class _BottomNavigationBarExampleState
       // appBar: AppBar(title: const Text('BottomNavigationBar Sample')),
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // ✅ important
+        type: BottomNavigationBarType.fixed, 
         selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.black, // now this works
+        unselectedItemColor: Colors.black, 
         enableFeedback: false,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

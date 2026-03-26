@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
+
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:ui_web' as ui;
@@ -58,9 +59,8 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
     try {
       if (_mediaStream != null) {
-        for (var track in _mediaStream!.getTracks()) {
-          track.stop();
-        }
+        _stopCamera();
+
         _mediaStream = null;
       }
       _videoElement.srcObject = null;
@@ -158,6 +158,11 @@ void _retake() {
     await _startCamera(front: !_isFrontCamera);
   }
 
+  void _stopCamera() {
+  _mediaStream?.getTracks().forEach((dynamic track) => track.stop());
+  _mediaStream = null;
+}
+
   Future<void> _submitSignup() async {
     if (_capturedBytes == null) return;
     setState(() {
@@ -191,10 +196,13 @@ void _retake() {
 
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
+      print("Response: $responseBody");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         //release camera and navigate to admin
-        _mediaStream?.getTracks().forEach((t) => t.stop());
+       _stopCamera();
+
+
         if (mounted) Navigator.pushNamed(context, '/admin');
       } else {
         setState(
@@ -202,7 +210,7 @@ void _retake() {
         print("Failed: ${response.statusCode} - $responseBody");
       }
     } catch (e) {
-      setState(() => _error = "Network error. Is your server running?");
+      setState(() => _error = "Network error. Please try again Later.");
       print("Error: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -211,7 +219,8 @@ void _retake() {
 
   @override
   void dispose() {
-    _mediaStream?.getTracks().forEach((t) => t.stop());
+    _stopCamera();
+
     _videoElement.srcObject = null;
     super.dispose();
   }

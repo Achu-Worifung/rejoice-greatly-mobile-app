@@ -57,8 +57,21 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
 
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        print("Signup successful");
-        Navigator.pushNamed(context, '/complete-signup');
+        //saving user data to shared preferences
+        final prefs = await SharedPreferences.getInstance();
+        String role = jsonDecode(response.body)["role"] == "admin" ? "Admin" : "User";
+        bool signupComplete = jsonDecode(response.body)["signupComplete"];
+        prefs.setString("account_id", jsonDecode(response.body)["account_id"]);
+        prefs.setString("name", jsonDecode(response.body)["name"]);
+        prefs.setBool("signupComplete", signupComplete);
+        prefs.setString("role", role);
+        if (!signupComplete) {
+          //navigate to complete signup page
+          Navigator.pushNamed(context, '/complete-signup');
+        } else {
+          //navigate to dashboard page
+          Navigator.pushNamed(context, '/dashboard');
+        }
       } else {
         print("Signup failed: ${response.statusCode}");
         // TODO: Show error to user
