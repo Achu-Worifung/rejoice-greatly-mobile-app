@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/overview_widget.dart';
 import '../widgets/reminder_widget.dart';
 import '../widgets/attendance_widget.dart';
+import '../widgets/report_widget.dart';
 
 /// Flutter code sample for [BottomNavigationBar].
 
@@ -12,20 +13,20 @@ class BottomNavigationBarExampleApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: BottomNavigationBarExample());
+    return const MaterialApp(home: AdminDashboard());
   }
 }
 
-class BottomNavigationBarExample extends StatefulWidget {
-  const BottomNavigationBarExample({super.key});
+class AdminDashboard extends StatefulWidget {
+  const AdminDashboard({super.key});
 
   @override
-  State<BottomNavigationBarExample> createState() =>
+  State<AdminDashboard> createState() =>
       _BottomNavigationBarExampleState();
 }
 
 class _BottomNavigationBarExampleState
-    extends State<BottomNavigationBarExample> {
+    extends State<AdminDashboard> {
   int _selectedIndex = 0;
   static const TextStyle optionStyle = TextStyle(
     fontSize: 30,
@@ -35,7 +36,7 @@ class _BottomNavigationBarExampleState
     OverviewWidget(),
     AttendanceWidget(),
     RemindersWidget(),
-    Text('Index 2: reports', style: optionStyle),
+    ReportsWidget (),
   ];
 
   void _onItemTapped(int index) {

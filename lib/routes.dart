@@ -20,12 +20,12 @@ class AppRoutes {
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
-      login: (context) => const BottomNavigationBarExample(),
+      login: (context) => const LoginPage(),
       emailLogin: (context) => const EmailLoginPage(),
       emailSignup: (context) => const EmailSignupPage(),
       privacy: (context) => const PrivacyPage(),
       terms: (context) => const TermsPage(),
-      admin: (context) => const BottomNavigationBarExample(),
+      admin: (context) => const AdminDashboard(),
       completeSignup: (context) => const CompleteSignup(),
       dashboard: (context) => const Dashboard(),
     };

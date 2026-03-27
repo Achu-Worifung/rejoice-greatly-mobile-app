@@ -69,7 +69,7 @@ class OverviewWidget extends StatelessWidget {
         // Today's Attendance Card
         Card(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            // borderRadius: BorderRadius.circular(12),
           ),
           // elevation: 2,
           child: Padding(
@@ -98,7 +98,7 @@ class OverviewWidget extends StatelessWidget {
                     ),
                     _buildStatCard(
                       icon: Icons.person_off,
-                      iconColor: Colors.blue[200]!,
+                      iconColor: Colors.blue,
                       title: 'Absent',
                       value: '47',
                     ),
@@ -110,7 +110,7 @@ class OverviewWidget extends StatelessWidget {
                     ),
                     _buildStatCard(
                       icon: Icons.show_chart,
-                      iconColor: Colors.blue[200]!,
+                      iconColor: Colors.blue,
                       title: 'Attendance Rate',
                       value: '81%',
                     ),
