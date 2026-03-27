@@ -45,9 +45,24 @@ class AuthService {
     }
   }
 
-  Future<String?> signInWithEmail(String email, String password) async {
+  Future<String?> signInWithEmail(String email, String password, context) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
+      String? idToken = await _auth.currentUser?.getIdToken();
+      if (idToken != null) {
+        bool signupComplete = await _sendUserToBackend("email", null);
+        if (signupComplete)
+        {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }else 
+        {
+          Navigator.pushReplacementNamed(context, '/complete-signup');
+        }
+      }
+      else {
+        return "Failed to sign in. Please try again.";
+      }
+
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;

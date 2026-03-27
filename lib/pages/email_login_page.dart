@@ -42,7 +42,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       final msg = await AuthService().signInWithEmail(
         _emailController.text,
         _passwordController.text,
+        context,
       );
+      print('here is the msg: $msg');
 
       if (msg != null) {
         setState(() => _error = msg);
