@@ -32,7 +32,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
     super.dispose();
   }
 
-  void _submit() async {
+void _submit() async {
     if (!_termsAccepted || !_privacyAccepted) {
       setState(() {
         _error = "You must accept all policies and terms to continue.";
@@ -41,41 +41,18 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
     }
 
     if (_formKey.currentState!.validate()) {
-      final url = Uri.parse("http://localhost:8080/auth/signup");
-      final response = await http.post(
-        url,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "provider": "email",
-          "email": _emailController.text,
-          "password": _passwordController.text,
-          "name": _nameController.text,
-        }),
+      setState(() => _error = null);
+
+      // FIX: Changed from signInWithEmail to signUpWithEmail
+      // Also added _nameController.text
+      final msg = await AuthService().signUpWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+        _nameController.text.trim(),
+        context,
       );
 
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        //saving user data to shared preferences
-        final prefs = await SharedPreferences.getInstance();
-        String role = jsonDecode(response.body)["role"] == "admin" ? "Admin" : "User";
-        bool signupComplete = jsonDecode(response.body)["signupComplete"];
-        prefs.setString("account_id", jsonDecode(response.body)["account_id"]);
-        prefs.setString("name", jsonDecode(response.body)["name"]);
-        prefs.setBool("signupComplete", signupComplete);
-        prefs.setString("role", role);
-        if (!signupComplete) {
-          //navigate to complete signup page
-          Navigator.pushNamed(context, '/complete-signup');
-        } else {
-          //navigate to dashboard page
-          Navigator.pushNamed(context, '/dashboard');
-        }
-      } else {
-        print("Signup failed: ${response.statusCode}");
-        // TODO: Show error to user
-      }
+     
     }
   }
 

@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
-
+import 'package:flutter/material.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -18,6 +18,7 @@ class AuthService {
     String email,
     String password,
     String name,
+    context,
   ) async {
     try {
       await _auth.createUserWithEmailAndPassword(
@@ -25,8 +26,19 @@ class AuthService {
         password: password,
       );
       //login no need to send to backend
-      await _sendUserToBackend("email", _auth.currentUser!.uid);
+      String? idToken = await _auth.currentUser?.getIdToken();
       await FirebaseAuth.instance.currentUser?.updateDisplayName(name);
+
+      if (idToken != null) {
+        bool signupComplete = await _sendUserToBackend("email", name);
+        if (signupComplete)
+        {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }else 
+        {
+          Navigator.pushReplacementNamed(context, '/complete-signup');
+        }
+      }
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -59,7 +71,7 @@ class AuthService {
       );
 
       await _auth.signInWithCredential(credential);
-      await _sendUserToBackend("Google", _auth.currentUser!.uid);
+      await _sendUserToBackend("Google", null);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -94,7 +106,7 @@ class AuthService {
       );
 
       await _auth.signInWithCredential(oauthCredential);
-      _sendUserToBackend("Apple", _auth.currentUser!.uid);
+      _sendUserToBackend("Apple", null);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -107,21 +119,51 @@ class AuthService {
   }
 
   // --- OPTIONAL: send user info to your backend ---
-  Future<void> _sendUserToBackend(String provider, String token) async {
+  Future<bool> _sendUserToBackend(String provider, String? name) async {
     try {
+      String? idToken = await _auth.currentUser?.getIdToken();
+
+      // Use the name passed in, or fallback to the Firebase display name
+      String? get_name = name ?? await _auth.currentUser?.displayName;
+
       final res = await http.post(
         Uri.parse("http://localhost:8080/auth/firebase"),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $token",
-        },
-        body: jsonEncode({"provider": provider}),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "provider": provider,
+          "idToken": idToken,
+          "name": get_name, // Use the resolved name
+        }),
       );
 
-      if (res.statusCode != 200)
-        throw Exception("Failed to send user to backend");
+      // CRITICAL FIX: Changed from != 200 to == 200
+      if (res.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        final Map<String, dynamic> userData = jsonDecode(res.body);
+
+        // Extract fields from Java/Spring response
+        String firebaseUid = userData['firebaseUid'] ?? "";
+        String email = userData['email'] ?? "";
+        String extractedName = userData['name'] ?? "User";
+        bool isAdmin = userData['admin'] ?? false;
+        bool signupComplete = userData['signupComplete'] ?? false;
+
+        // Save to SharedPreferences
+        await prefs.setString("firebaseUid", firebaseUid);
+        await prefs.setString("email", email);
+        await prefs.setString("name", extractedName);
+        await prefs.setBool("isAdmin", isAdmin);
+        await prefs.setBool("signupComplete", signupComplete);
+
+        print("Backend success: User $extractedName saved locally.");
+        return signupComplete;
+      } else {
+        print("Backend error: ${res.statusCode} - ${res.body}");
+        return false;
+      }
     } catch (e) {
-      print(e);
+      print("Backend connection error: $e");
+      return false;
     }
   }
 }
