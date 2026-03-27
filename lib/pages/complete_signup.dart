@@ -67,8 +67,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       }
       _videoElement.srcObject = null;
 
-      final stream =
-          await html.window.navigator.mediaDevices!.getUserMedia({
+      final stream = await html.window.navigator.mediaDevices!.getUserMedia({
         'video': {
           'facingMode': front ? 'user' : 'environment',
           'width': {'ideal': 1280},
@@ -79,8 +78,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
       _mediaStream = stream;
       _videoElement.srcObject = stream;
-      _videoElement.style.transform =
-          front ? 'scaleX(-1)' : 'scaleX(1)';
+      _videoElement.style.transform = front ? 'scaleX(-1)' : 'scaleX(1)';
 
       _videoElement.onLoadedMetadata.listen((_) async {
         try {
@@ -100,8 +98,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
     } catch (e) {
       print("Camera Error: $e");
       if (mounted) {
-        setState(() => _error =
-            "Camera access denied. Please allow permissions and use HTTPS.");
+        setState(
+          () => _error =
+              "Camera access denied. Please allow permissions and use HTTPS.",
+        );
       }
     } finally {
       _isStarting = false;
@@ -138,21 +138,22 @@ class _CompleteSignupState extends State<CompleteSignup> {
     });
   }
 
-void _retake() {
-  setState(() {
-    _capturedBytes = null;
-    _error = null;
-    _isCameraReady = false; // briefly show spinner
-  });
-
-  Future.delayed(const Duration(milliseconds: 100), () {
-    _videoElement.style.transform =
-        _isFrontCamera ? 'scaleX(-1)' : 'scaleX(1)';
-    _videoElement.play().then((_) {
-      if (mounted) setState(() => _isCameraReady = true);
+  void _retake() {
+    setState(() {
+      _capturedBytes = null;
+      _error = null;
+      _isCameraReady = false; // briefly show spinner
     });
-  });
-}
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _videoElement.style.transform = _isFrontCamera
+          ? 'scaleX(-1)'
+          : 'scaleX(1)';
+      _videoElement.play().then((_) {
+        if (mounted) setState(() => _isCameraReady = true);
+      });
+    });
+  }
 
   Future<void> _flipCamera() async {
     if (_isStarting) return;
@@ -161,9 +162,9 @@ void _retake() {
   }
 
   void _stopCamera() {
-  _mediaStream?.getTracks().forEach((dynamic track) => track.stop());
-  _mediaStream = null;
-}
+    _mediaStream?.getTracks().forEach((dynamic track) => track.stop());
+    _mediaStream = null;
+  }
 
   Future<void> _submitSignup() async {
     final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -186,15 +187,14 @@ void _retake() {
         'POST',
         Uri.parse("http://localhost:8080/profile/picture-upload"),
       );
-      
 
       request.fields['firebaseUid'] = firebaseUid;
       request.files.add(
         http.MultipartFile.fromBytes(
           'Image',
           _capturedBytes!,
-          filename: 'profile.jpg',       
-           ),
+          filename: 'profile.jpg',
+        ),
       );
 
       final response = await request.send();
@@ -203,13 +203,20 @@ void _retake() {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         //release camera and navigate to admin
-       _stopCamera();
+        _stopCamera();
 
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool("signupComplete", true);
 
-        if (mounted) Navigator.pushNamed(context, '/admin');
+        bool isAdmin = prefs.getBool("admin") ?? false;
+
+        if (!isAdmin && mounted) {
+          Navigator.pushNamed(context, '/dashboard');
+        } else if (isAdmin && mounted) {
+          Navigator.pushNamed(context, '/admin');
+        }
       } else {
-        setState(
-            () => _error = "Upload failed. Error: ${response.statusCode}");
+        setState(() => _error = "Upload failed. Error: ${response.statusCode}");
         print("Failed: ${response.statusCode} - $responseBody");
       }
     } catch (e) {
@@ -267,7 +274,9 @@ void _retake() {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _circleButton(
-                        Icons.arrow_back, () => Navigator.pop(context)),
+                      Icons.arrow_back,
+                      () => Navigator.pop(context),
+                    ),
                     const Text(
                       "TAKE A SELFIE FOR IDENTITY VERIFICATION",
                       style: TextStyle(
@@ -275,9 +284,7 @@ void _retake() {
                         letterSpacing: 1.5,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        shadows: [
-                          Shadow(blurRadius: 8, color: Colors.black54)
-                        ],
+                        shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
                       ),
                     ),
                     // _circleButton(Icons.flip_camera_ios, _flipCamera),
@@ -336,8 +343,7 @@ void _retake() {
         // Top bar
         SafeArea(
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Column(
               children: [
                 Row(
@@ -419,8 +425,7 @@ void _retake() {
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin:
-                fromTop ? Alignment.topCenter : Alignment.bottomCenter,
+            begin: fromTop ? Alignment.topCenter : Alignment.bottomCenter,
             end: fromTop ? Alignment.bottomCenter : Alignment.topCenter,
             colors: [Colors.black.withOpacity(0.65), Colors.transparent],
           ),

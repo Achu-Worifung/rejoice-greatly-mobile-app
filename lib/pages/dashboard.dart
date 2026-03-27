@@ -41,6 +41,7 @@ class _DashboardState extends State<Dashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         scrolledUnderElevation: 4.0,
         title: Text(greeting.isEmpty ? "Loading..." : greeting),
         elevation: 0.0, 
