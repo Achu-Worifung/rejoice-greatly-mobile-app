@@ -52,6 +52,12 @@ void _submit() async {
         context,
       );
 
+      if (msg != null) {
+        setState(() => _error = msg);
+        return;
+      }
+
+
      
     }
   }
