@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'dart:ui_web' as ui;
@@ -164,6 +166,7 @@ void _retake() {
 }
 
   Future<void> _submitSignup() async {
+    final FirebaseAuth _auth = FirebaseAuth.instance;
     if (_capturedBytes == null) return;
     setState(() {
       _isLoading = true;
@@ -172,9 +175,9 @@ void _retake() {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final accountId = prefs.getString("account_id") ?? "";
+      final firebaseUid = await _auth.currentUser?.uid ?? "";
 
-      if (accountId.isEmpty) {
+      if (firebaseUid.isEmpty) {
         setState(() => _error = "Account not found. Please sign up again.");
         return;
       }
@@ -185,12 +188,12 @@ void _retake() {
       );
       
 
-      request.fields['account_id'] = accountId;
+      request.fields['firebaseUid'] = firebaseUid;
       request.files.add(
         http.MultipartFile.fromBytes(
           'Image',
           _capturedBytes!,
-          filename: '$accountId' + 'profile.jpg',       
+          filename: 'profile.jpg',       
            ),
       );
 
