@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../services/auth_service.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
-  void _handleGoogle(BuildContext context) {
-    // TODO: implement Google sign in
-    print("Google pressed");
+  Future<void> _handleGoogle() async {
+    final msg = await AuthService().signInWithGoogle();
+    if (msg != null) {
+        print(msg);
+        return;
+      }
   }
 
-  void _handleApple(BuildContext context) {
-    // TODO: implement Apple sign in
-    print("Apple pressed");
+  Future<void> _handleApple() async {
+    final msg = await AuthService().signInWithApple();
+    if (msg != null) {
+        print(msg);
+        return;
+      }
   }
 
   void _handleEmail(BuildContext context) {
@@ -80,7 +87,7 @@ class LoginPage extends StatelessWidget {
       isFa: true,
       bg: Colors.white,
       fg: Colors.black,
-      onPressed: () => _handleGoogle(context),
+      onPressed: () => _handleGoogle(),
     );
   }
 
@@ -91,7 +98,7 @@ class LoginPage extends StatelessWidget {
       isFa: true,
       bg: Colors.white,
       fg: Colors.black,
-      onPressed: () => _handleApple(context),
+      onPressed: () => _handleApple(),
     );
   }
 

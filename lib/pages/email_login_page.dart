@@ -209,28 +209,31 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                         borderRadius: BorderRadius.circular(12),
 
                         child: SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _googleSignUp,
-                            style: ElevatedButton.styleFrom(
-                              side: const BorderSide(
-                                color: Color.fromARGB(179, 234, 231, 231),
-                                width: 1,
+                          width: 70,
+                          height: 70,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ElevatedButton(
+                              onPressed: _googleSignUp,
+                              style: ElevatedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color.fromARGB(179, 234, 231, 231),
+                                  width: 1,
+                                ),
+                            
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(49),
+                                ),
+                                elevation: 2,
+                                padding: EdgeInsets.zero,
                               ),
-
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(49),
-                              ),
-                              elevation: 2,
-                              padding: EdgeInsets.zero,
-                            ),
-                            child: const Center(
-                              child: FaIcon(
-                                FontAwesomeIcons.google,
-                                size: 24,
-                                color: Colors.black,
+                              child: const Center(
+                                child: FaIcon(
+                                  FontAwesomeIcons.google,
+                                  size: 24,
+                                  color: Colors.black,
+                                ),
                               ),
                             ),
                           ),
@@ -240,28 +243,31 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: ElevatedButton(
-                            onPressed: _appleSignUp,
-                            style: ElevatedButton.styleFrom(
-                              side: const BorderSide(
-                                color: Color.fromARGB(179, 234, 231, 231),
-                                width: 1,
+                          width: 70,
+                          height: 70,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ElevatedButton(
+                              onPressed: _appleSignUp,
+                              style: ElevatedButton.styleFrom(
+                                side: const BorderSide(
+                                  color: Color.fromARGB(179, 234, 231, 231),
+                                  width: 1,
+                                ),
+                            
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(52),
+                                ),
+                                elevation: 2,
+                                padding: EdgeInsets.zero,
                               ),
-
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(52),
-                              ),
-                              elevation: 2,
-                              padding: EdgeInsets.zero,
-                            ),
-                            child: const Center(
-                              child: FaIcon(
-                                FontAwesomeIcons.apple,
-                                size: 24,
-                                color: Colors.black,
+                              child: const Center(
+                                child: FaIcon(
+                                  FontAwesomeIcons.apple,
+                                  size: 24,
+                                  color: Colors.black,
+                                ),
                               ),
                             ),
                           ),

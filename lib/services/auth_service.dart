@@ -4,6 +4,8 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -12,14 +14,18 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   // --- EMAIL/PASSWORD ---
-  Future<String?> signUpWithEmail(String email, String password, String name) async {
+  Future<String?> signUpWithEmail(
+    String email,
+    String password,
+    String name,
+  ) async {
     try {
       await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
       //login no need to send to backend
-      await _sendUserToBackend("email", _auth.currentUser!.uid); 
+      await _sendUserToBackend("email", _auth.currentUser!.uid);
       await FirebaseAuth.instance.currentUser?.updateDisplayName(name);
       return null;
     } on FirebaseAuthException catch (e) {
@@ -39,7 +45,10 @@ class AuthService {
   // --- GOOGLE ---
   Future<String?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      final GoogleSignInAccount? googleUser = await GoogleSignIn(
+        clientId:
+            '556556905292-n17ddaeaa0uuef5h7f5tnjl8rthe8d3l.apps.googleusercontent.com',
+      ).signIn();
       if (googleUser == null) return 'Cancelled';
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -60,6 +69,15 @@ class AuthService {
   // --- APPLE ---
   Future<String?> signInWithApple() async {
     try {
+      if (kIsWeb) {
+        // Apple sign-in via Firebase on web
+        final provider = OAuthProvider("apple.com")
+          ..addScope('email')
+          ..addScope('name');
+        await FirebaseAuth.instance.signInWithPopup(provider);
+
+        return null;
+      }
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
@@ -67,8 +85,8 @@ class AuthService {
         ],
       );
       String fullName =
-    "${credential.givenName ?? ''} ${credential.familyName ?? ''}".trim();
-     await FirebaseAuth.instance.currentUser?.updateDisplayName(fullName);
+          "${credential.givenName ?? ''} ${credential.familyName ?? ''}".trim();
+      await FirebaseAuth.instance.currentUser?.updateDisplayName(fullName);
 
       final oauthCredential = OAuthProvider("apple.com").credential(
         idToken: credential.identityToken,
@@ -100,13 +118,10 @@ class AuthService {
         body: jsonEncode({"provider": provider}),
       );
 
-      if (res.statusCode != 200) throw Exception("Failed to send user to backend");
-      
-
+      if (res.statusCode != 200)
+        throw Exception("Failed to send user to backend");
     } catch (e) {
       print(e);
     }
   }
-
- 
 }
