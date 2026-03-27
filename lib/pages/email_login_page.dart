@@ -3,6 +3,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../routes.dart';
+import '../services/auth_service.dart';
 
 class EmailLoginPage extends StatefulWidget {
   const EmailLoginPage({super.key});

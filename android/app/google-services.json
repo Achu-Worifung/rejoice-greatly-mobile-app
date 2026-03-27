@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "360444353139",
+    "project_id": "rejoice-greatly",
+    "storage_bucket": "rejoice-greatly.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:360444353139:android:cbed5c03ba3ded1639e806",
+        "android_client_info": {
+          "package_name": "com.example.church_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXI5Gb5l4omIlhNHOKXgPu1sfOsXQQ6Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

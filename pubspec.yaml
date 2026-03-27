@@ -30,19 +30,22 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_svg: ^2.0.10 # for svg icons
-  font_awesome_flutter: ^10.7.0 # for icons
-  http: ^1.2.0 #for http requests
+  flutter_svg: ^2.0.10
+  font_awesome_flutter: ^10.7.0
+  http: ^1.2.0
   shared_preferences: ^2.2.2
   permission_handler: ^11.3.0
-  image_picker: ^1.0.0 # for camera and gallery
+  image_picker: ^1.0.0
   camera: ^0.10.5+9
+  firebase_core: 4.6.0
+  firebase_auth: ^6.3.0
+  cupertino_icons: ^1.0.8
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.0
 
   
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+
 
 dev_dependencies:
   flutter_test:
