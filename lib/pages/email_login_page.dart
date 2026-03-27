@@ -38,51 +38,34 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   Future<void> _emailLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _error = null);
-      
-      try {
-        final url = Uri.parse("http://localhost:8080/auth/signin");
-        final response = await http.post(
-          url,
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: jsonEncode({
-            "provider": "email",
-            "email": _emailController.text,
-            "password": _passwordController.text,
-          }),
-        );
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          //saving user data to shared preferences
-          final prefs = await SharedPreferences.getInstance();
-          String role = jsonDecode(response.body)["role"] == "admin" ? "Admin" : "User";
-          bool signupComplete = jsonDecode(response.body)["signupComplete"];
-          prefs.setString("account_id", jsonDecode(response.body)["account_id"]);
-          prefs.setString("name", jsonDecode(response.body)["name"]);
-          prefs.setBool("signupComplete", signupComplete);
-          prefs.setString("role", role);
-          if (!signupComplete) {
-            //navigate to complete signup page
-            Navigator.pushNamed(context, '/complete-signup');
-          } else {
-            //navigate to home page
-            Navigator.pushNamed(context, '/home');
-          }
-        } else {
-          setState(() => _error = "Login failed. Please check your credentials.");
-          print("Login failed: ${response.statusCode}");
-        }
-      } catch (e) {
-        setState(() => _error = "An error occurred. Please try again.");
-        print("Error: $e");
+      final msg = await AuthService().signInWithEmail(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      if (msg != null) {
+        setState(() => _error = msg);
+        return;
       }
     }
   }
 
-  void _googleSignUp() {}
+  Future<void> _googleSignUp() async {
+    final msg = await AuthService().signInWithGoogle();
+    if (msg != null) {
+        setState(() => _error = msg);
+        return;
+      }
+  }
 
-  void _appleSignUp() {}
+  Future<void> _appleSignUp() async{
+    final msg = await AuthService().signInWithApple();
+    if (msg != null) {
+        setState(() => _error = msg);
+        return;
+      }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,16 +149,17 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     },
                   ),
                   const SizedBox(height: 16),
-                   SizedBox(
+                  SizedBox(
                     width: double.infinity,
                     child: GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/login'),
-                    child: Text(
-                      "Forgot Password?",
-                      textAlign: TextAlign.right,
-                      style: TextStyle(color: Colors.black, fontSize: 12),
-                  )),
-                   ),
+                      onTap: () => Navigator.pushNamed(context, '/login'),
+                      child: Text(
+                        "Forgot Password?",
+                        textAlign: TextAlign.right,
+                        style: TextStyle(color: Colors.black, fontSize: 12),
+                      ),
+                    ),
+                  ),
 
                   // Password
                   TextFormField(
@@ -297,7 +281,8 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                         ),
                         SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/email-signup'),
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/email-signup'),
                           child: Text(
                             "Sign up",
                             style: TextStyle(

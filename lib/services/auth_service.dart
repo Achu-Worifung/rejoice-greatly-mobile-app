@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -11,10 +12,15 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
 
   // --- EMAIL/PASSWORD ---
-  Future<String?> signUpWithEmail(String email, String password) async {
+  Future<String?> signUpWithEmail(String email, String password, String name) async {
     try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      await _sendUserToBackend(); // optional
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      //login no need to send to backend
+      await _sendUserToBackend("email", _auth.currentUser!.uid); 
+      await FirebaseAuth.instance.currentUser?.updateDisplayName(name);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -24,7 +30,6 @@ class AuthService {
   Future<String?> signInWithEmail(String email, String password) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      await _sendUserToBackend(); // optional
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -36,7 +41,8 @@ class AuthService {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return 'Cancelled';
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -44,7 +50,7 @@ class AuthService {
       );
 
       await _auth.signInWithCredential(credential);
-      await _sendUserToBackend(); // optional
+      await _sendUserToBackend("Google", _auth.currentUser!.uid);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -57,9 +63,12 @@ class AuthService {
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName
+          AppleIDAuthorizationScopes.fullName,
         ],
       );
+      String fullName =
+    "${credential.givenName ?? ''} ${credential.familyName ?? ''}".trim();
+     await FirebaseAuth.instance.currentUser?.updateDisplayName(fullName);
 
       final oauthCredential = OAuthProvider("apple.com").credential(
         idToken: credential.identityToken,
@@ -67,7 +76,7 @@ class AuthService {
       );
 
       await _auth.signInWithCredential(oauthCredential);
-      await _sendUserToBackend(); // optional
+      _sendUserToBackend("Apple", _auth.currentUser!.uid);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -80,18 +89,24 @@ class AuthService {
   }
 
   // --- OPTIONAL: send user info to your backend ---
-  Future<void> _sendUserToBackend() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+  Future<void> _sendUserToBackend(String provider, String token) async {
+    try {
+      final res = await http.post(
+        Uri.parse("http://localhost:8080/auth/firebase"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({"provider": provider}),
+      );
 
-    await http.post(
-      Uri.parse('https://your-backend.com/users'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'uid': user.uid,
-        'email': user.email,
-        'name': user.displayName ?? '',
-      }),
-    );
+      if (res.statusCode != 200) throw Exception("Failed to send user to backend");
+      
+
+    } catch (e) {
+      print(e);
+    }
   }
+
+ 
 }
