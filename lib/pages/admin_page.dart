@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/overview_widget.dart';
 
 /// Flutter code sample for [BottomNavigationBar].
 
@@ -29,9 +30,9 @@ class _BottomNavigationBarExampleState
     fontWeight: FontWeight.bold,
   );
   static const List<Widget> _widgetOptions = <Widget>[
-    Text('Index 0: Home', style: optionStyle),
-    Text('Index 1: Business', style: optionStyle),
-    Text('Index 2: School', style: optionStyle),
+    OverviewWidget(),
+    Text('Index 1: Attendance', style: optionStyle),
+    Text('Index 2: Reminders', style: optionStyle),
     Text('Index 2: reports', style: optionStyle),
   ];
 
@@ -47,9 +48,9 @@ class _BottomNavigationBarExampleState
       // appBar: AppBar(title: const Text('BottomNavigationBar Sample')),
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, 
+        type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.black, 
+        unselectedItemColor: Colors.black,
         enableFeedback: false,
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

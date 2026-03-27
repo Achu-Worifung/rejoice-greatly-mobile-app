@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({Key? key}) : super(key: key);
@@ -51,8 +52,8 @@ class _DashboardState extends State<Dashboard> {
             child: IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.clear();
+                final authService = AuthService();
+                await authService.logout();
                 Navigator.pushNamed(context, '/login');
               },
                     ),
