@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/overview_widget.dart';
+import '../widgets/reminder_widget.dart';
 
 /// Flutter code sample for [BottomNavigationBar].
 
@@ -31,8 +32,8 @@ class _BottomNavigationBarExampleState
   );
   static const List<Widget> _widgetOptions = <Widget>[
     OverviewWidget(),
-    Text('Index 1: Attendance', style: optionStyle),
     Text('Index 2: Reminders', style: optionStyle),
+    RemindersWidget(),
     Text('Index 2: reports', style: optionStyle),
   ];
 

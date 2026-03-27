@@ -42,21 +42,24 @@ class OverviewWidget extends StatelessWidget {
                 ),
               ],
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                SizedBox(
-                  height: 48,
-                  width: 48,
-                  child: Icon(Icons.notifications, color: Colors.grey),
-                ),
-                SizedBox(width: 10),
-                SizedBox(
-                  height: 48,
-                  width: 48,
-                  child: Icon(Icons.calendar_month, color: Colors.grey),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0, right: 8.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  SizedBox(
+                    height: 48,
+                    width: 48,
+                    child: Icon(Icons.notifications, color: Colors.grey),
+                  ),
+                  SizedBox(width: 10),
+                  SizedBox(
+                    height: 48,
+                    width: 48,
+                    child: Icon(Icons.calendar_month, color: Colors.grey),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
