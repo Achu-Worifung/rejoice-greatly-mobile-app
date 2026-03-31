@@ -7,6 +7,7 @@ import 'pages/terms_page.dart';
 import 'pages/admin_page.dart';
 import 'pages/complete_signup.dart';
 import 'pages/dashboard.dart';
+import 'pages/user_prep.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -17,6 +18,8 @@ class AppRoutes {
   static const String admin = '/admin';
   static const String completeSignup = '/complete-signup';
   static const String dashboard = '/dashboard';
+  static const String userPrep = '/user-prep';
+
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
@@ -28,6 +31,7 @@ class AppRoutes {
       admin: (context) => const AdminDashboard(),
       completeSignup: (context) => const CompleteSignup(),
       dashboard: (context) => const Dashboard(),
+      userPrep: (context) => const UserPrepPage(),
     };
   }
 }

@@ -278,10 +278,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
                       () => Navigator.pop(context),
                     ),
                     const Text(
-                      "TAKE A SELFIE FOR IDENTITY VERIFICATION",
+                      "TAKE A SELFIE",
                       style: TextStyle(
                         color: Colors.white,
-                        letterSpacing: 1.5,
+                        letterSpacing: 1,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
@@ -300,10 +300,20 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
                 // Hint
                 const Text(
-                  "Position your face in the center",
+                  "Center your face",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+                  ),
+                ),
+                const Text(
+                  "Position your face inside the frame and \n  look directly at the camera",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white54,
                     fontSize: 13,
                     shadows: [Shadow(blurRadius: 8, color: Colors.black)],
                   ),
@@ -315,7 +325,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(width: 50),
+                    // const SizedBox(width: 50),
                     _shutterButton(),
                     // _circleButton(Icons.flip_camera_ios, _flipCamera),
                   ],
@@ -325,6 +335,24 @@ class _CompleteSignupState extends State<CompleteSignup> {
             ),
           ),
         ),
+        // Align(
+        //   alignment:
+        //       Alignment.topCenter, // Centers horizontally, sticks to the top
+        //   child: Container(
+        //     margin: const EdgeInsets.only(
+        //       top: 100,
+        //     ), // Push it down slightly from the very top
+        //     width: MediaQuery.of(context).size.width * 0.7,
+        //     height: MediaQuery.of(context).size.height * 0.4,
+        //     decoration: BoxDecoration(
+        //       border: Border.all(
+        //         color: Colors.white.withOpacity(0.8),
+        //         width: 1.0,
+        //       ),
+        //       borderRadius: BorderRadius.circular(16),
+        //     ),
+        //   ),
+        // ),
       ],
     );
   }
@@ -396,7 +424,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                       Expanded(
                         flex: 2,
                         child: _bottomButton(
-                          label: _isLoading ? "Uploading..." : "Use Photo",
+                          label: _isLoading ? "Uploading..." : "Use This Photo",
                           onTap: _isLoading ? null : _submitSignup,
                           color: const Color(0xFF5286FF),
                           isLoading: _isLoading,

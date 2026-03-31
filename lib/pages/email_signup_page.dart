@@ -95,7 +95,7 @@ void _submit() async {
         height: double.infinity,
         color: Colors.white,
         child: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(10),
           children: [
             const Text(
               "Let's Get Started!",
@@ -317,7 +317,7 @@ void _submit() async {
                                   children: [
                                     FaIcon(
                                       FontAwesomeIcons.google,
-                                      size: 24,
+                                      size: 22,
                                       color: Colors.black,
                                     ),
                                     SizedBox(width: 8),
@@ -364,7 +364,7 @@ void _submit() async {
                                   children: [
                                     FaIcon(
                                       FontAwesomeIcons.apple,
-                                      size: 24,
+                                      size: 22,
                                       color: Colors.black,
                                     ),
                                     SizedBox(width: 8),
