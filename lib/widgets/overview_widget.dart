@@ -30,8 +30,11 @@ class _OverviewWidgetState extends State<OverviewWidget> {
 
   DateTime _mostRecentSunday(DateTime from) {
     final daysBack = from.weekday % 7; // Sunday = 0 in DateTime (weekday 7)
-    return DateTime(from.year, from.month, from.day)
-        .subtract(Duration(days: daysBack == 0 ? 0 : from.weekday));
+    return DateTime(
+      from.year,
+      from.month,
+      from.day,
+    ).subtract(Duration(days: daysBack == 0 ? 0 : from.weekday));
   }
 
   List<DateTime> _pastSundays({int count = 8}) {
@@ -90,7 +93,6 @@ class _OverviewWidgetState extends State<OverviewWidget> {
     }
   }
 
-
   Future<void> _showDatePicker() async {
     final sundays = _pastSundays();
     final picked = await showModalBottomSheet<DateTime>(
@@ -98,10 +100,8 @@ class _OverviewWidgetState extends State<OverviewWidget> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _SundayPickerSheet(
-        sundays: sundays,
-        selected: _selectedSunday,
-      ),
+      builder: (context) =>
+          _SundayPickerSheet(sundays: sundays, selected: _selectedSunday),
     );
     if (picked != null && picked != _selectedSunday) {
       setState(() => _selectedSunday = picked);
@@ -173,8 +173,10 @@ class _OverviewWidgetState extends State<OverviewWidget> {
           child: Row(
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blue[50],
                   borderRadius: BorderRadius.circular(20),
@@ -183,13 +185,15 @@ class _OverviewWidgetState extends State<OverviewWidget> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.arrow_drop_down,
-                        size: 16, color: Colors.blue[700]),
+                    Icon(
+                      Icons.arrow_drop_down,
+                      size: 16,
+                      color: Colors.blue[700],
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       _formatDate(_selectedSunday),
-                      style: TextStyle(
-                          fontSize: 13, color: Colors.blue[700]),
+                      style: TextStyle(fontSize: 13, color: Colors.blue[700]),
                     ),
                   ],
                 ),
@@ -203,7 +207,8 @@ class _OverviewWidgetState extends State<OverviewWidget> {
         // Stats card
         Card(
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -211,44 +216,56 @@ class _OverviewWidgetState extends State<OverviewWidget> {
               children: [
                 const Text(
                   "Today's Attendance",
-                  style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
                 ),
                 const SizedBox(height: 12),
                 if (isLoading)
                   const Center(child: CircularProgressIndicator())
                 else
-                  GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 2.5,
+                  Column(
                     children: [
-                      _buildStatCard(
-                        icon: Icons.person,
-                        iconColor: Colors.blue,
-                        title: 'Present',
-                        value: '$presentCount',
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.person,
+                              iconColor: Colors.blue,
+                              title: 'Present',
+                              value: '$presentCount',
+                            ),
+                          ),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.person_off,
+                              iconColor: Colors.red,
+                              title: 'Absent',
+                              value: '$absentCount',
+                            ),
+                          ),
+                        ],
                       ),
-                      _buildStatCard(
-                        icon: Icons.person_off,
-                        iconColor: Colors.red,
-                        title: 'Absent',
-                        value: '$absentCount',
-                      ),
-                      _buildStatCard(
-                        icon: Icons.people,
-                        iconColor: Colors.blue,
-                        title: 'Total Members',
-                        value: '$totalCount',
-                      ),
-                      _buildStatCard(
-                        icon: Icons.show_chart,
-                        iconColor: Colors.blue,
-                        title: 'Attendance Rate',
-                        value: '$rate%',
+                      const SizedBox(height: 9),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.people,
+                              iconColor: Colors.blue,
+                              title: 'Total Members',
+                              value: '$totalCount',
+                            ),
+                          ),
+                          const SizedBox(width: 9),
+                          Expanded(
+                            child: _buildStatCard(
+                              icon: Icons.show_chart,
+                              iconColor: Colors.blue,
+                              title: 'Attendance Rate',
+                              value: '$rate%',
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -290,9 +307,10 @@ class _OverviewWidgetState extends State<OverviewWidget> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2))
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
               ],
             ),
             child: _AttendanceChart(data: _attendanceRateByMonth!),
@@ -313,8 +331,7 @@ class _OverviewWidgetState extends State<OverviewWidget> {
               children: [
                 const Text(
                   'Attendance Rate',
-                  style:
-                      TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
                 Stack(
@@ -352,16 +369,25 @@ class _OverviewWidgetState extends State<OverviewWidget> {
           ),
           const SizedBox(height: 16),
         ],
-
-
       ],
     );
   }
 
   String _formatDate(DateTime d) {
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return 'Sunday, ${months[d.month]} ${d.day}, ${d.year}';
   }
@@ -386,8 +412,7 @@ class _OverviewWidgetState extends State<OverviewWidget> {
               Expanded(
                 child: Text(
                   title,
-                  style:
-                      const TextStyle(fontSize: 12, color: Colors.black54),
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -395,8 +420,7 @@ class _OverviewWidgetState extends State<OverviewWidget> {
           ),
           Text(
             value,
-            style: const TextStyle(
-                fontSize: 22, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -404,21 +428,29 @@ class _OverviewWidgetState extends State<OverviewWidget> {
   }
 }
 
-
-
 // ── Sunday picker sheet ──────────────────────────────────────────────────────
 
 class _SundayPickerSheet extends StatelessWidget {
   final List<DateTime> sundays;
   final DateTime selected;
 
-  const _SundayPickerSheet(
-      {required this.sundays, required this.selected});
+  const _SundayPickerSheet({required this.sundays, required this.selected});
 
   String _format(DateTime d) {
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[d.month]} ${d.day}, ${d.year}';
   }
@@ -444,8 +476,7 @@ class _SundayPickerSheet extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             'Select a Sunday',
-            style:
-                TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...sundays.map((sunday) {
@@ -454,19 +485,14 @@ class _SundayPickerSheet extends StatelessWidget {
               contentPadding: EdgeInsets.zero,
               leading: Icon(
                 Icons.calendar_today,
-                color:
-                    isSelected ? const Color(0xFF438FFC) : Colors.grey,
+                color: isSelected ? const Color(0xFF438FFC) : Colors.grey,
                 size: 20,
               ),
               title: Text(
                 _format(sunday),
                 style: TextStyle(
-                  fontWeight: isSelected
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                  color: isSelected
-                      ? const Color(0xFF438FFC)
-                      : null,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? const Color(0xFF438FFC) : null,
                 ),
               ),
               trailing: isSelected
@@ -498,15 +524,23 @@ class _AttendanceChart extends StatelessWidget {
       ..sort((a, b) => a.key.compareTo(b.key));
 
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
 
     final chartData = sorted
-        .map((e) => {
-              'label': months[e.key.month],
-              'value': e.value / 100.0,
-            })
+        .map((e) => {'label': months[e.key.month], 'value': e.value / 100.0})
         .toList();
 
     return Column(
@@ -589,8 +623,7 @@ class _LineChartPainter extends CustomPainter {
       final pct = ((data[i]['value'] as double) * 100).round();
 
       // Dot
-      canvas.drawCircle(
-          p, 5, Paint()..color = const Color(0xFF438FFC));
+      canvas.drawCircle(p, 5, Paint()..color = const Color(0xFF438FFC));
       canvas.drawCircle(p, 3, Paint()..color = Colors.white);
 
       // Label
@@ -600,9 +633,9 @@ class _LineChartPainter extends CustomPainter {
       );
       textPainter.layout();
       textPainter.paint(
-          canvas,
-          Offset(p.dx - textPainter.width / 2,
-              p.dy - textPainter.height - 6));
+        canvas,
+        Offset(p.dx - textPainter.width / 2, p.dy - textPainter.height - 6),
+      );
     }
 
     // Grid lines
