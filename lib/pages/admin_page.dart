@@ -36,7 +36,7 @@ class _BottomNavigationBarExampleState
     OverviewWidget(),
     AttendanceWidget(),
     RemindersWidget(),
-    ReportsWidget (),
+    // ReportsWidget (),
   ];
 
   void _onItemTapped(int index) {
@@ -46,7 +46,7 @@ class _BottomNavigationBarExampleState
   }
 
   Future<void> _getData() async {
-    
+
   }
 
   @override
@@ -75,10 +75,10 @@ class _BottomNavigationBarExampleState
             icon: Icon(Icons.notifications_none),
             label: 'Reminders',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.show_chart),
-            label: 'Reports',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.show_chart),
+          //   label: 'Reports',
+          // ),
         ],
       ),
     );
