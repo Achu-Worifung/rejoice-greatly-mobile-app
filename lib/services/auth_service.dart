@@ -156,7 +156,7 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         final Map<String, dynamic> userData = jsonDecode(res.body);
 
-        // Extract fields from Java/Spring response
+        // Extract fields from response
         String firebaseUid = userData['firebaseUid'] ?? "";
         String email = userData['email'] ?? "";
         String extractedName = userData['name'] ?? "User";

@@ -1,19 +1,159 @@
 import 'package:flutter/material.dart';
+import '../dataobject/admin-type.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
 
-class OverviewWidget extends StatelessWidget {
+class OverviewWidget extends StatefulWidget {
   const OverviewWidget({super.key});
 
   @override
+  State<OverviewWidget> createState() => _OverviewWidgetState();
+}
+
+class _OverviewWidgetState extends State<OverviewWidget> {
+  List<AdminType>? _totalPresent;
+  List<AdminType>? _totalAbsent;
+  List<AdminType>? _totalMembers;
+  Map<DateTime, int>? _attendanceRateByMonth;
+  int? _attendanceRate;
+
+  late DateTime _selectedSunday;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSunday = _mostRecentSunday(DateTime.now());
+    _loadData();
+  }
+
+  DateTime _mostRecentSunday(DateTime from) {
+    final daysBack = from.weekday % 7; // Sunday = 0 in DateTime (weekday 7)
+    return DateTime(from.year, from.month, from.day)
+        .subtract(Duration(days: daysBack == 0 ? 0 : from.weekday));
+  }
+
+  List<DateTime> _pastSundays({int count = 8}) {
+    final sundays = <DateTime>[];
+    DateTime current = _mostRecentSunday(DateTime.now());
+    for (int i = 0; i < count; i++) {
+      sundays.add(current);
+      current = current.subtract(const Duration(days: 7));
+    }
+    return sundays;
+  }
+
+  Future<void> _loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final Uri uri = Uri.parse("http://localhost:8080/admin/overview");
+
+    final String dateStr =
+        "${_selectedSunday.year}-${_selectedSunday.month.toString().padLeft(2, '0')}-${_selectedSunday.day.toString().padLeft(2, '0')}";
+
+    final Map<String, dynamic> payload = {
+      "date": dateStr,
+      "userId": prefs.getString("firebaseUid") ?? "",
+    };
+
+    try {
+      final http.Response response = await http.post(
+        uri,
+        body: jsonEncode(payload),
+        headers: {"Content-Type": "application/json"},
+      );
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        setState(() {
+          _totalPresent = List<AdminType>.from(
+            responseData['totalPresent'].map((x) => AdminType.fromJson(x)),
+          );
+          _totalAbsent = List<AdminType>.from(
+            responseData['totalAbsent'].map((x) => AdminType.fromJson(x)),
+          );
+          _totalMembers = List<AdminType>.from(
+            responseData['totalMemberDTOs'].map((x) => AdminType.fromJson(x)),
+          );
+          _attendanceRateByMonth = Map<DateTime, int>.fromEntries(
+            (responseData['attendanceRateByMonth'] as Map<String, dynamic>)
+                .entries
+                .map((e) => MapEntry(DateTime.parse(e.key), e.value as int)),
+          );
+          _attendanceRate = responseData['attendanceRate'];
+        });
+      } else {
+        print("Server error: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error loading data: $e");
+    }
+  }
+
+  void _showAttendanceDrawer() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _AttendanceDrawer(
+        present: _totalPresent ?? [],
+        absent: _totalAbsent ?? [],
+        members: _totalMembers ?? [],
+        onAbsentTap: (member) {
+          Navigator.pop(context);
+          _showAbsentDrawer(member);
+        },
+      ),
+    );
+  }
+
+  void _showAbsentDrawer(AdminType member) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _AbsentMemberDrawer(member: member),
+    );
+  }
+
+  Future<void> _showDatePicker() async {
+    final sundays = _pastSundays();
+    final picked = await showModalBottomSheet<DateTime>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _SundayPickerSheet(
+        sundays: sundays,
+        selected: _selectedSunday,
+      ),
+    );
+    if (picked != null && picked != _selectedSunday) {
+      setState(() => _selectedSunday = picked);
+      _loadData();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool isLoading = _totalPresent == null;
+    final int presentCount = _totalPresent?.length ?? 0;
+    final int absentCount = _totalAbsent?.length ?? 0;
+    final int totalCount = _totalMembers?.length ?? 0;
+    final int rate = _attendanceRate ?? 0;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // User profile (top)
+        // Header row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
+          children: [
             Row(
-              children: <Widget>[
+              children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(25),
                   child: Image.network(
@@ -42,171 +182,247 @@ class OverviewWidget extends StatelessWidget {
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0, top: 8.0, bottom: 8.0, right: 8.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  SizedBox(
-                    height: 48,
-                    width: 48,
-                    child: Icon(Icons.notifications, color: Colors.grey),
-                  ),
-                  SizedBox(width: 10),
-                  SizedBox(
-                    height: 48,
-                    width: 48,
-                    child: Icon(Icons.calendar_month, color: Colors.grey),
-                  ),
-                ],
-              ),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: _showDatePicker,
+                  icon: const Icon(Icons.calendar_month, color: Colors.grey),
+                ),
+              ],
             ),
           ],
         ),
 
-        const SizedBox(height: 24),
+        const SizedBox(height: 8),
 
-        // Today's Attendance Card
+        // Selected date chip
+        GestureDetector(
+          onTap: _showDatePicker,
+          child: Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_drop_down,
+                        size: 16, color: Colors.blue[700]),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDate(_selectedSunday),
+                      style: TextStyle(
+                          fontSize: 13, color: Colors.blue[700]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Stats card
         Card(
           shape: RoundedRectangleBorder(
-            // borderRadius: BorderRadius.circular(12),
-          ),
-          // elevation: 2,
+              borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Today's Attendance",
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+                GestureDetector(
+                  onTap: isLoading ? null : _showAttendanceDrawer,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Today's Attendance",
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 18),
+                      ),
+                      if (!isLoading)
+                        Row(
+                          children: [
+                            Text(
+                              'View all',
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.blue[600]),
+                            ),
+                            Icon(Icons.chevron_right,
+                                size: 18, color: Colors.blue[600]),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
-                GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 2.5,
+                if (isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    childAspectRatio: 2.5,
+                    children: [
+                      _buildStatCard(
+                        icon: Icons.person,
+                        iconColor: Colors.blue,
+                        title: 'Present',
+                        value: '$presentCount',
+                      ),
+                      _buildStatCard(
+                        icon: Icons.person_off,
+                        iconColor: Colors.red,
+                        title: 'Absent',
+                        value: '$absentCount',
+                      ),
+                      _buildStatCard(
+                        icon: Icons.people,
+                        iconColor: Colors.blue,
+                        title: 'Total Members',
+                        value: '$totalCount',
+                      ),
+                      _buildStatCard(
+                        icon: Icons.show_chart,
+                        iconColor: Colors.blue,
+                        title: 'Attendance Rate',
+                        value: '$rate%',
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Attendance trend chart
+        if (!isLoading && _attendanceRateByMonth != null) ...[
+          RichText(
+            text: const TextSpan(
+              text: 'Attendance Trend ',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              children: [
+                TextSpan(
+                  text: '(By Month)',
+                  style: TextStyle(
+                    color: Color(0xFF438FFC),
+                    fontWeight: FontWeight.normal,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 200,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2))
+              ],
+            ),
+            child: _AttendanceChart(data: _attendanceRateByMonth!),
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Attendance rate bar
+        if (!isLoading) ...[
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF3FF),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Attendance Rate',
+                  style:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                Stack(
                   children: [
-                    _buildStatCard(
-                      icon: Icons.person,
-                      iconColor: Colors.blue,
-                      title: 'Present',
-                      value: '198',
+                    Container(
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFBDD9FF),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                     ),
-                    _buildStatCard(
-                      icon: Icons.person_off,
-                      iconColor: Colors.blue,
-                      title: 'Absent',
-                      value: '47',
-                    ),
-                    _buildStatCard(
-                      icon: Icons.people,
-                      iconColor: Colors.blue,
-                      title: 'Total Members',
-                      value: '245',
-                    ),
-                    _buildStatCard(
-                      icon: Icons.show_chart,
-                      iconColor: Colors.blue,
-                      title: 'Attendance Rate',
-                      value: '81%',
+                    FractionallySizedBox(
+                      widthFactor: rate / 100,
+                      child: Container(
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF438FFC),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$rate%',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-        ),
+          const SizedBox(height: 16),
+        ],
 
-        const SizedBox(height: 16),
-
-        // Send Reminder Card
-        Card(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        // Absent members list
+        if (!isLoading && _totalAbsent != null && _totalAbsent!.isNotEmpty) ...[
+          const Text(
+            'Absent Members',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           ),
-          elevation: 2,
-          color: Colors.blue[400],
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Send reminder to absentees",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Message Absentees',
-                    filled: true,
-                    fillColor: Colors.white,
-                    suffixIcon: const Icon(Icons.arrow_forward),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Filter Tabs
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildFilterChip('All', true),
-            _buildFilterChip('Present', false),
-            _buildFilterChip('Absent', false),
-          ],
-        ),
-
-        const SizedBox(height: 16),
-
-        // Members List
-        ...List.generate(3, (index) {
-          bool present = index != 2;
-          return Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 1,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: ListTile(
-              leading: Checkbox(value: false, onChanged: (_) {}),
-              title: const Text('John Doe'),
-              subtitle: const Text('NFC'),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: present ? Colors.green[50] : Colors.red[50],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  present ? 'Present' : 'Absent',
-                  style: TextStyle(
-                    color: present ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
+          const SizedBox(height: 8),
+          ..._totalAbsent!.map((member) => _AbsentMemberTile(
+                member: member,
+                onTap: () => _showAbsentDrawer(member),
+              )),
+        ],
       ],
     );
+  }
+
+  String _formatDate(DateTime d) {
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return 'Sunday, ${months[d.month]} ${d.day}, ${d.year}';
   }
 
   Widget _buildStatCard({
@@ -217,42 +433,605 @@ class OverviewWidget extends StatelessWidget {
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start, // ← add this
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(icon, color: iconColor, size: 24),
               const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+              Expanded(
+                child: Text(
+                  title,
+                  style:
+                      const TextStyle(fontSize: 12, color: Colors.black54),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
           Text(
             value,
-            textAlign: TextAlign.left,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+                fontSize: 22, fontWeight: FontWeight.bold),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFilterChip(String label, bool selected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: selected ? Colors.blue[100] : Colors.grey[200],
-        borderRadius: BorderRadius.circular(20),
+// ── Absent member tile ───────────────────────────────────────────────────────
+
+class _AbsentMemberTile extends StatelessWidget {
+  final AdminType member;
+  final VoidCallback onTap;
+
+  const _AbsentMemberTile({required this.member, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(
+          backgroundImage: member.imgURL != null
+              ? NetworkImage(member.imgURL!)
+              : null,
+          backgroundColor: Colors.grey[200],
+          child: member.imgURL == null
+              ? Text(
+                  member.name.isNotEmpty
+                      ? member.name[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                )
+              : null,
+        ),
+        title: Text(member.name),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Absent',
+                style: TextStyle(
+                    color: Colors.red[700], fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
       ),
-      child: Text(label, style: const TextStyle(fontSize: 14)),
     );
   }
+}
+
+// ── Absent member detail drawer ──────────────────────────────────────────────
+
+class _AbsentMemberDrawer extends StatelessWidget {
+  final AdminType member;
+
+  const _AbsentMemberDrawer({required this.member});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Avatar
+          CircleAvatar(
+            radius: 36,
+            backgroundImage:
+                member.imgURL != null ? NetworkImage(member.imgURL!) : null,
+            backgroundColor: Colors.grey[200],
+            child: member.imgURL == null
+                ? Text(
+                    member.name.isNotEmpty
+                        ? member.name[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                        fontSize: 28, fontWeight: FontWeight.bold),
+                  )
+                : null,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            member.name,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Absent',
+              style: TextStyle(
+                  color: Colors.red[700], fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Divider(),
+          const SizedBox(height: 12),
+          _InfoRow(label: 'Member ID', value: member.id),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+              label: const Text(
+                'Send Reminder',
+                style: TextStyle(color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF438FFC),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: const TextStyle(color: Colors.grey, fontSize: 14)),
+        Text(value,
+            style: const TextStyle(
+                fontWeight: FontWeight.w500, fontSize: 14)),
+      ],
+    );
+  }
+}
+
+// ── Sunday picker sheet ──────────────────────────────────────────────────────
+
+class _SundayPickerSheet extends StatelessWidget {
+  final List<DateTime> sundays;
+  final DateTime selected;
+
+  const _SundayPickerSheet(
+      {required this.sundays, required this.selected});
+
+  String _format(DateTime d) {
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[d.month]} ${d.day}, ${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Select a Sunday',
+            style:
+                TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ...sundays.map((sunday) {
+            final isSelected = sunday == selected;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.calendar_today,
+                color:
+                    isSelected ? const Color(0xFF438FFC) : Colors.grey,
+                size: 20,
+              ),
+              title: Text(
+                _format(sunday),
+                style: TextStyle(
+                  fontWeight: isSelected
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+                  color: isSelected
+                      ? const Color(0xFF438FFC)
+                      : null,
+                ),
+              ),
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: Color(0xFF438FFC))
+                  : null,
+              onTap: () => Navigator.pop(context, sunday),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Full attendance drawer ───────────────────────────────────────────────────
+
+class _AttendanceDrawer extends StatefulWidget {
+  final List<AdminType> present;
+  final List<AdminType> absent;
+  final List<AdminType> members;
+  final void Function(AdminType) onAbsentTap;
+
+  const _AttendanceDrawer({
+    required this.present,
+    required this.absent,
+    required this.members,
+    required this.onAbsentTap,
+  });
+
+  @override
+  State<_AttendanceDrawer> createState() => _AttendanceDrawerState();
+}
+
+class _AttendanceDrawerState extends State<_AttendanceDrawer>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SizedBox(
+      height: screenHeight * 0.75,
+      child: Column(
+        children: [
+          // Handle + header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Attendance",
+                    style: TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+          // Tab bar
+          TabBar(
+            controller: _tabController,
+            labelColor: const Color(0xFF438FFC),
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: const Color(0xFF438FFC),
+            tabs: [
+              Tab(text: 'Present (${widget.present.length})'),
+              Tab(text: 'Absent (${widget.absent.length})'),
+              Tab(text: 'All (${widget.members.length})'),
+            ],
+          ),
+          // Tab views
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _MemberList(
+                  members: widget.present,
+                  showStatus: false,
+                  isPresent: true,
+                  onTap: null,
+                ),
+                _MemberList(
+                  members: widget.absent,
+                  showStatus: false,
+                  isPresent: false,
+                  onTap: widget.onAbsentTap,
+                ),
+                _MemberList(
+                  members: widget.members,
+                  showStatus: true,
+                  isPresent: null,
+                  onTap: (m) => m.isPresent == false
+                      ? widget.onAbsentTap(m)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberList extends StatelessWidget {
+  final List<AdminType> members;
+  final bool showStatus;
+  final bool? isPresent; // null = use member's own isPresent
+  final void Function(AdminType)? onTap;
+
+  const _MemberList({
+    required this.members,
+    required this.showStatus,
+    required this.isPresent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (members.isEmpty) {
+      return const Center(
+        child: Text('No members', style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: members.length,
+      itemBuilder: (context, index) {
+        final member = members[index];
+        final present = isPresent ?? member.isPresent;
+
+        return ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          onTap: onTap != null ? () => onTap!(member) : null,
+          leading: CircleAvatar(
+            backgroundImage: member.imgURL != null
+                ? NetworkImage(member.imgURL!)
+                : null,
+            backgroundColor: Colors.grey[200],
+            child: member.imgURL == null
+                ? Text(
+                    member.name.isNotEmpty
+                        ? member.name[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  )
+                : null,
+          ),
+          title: Text(member.name,
+              style: const TextStyle(fontWeight: FontWeight.w500)),
+          trailing: showStatus
+              ? Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: present == true
+                        ? Colors.green[50]
+                        : Colors.red[50],
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    present == true ? 'Present' : 'Absent',
+                    style: TextStyle(
+                      color: present == true
+                          ? Colors.green[700]
+                          : Colors.red[700],
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                )
+              : onTap != null
+                  ? const Icon(Icons.chevron_right, color: Colors.grey)
+                  : null,
+        );
+      },
+    );
+  }
+}
+
+// ── Attendance chart ─────────────────────────────────────────────────────────
+
+class _AttendanceChart extends StatelessWidget {
+  final Map<DateTime, int> data;
+
+  const _AttendanceChart({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.isEmpty) {
+      return const Center(child: Text('No data'));
+    }
+
+    final sorted = data.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    final chartData = sorted
+        .map((e) => {
+              'label': months[e.key.month],
+              'value': e.value / 100.0,
+            })
+        .toList();
+
+    return Column(
+      children: [
+        Expanded(
+          child: CustomPaint(
+            painter: _LineChartPainter(data: chartData),
+            size: Size.infinite,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: chartData.map((d) {
+            return Text(
+              d['label'] as String,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _LineChartPainter extends CustomPainter {
+  final List<Map<String, dynamic>> data;
+
+  _LineChartPainter({required this.data});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.length < 2) return;
+
+    final points = <Offset>[];
+    for (int i = 0; i < data.length; i++) {
+      final x = i * size.width / (data.length - 1);
+      final y = size.height - (data[i]['value'] as double) * size.height;
+      points.add(Offset(x, y));
+    }
+
+    // Filled area
+    final fillPath = Path()..moveTo(points.first.dx, points.first.dy);
+    for (final p in points.skip(1)) {
+      fillPath.lineTo(p.dx, p.dy);
+    }
+    fillPath
+      ..lineTo(points.last.dx, size.height)
+      ..lineTo(points.first.dx, size.height)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          const Color(0xFF438FFC).withOpacity(0.4),
+          const Color(0xFF438FFC).withOpacity(0.0),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    canvas.drawPath(fillPath, fillPaint);
+
+    // Line
+    final linePaint = Paint()
+      ..color = const Color(0xFF438FFC)
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
+
+    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+    for (final p in points.skip(1)) {
+      linePath.lineTo(p.dx, p.dy);
+    }
+    canvas.drawPath(linePath, linePaint);
+
+    // Value labels above dots
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    for (int i = 0; i < points.length; i++) {
+      final p = points[i];
+      final pct = ((data[i]['value'] as double) * 100).round();
+
+      // Dot
+      canvas.drawCircle(
+          p, 5, Paint()..color = const Color(0xFF438FFC));
+      canvas.drawCircle(p, 3, Paint()..color = Colors.white);
+
+      // Label
+      textPainter.text = TextSpan(
+        text: '$pct%',
+        style: const TextStyle(fontSize: 10, color: Color(0xFF438FFC)),
+      );
+      textPainter.layout();
+      textPainter.paint(
+          canvas,
+          Offset(p.dx - textPainter.width / 2,
+              p.dy - textPainter.height - 6));
+    }
+
+    // Grid lines
+    final gridPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.2)
+      ..strokeWidth = 1;
+
+    for (int i = 1; i <= 4; i++) {
+      final y = size.height * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

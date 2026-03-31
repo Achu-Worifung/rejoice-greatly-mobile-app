@@ -45,6 +45,10 @@ class _BottomNavigationBarExampleState
     });
   }
 
+  Future<void> _getData() async {
+    
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
