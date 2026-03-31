@@ -7,6 +7,8 @@ enum NotificationType { email, push, both }
 
 enum RecurringFrequency { none, weekly, biweekly, monthly }
 
+enum SendTo { all, absent, present }
+
 class ReminderItem {
   final String id;
   String subject;
@@ -14,6 +16,7 @@ class ReminderItem {
   NotificationType type;
   DateTime? scheduledAt;
   RecurringFrequency recurring;
+  SendTo sendTo;
   bool isActive;
 
   ReminderItem({
@@ -23,6 +26,7 @@ class ReminderItem {
     this.type = NotificationType.both,
     this.scheduledAt,
     this.recurring = RecurringFrequency.none,
+    this.sendTo = SendTo.absent,
     this.isActive = true,
   });
 }
@@ -47,6 +51,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
           'Hello [First Name],\n\nWe noticed you were absent on [Service Date].\nWe hope to see you at the next gathering.\nIf you need any support, please reach out.\n\nJane,\n[Church Name]',
       type: NotificationType.both,
       recurring: RecurringFrequency.weekly,
+      sendTo: SendTo.absent,
       isActive: true,
     ),
   ];
@@ -93,7 +98,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
-        // leading: const BackButton(color: Colors.black),
+        leading: const BackButton(color: Colors.black),
         title: const Text(
           'Reminders',
           style: TextStyle(
@@ -352,6 +357,14 @@ class _ReminderCard extends StatelessWidget {
                     label: _typeLabel(reminder.type),
                   ),
                   _MetaChip(
+                    icon: Icons.people_outline,
+                    label: reminder.sendTo == SendTo.all
+                        ? 'All members'
+                        : reminder.sendTo == SendTo.absent
+                            ? 'Absent only'
+                            : 'Present only',
+                  ),
+                  _MetaChip(
                     icon: Icons.schedule,
                     label: _scheduleLabel(reminder.scheduledAt),
                   ),
@@ -447,6 +460,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
   late TextEditingController _messageCtrl;
   late NotificationType _type;
   late RecurringFrequency _recurring;
+  late SendTo _sendTo;
   DateTime? _scheduledAt;
   bool _scheduleEnabled = false;
 
@@ -461,6 +475,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
             'Hello [First Name],\n\nWe noticed you were absent on [Service Date].\nWe hope to see you at the next gathering.\n\nJane,\n[Church Name]');
     _type = e?.type ?? NotificationType.both;
     _recurring = e?.recurring ?? RecurringFrequency.none;
+    _sendTo = e?.sendTo ?? SendTo.absent;
     _scheduledAt = e?.scheduledAt;
     _scheduleEnabled = _scheduledAt != null;
   }
@@ -512,6 +527,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
       type: _type,
       scheduledAt: _scheduleEnabled ? _scheduledAt : null,
       recurring: _recurring,
+      sendTo: _sendTo,
       isActive: widget.existing?.isActive ?? true,
     );
     Navigator.pop(context, result);
@@ -614,6 +630,65 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
               }).toList(),
             ),
             const SizedBox(height: 20),
+
+            // Send to
+            const Text('Send to',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black54)),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: SendTo.values.map((f) {
+                  final selected = _sendTo == f;
+                  final label = f == SendTo.all
+                      ? 'All'
+                      : f == SendTo.absent
+                          ? 'Absent'
+                          : 'Present';
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _sendTo = f),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: selected ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: selected
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.06),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            color: selected
+                                ? const Color(0xFF438FFC)
+                                : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
 
             // Subject
             const Text('Subject',
