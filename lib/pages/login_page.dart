@@ -43,7 +43,7 @@ class LoginPage extends StatelessWidget {
           children: [
             const SizedBox(height: 125),
             const Text(
-              "WELCOME TO AMC PHOENIX",
+              "WELCOME TO REJOICE GREATLY PHX",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,

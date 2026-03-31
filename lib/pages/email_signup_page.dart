@@ -111,7 +111,7 @@ void _submit() async {
               "Create your account",
               style: TextStyle(
                 color: Colors.black,
-                fontSize: 12,
+                fontSize: 14,
                 fontWeight: FontWeight.w400,
                 letterSpacing: 1,
               ),
@@ -194,12 +194,13 @@ void _submit() async {
                           text: TextSpan(
                             style: const TextStyle(color: Colors.black),
                             children: [
-                              const TextSpan(text: "By signing up, you agree to the "),
+                              const TextSpan(text: "By signing up, you agree to the ", style: TextStyle(fontSize: 16)),
                               TextSpan(
                                 text: "Terms of Service",
                                 style: const TextStyle(
                                   color: Color(0xFF5286FF),
                                   decoration: TextDecoration.underline,
+                                  fontSize: 16
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
@@ -213,6 +214,7 @@ void _submit() async {
                                 style: const TextStyle(
                                   color: Color(0xFF5286FF),
                                   decoration: TextDecoration.underline,
+                                  fontSize: 16
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
@@ -230,7 +232,7 @@ void _submit() async {
                       CheckboxListTile(
                         title: const Text(
                           "I consent to the use of biometric and/or Bluetooth technology to record my church attendance",
-                          style: TextStyle(color: Colors.black, fontSize: 12),
+                          style: TextStyle(color: Colors.black, fontSize: 16),
                         ),
                         value: _privacyAccepted,
                         onChanged: (val) => setState(() => _privacyAccepted = val!),
@@ -253,16 +255,43 @@ void _submit() async {
                     ],
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
 
-                  // Social sign‑up buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade400,
+                          thickness: 1,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Text(
+                          'OR',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade400,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                                    const SizedBox(height: 20),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                      Expanded(
                         child: SizedBox(
-                          width: 70,
+                          // width: 70,
                           height: 70,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -270,32 +299,46 @@ void _submit() async {
                               onPressed: _handleGoogle,
                               style: ElevatedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: Color.fromARGB(179, 234, 231, 231),
+                                  color: Color.fromARGB(12, 123, 231, 231),
                                   width: 1,
                                 ),
+
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(49),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
                                 padding: EdgeInsets.zero,
                               ),
                               child: const Center(
-                                child: FaIcon(
-                                  FontAwesomeIcons.google,
-                                  size: 24,
-                                  color: Colors.black,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.google,
+                                      size: 24,
+                                      color: Colors.black,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Sign in with Google",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                      const SizedBox(width: 4),
+                      Expanded(
                         child: SizedBox(
-                          width: 70,
+                          // width: 70,
                           height: 70,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -306,18 +349,33 @@ void _submit() async {
                                   color: Color.fromARGB(179, 234, 231, 231),
                                   width: 1,
                                 ),
+
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(25),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
                                 padding: EdgeInsets.zero,
                               ),
                               child: const Center(
-                                child: FaIcon(
-                                  FontAwesomeIcons.apple,
-                                  size: 24,
-                                  color: Colors.black,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.apple,
+                                      size: 24,
+                                      color: Colors.black,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Sign in with Apple",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -330,13 +388,13 @@ void _submit() async {
 
                   // Login link
                   SizedBox(
-                    height: 16,
+                    height: 24,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text(
                           "Already have an account?",
-                          style: TextStyle(color: Colors.black, fontSize: 12),
+                          style: TextStyle(color: Colors.black, fontSize: 16),
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
@@ -345,7 +403,9 @@ void _submit() async {
                             "Login",
                             style: TextStyle(
                               color: Color(0xFF5286FF),
-                              fontSize: 12,
+                              fontSize: 16,
+                              decoration: TextDecoration.underline,
+
                             ),
                           ),
                         ),

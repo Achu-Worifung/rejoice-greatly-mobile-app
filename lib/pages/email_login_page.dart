@@ -56,17 +56,17 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   Future<void> _googleSignUp() async {
     final msg = await AuthService().signInWithGoogle();
     if (msg != null) {
-        setState(() => _error = msg);
-        return;
-      }
+      setState(() => _error = msg);
+      return;
+    }
   }
 
-  Future<void> _appleSignUp() async{
+  Future<void> _appleSignUp() async {
     final msg = await AuthService().signInWithApple();
     if (msg != null) {
-        setState(() => _error = msg);
-        return;
-      }
+      setState(() => _error = msg);
+      return;
+    }
   }
 
   @override
@@ -201,17 +201,43 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   //   textAlign: TextAlign.left,
                   //   style: TextStyle(color: Colors.black, fontSize: 12),
                   // ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
 
-                  const SizedBox(height: 32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade400,
+                          thickness: 1,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Text(
+                          'OR',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(
+                          color: Colors.grey.shade400,
+                          thickness: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                                    const SizedBox(height: 20),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-
+                      Expanded(
                         child: SizedBox(
-                          width: 70,
+                          // width: 70,
                           height: 70,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -219,33 +245,46 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                               onPressed: _googleSignUp,
                               style: ElevatedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: Color.fromARGB(179, 234, 231, 231),
+                                  color: Color.fromARGB(12, 123, 231, 231),
                                   width: 1,
                                 ),
-                            
+
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(49),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
                                 padding: EdgeInsets.zero,
                               ),
                               child: const Center(
-                                child: FaIcon(
-                                  FontAwesomeIcons.google,
-                                  size: 24,
-                                  color: Colors.black,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.google,
+                                      size: 24,
+                                      color: Colors.black,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Sign in with Google",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                      const SizedBox(width: 4),
+                      Expanded(
                         child: SizedBox(
-                          width: 70,
+                          // width: 70,
                           height: 70,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
@@ -256,19 +295,33 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                   color: Color.fromARGB(179, 234, 231, 231),
                                   width: 1,
                                 ),
-                            
+
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(52),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
                                 padding: EdgeInsets.zero,
                               ),
                               child: const Center(
-                                child: FaIcon(
-                                  FontAwesomeIcons.apple,
-                                  size: 24,
-                                  color: Colors.black,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.apple,
+                                      size: 24,
+                                      color: Colors.black,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Sign in with Apple",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -279,13 +332,13 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
-                    height: 16,
+                    height: 24,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           "Don't have an account?",
-                          style: TextStyle(color: Colors.black, fontSize: 12),
+                          style: TextStyle(color: Colors.black, fontSize: 16),
                         ),
                         SizedBox(width: 4),
                         GestureDetector(
@@ -295,7 +348,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                             "Sign up",
                             style: TextStyle(
                               color: Color(0xFF5286FF),
-                              fontSize: 12,
+                              fontSize: 16,
                             ),
                           ),
                         ),
