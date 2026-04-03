@@ -3,11 +3,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-import 'dart:ui_web' as ui;
+import 'package:flutter/foundation.dart';
+
+import '../util/video_handler_web.dart'
+    if (dart.library.io) '../util/video_handler_mobile.dart';
 
 class CompleteSignup extends StatefulWidget {
   const CompleteSignup({super.key});
@@ -17,169 +16,83 @@ class CompleteSignup extends StatefulWidget {
 }
 
 class _CompleteSignupState extends State<CompleteSignup> {
-  late final html.VideoElement _videoElement;
-  html.MediaStream? _mediaStream;
-
-  bool _isCameraReady = false;
-  bool _isFrontCamera = true;
-  bool _isStarting = false;
+  late VideoHandler _handler;
   Uint8List? _capturedBytes;
   bool _isLoading = false;
   String? _error;
-
-  final String _viewId = 'camera-view-html-element';
+  bool _isCameraReady = false;
 
   @override
   void initState() {
     super.initState();
-    _setupVideoElement();
-    _registerView();
-    _startCamera();
+    _handler = VideoHandler();
+    _initializeCamera();
   }
 
-  void _setupVideoElement() {
-    _videoElement = html.VideoElement()
-      ..autoplay = true
-      ..muted = true
-      ..setAttribute('playsinline', 'true')
-      ..style.width = '100%'
-      ..style.height = '100%'
-      ..style.objectFit = 'cover'
-      ..style.transform = 'scaleX(-1)';
-  }
-
-  void _registerView() {
-    ui.platformViewRegistry.registerViewFactory(
-      _viewId,
-      (int id) => _videoElement,
-    );
-  }
-
-  Future<void> _startCamera({bool front = true}) async {
-    if (_isStarting) return;
-    _isStarting = true;
-
+  Future<void> _initializeCamera() async {
     try {
-      if (_mediaStream != null) {
-        _stopCamera();
-
-        _mediaStream = null;
-      }
-      _videoElement.srcObject = null;
-
-      final stream = await html.window.navigator.mediaDevices!.getUserMedia({
-        'video': {
-          'facingMode': front ? 'user' : 'environment',
-          'width': {'ideal': 1280},
-          'height': {'ideal': 720},
-        },
-        'audio': false,
-      });
-
-      _mediaStream = stream;
-      _videoElement.srcObject = stream;
-      _videoElement.style.transform = front ? 'scaleX(-1)' : 'scaleX(1)';
-
-      _videoElement.onLoadedMetadata.listen((_) async {
-        try {
-          await _videoElement.play();
-        } catch (e) {
-          print("Playback error: $e");
-        }
-      });
-
+      await _handler.initCamera(front: true);
       if (mounted) {
         setState(() {
           _isCameraReady = true;
-          _isFrontCamera = front;
           _error = null;
         });
       }
     } catch (e) {
-      print("Camera Error: $e");
       if (mounted) {
-        setState(
-          () => _error =
-              "Camera access denied. Please allow permissions and use HTTPS.",
-        );
+        setState(() {
+          _error = "Camera access denied. Please allow permissions.";
+          _isCameraReady = false;
+        });
       }
-    } finally {
-      _isStarting = false;
     }
   }
 
-  void _capturePhoto() {
-    if (!_isCameraReady) return;
-
-    final int width = _videoElement.videoWidth;
-    final int height = _videoElement.videoHeight;
-
-    final canvas = html.CanvasElement(width: width, height: height);
-    final ctx = canvas.context2D;
-
-    if (_isFrontCamera) {
-      ctx.translate(width.toDouble(), 0);
-      ctx.scale(-1, 1);
+  Future<void> _capturePhoto() async {
+    try {
+      final bytes = await _handler.capturePhoto();
+      if (bytes != null && mounted) {
+        setState(() {
+          _capturedBytes = bytes;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      setState(() => _error = "Failed to capture photo");
     }
-
-    ctx.drawImage(_videoElement, 0, 0);
-
-    canvas.toBlob('image/jpeg', 0.9).then((blob) {
-      final reader = html.FileReader();
-      reader.readAsArrayBuffer(blob!);
-      reader.onLoad.listen((_) {
-        if (mounted) {
-          setState(() {
-            _capturedBytes = reader.result as Uint8List;
-            _error = null;
-          });
-        }
-      });
-    });
   }
 
   void _retake() {
     setState(() {
       _capturedBytes = null;
       _error = null;
-      _isCameraReady = false; // briefly show spinner
-    });
-
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _videoElement.style.transform = _isFrontCamera
-          ? 'scaleX(-1)'
-          : 'scaleX(1)';
-      _videoElement.play().then((_) {
-        if (mounted) setState(() => _isCameraReady = true);
-      });
     });
   }
 
   Future<void> _flipCamera() async {
-    if (_isStarting) return;
     setState(() => _isCameraReady = false);
-    await _startCamera(front: !_isFrontCamera);
-  }
-
-  void _stopCamera() {
-    _mediaStream?.getTracks().forEach((dynamic track) => track.stop());
-    _mediaStream = null;
+    try {
+      await _handler.flipCamera();
+      if (mounted) {
+        setState(() => _isCameraReady = true);
+      }
+    } catch (e) {
+      setState(() => _error = "Failed to switch camera");
+    }
   }
 
   Future<void> _submitSignup() async {
-    final FirebaseAuth _auth = FirebaseAuth.instance;
     if (_capturedBytes == null) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final firebaseUid = await _auth.currentUser?.uid ?? "";
-
-      if (firebaseUid.isEmpty) {
-        setState(() => _error = "Account not found. Please sign up again.");
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() => _error = "Not authenticated");
         return;
       }
 
@@ -188,7 +101,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         Uri.parse("http://localhost:8080/profile/picture-upload"),
       );
 
-      request.fields['firebaseUid'] = firebaseUid;
+      request.fields['firebaseUid'] = user.uid;
       request.files.add(
         http.MultipartFile.fromBytes(
           'Image',
@@ -198,30 +111,25 @@ class _CompleteSignupState extends State<CompleteSignup> {
       );
 
       final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-      print("Response: $responseBody");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        //release camera and navigate to admin
-        _stopCamera();
-
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool("signupComplete", true);
 
-        bool isAdmin = prefs.getBool("admin") ?? false;
+        final isAdmin = prefs.getBool("admin") ?? false;
 
-        if (!isAdmin && mounted) {
-          Navigator.pushNamed(context, '/dashboard');
-        } else if (isAdmin && mounted) {
-          Navigator.pushNamed(context, '/admin');
+        if (mounted) {
+          Navigator.pushReplacementNamed(
+            context,
+            isAdmin ? '/admin' : '/dashboard',
+          );
         }
       } else {
-        setState(() => _error = "Upload failed. Error: ${response.statusCode}");
-        print("Failed: ${response.statusCode} - $responseBody");
+        setState(() => _error = "Upload failed: ${response.statusCode}");
       }
     } catch (e) {
-      setState(() => _error = "Network error. Please try again Later.");
-      print("Error: $e");
+      setState(() => _error = "Network error. Please try again.");
+      print("Upload error: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -229,9 +137,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
   @override
   void dispose() {
-    _stopCamera();
-
-    _videoElement.srcObject = null;
+    _handler.dispose();
     super.dispose();
   }
 
@@ -243,16 +149,13 @@ class _CompleteSignupState extends State<CompleteSignup> {
     );
   }
 
-  // ─── Camera Screen ────────────────────────────────────────────────────────
-
   Widget _buildCamera() {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Always keep HtmlElementView mounted — never remove from tree
-        HtmlElementView(viewType: _viewId),
+        // Use the handler's buildCameraView method - works for both web and mobile
+        _handler.buildCameraView(),
 
-        // Show black overlay + spinner while camera is starting
         if (!_isCameraReady)
           const ColoredBox(
             color: Colors.black,
@@ -266,112 +169,68 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // Top bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleButton(
-                      Icons.arrow_back,
-                      () => Navigator.pop(context),
-                    ),
+                    _circleButton(Icons.arrow_back, () => Navigator.pop(context)),
                     const Text(
                       "TAKE A SELFIE",
                       style: TextStyle(
                         color: Colors.white,
-                        letterSpacing: 1,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
+                        letterSpacing: 1,
                       ),
                     ),
-                    // _circleButton(Icons.flip_camera_ios, _flipCamera),
+                    _circleButton(Icons.flip_camera_ios, _flipCamera),
                   ],
                 ),
-
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   _errorBanner(),
                 ],
-
                 const Spacer(),
-
-                // Hint
                 const Text(
                   "Center your face",
-                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    shadows: [Shadow(blurRadius: 8, color: Colors.black)],
                   ),
                 ),
+                const SizedBox(height: 8),
                 const Text(
-                  "Position your face inside the frame and \n  look directly at the camera",
+                  "Position your face inside the frame and\nlook directly at the camera",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white54,
                     fontSize: 13,
-                    shadows: [Shadow(blurRadius: 8, color: Colors.black)],
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Shutter row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // const SizedBox(width: 50),
-                    _shutterButton(),
-                    // _circleButton(Icons.flip_camera_ios, _flipCamera),
-                  ],
-                ),
+                _shutterButton(),
                 const SizedBox(height: 40),
               ],
             ),
           ),
         ),
-        // Align(
-        //   alignment:
-        //       Alignment.topCenter, // Centers horizontally, sticks to the top
-        //   child: Container(
-        //     margin: const EdgeInsets.only(
-        //       top: 100,
-        //     ), // Push it down slightly from the very top
-        //     width: MediaQuery.of(context).size.width * 0.7,
-        //     height: MediaQuery.of(context).size.height * 0.4,
-        //     decoration: BoxDecoration(
-        //       border: Border.all(
-        //         color: Colors.white.withOpacity(0.8),
-        //         width: 1.0,
-        //       ),
-        //       borderRadius: BorderRadius.circular(16),
-        //     ),
-        //   ),
-        // ),
       ],
     );
   }
-
-  // ─── Preview Screen ───────────────────────────────────────────────────────
 
   Widget _buildPreview() {
     return Stack(
       fit: StackFit.expand,
       children: [
         Image.memory(_capturedBytes!, fit: BoxFit.cover),
-
         _gradientOverlay(fromTop: true),
         _gradientOverlay(fromTop: false),
-
-        // Top bar
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.all(20),
             child: Column(
               children: [
                 Row(
@@ -382,66 +241,48 @@ class _CompleteSignupState extends State<CompleteSignup> {
                       "USE THIS PHOTO?",
                       style: TextStyle(
                         color: Colors.white,
-                        letterSpacing: 1.5,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
+                        letterSpacing: 1.5,
                       ),
                     ),
                     const SizedBox(width: 44),
                   ],
                 ),
-              ],
-            ),
-          ),
-        ),
-
-        // Bottom buttons
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 48),
-              child: Column(
-                children: [
-                  if (_error != null) ...[
-                    _errorBanner(),
-                    const SizedBox(height: 16),
-                  ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _bottomButton(
-                          label: "Retake",
-                          onTap: _retake,
-                          color: Colors.white.withOpacity(0.15),
-                          border: Colors.white30,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: _bottomButton(
-                          label: _isLoading ? "Uploading..." : "Use This Photo",
-                          onTap: _isLoading ? null : _submitSignup,
-                          color: const Color(0xFF5286FF),
-                          isLoading: _isLoading,
-                        ),
-                      ),
-                    ],
-                  ),
+                const Spacer(),
+                if (_error != null) ...[
+                  _errorBanner(),
+                  const SizedBox(height: 16),
                 ],
-              ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _bottomButton(
+                        label: "Retake",
+                        onTap: _retake,
+                        color: Colors.white.withOpacity(0.15),
+                        border: Colors.white30,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: _bottomButton(
+                        label: _isLoading ? "Uploading..." : "Use This Photo",
+                        onTap: _isLoading ? null : _submitSignup,
+                        color: const Color(0xFF5286FF),
+                        isLoading: _isLoading,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
           ),
         ),
       ],
     );
   }
-
-  // ─── Helpers ──────────────────────────────────────────────────────────────
 
   Widget _gradientOverlay({required bool fromTop}) {
     return Positioned(

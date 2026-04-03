@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
+
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -162,6 +164,7 @@ class AuthService {
         String extractedName = userData['name'] ?? "User";
         bool isAdmin = userData['admin'] ?? false;
         bool signupComplete = userData['signupComplete'] ?? false;
+        OneSignal.login(firebaseUid); // Log OneSignal in with Firebase UID
 
         // Save to SharedPreferences
         await prefs.setString("firebaseUid", firebaseUid);
