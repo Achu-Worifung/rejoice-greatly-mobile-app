@@ -6,18 +6,14 @@ import 'routes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'pages/RootPage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'notifications/notification_service.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await dotenv.load(fileName: ".env");
-  String appId = dotenv.env['ONESIGNAL_APP_ID'] ?? '';
-  if (appId.isEmpty) {
-    print("Warning: ONESIGNAL_APP_ID is not set in .env file.");
-  } else {
-    OneSignal.initialize(appId);
-    OneSignal.Notifications.requestPermission(true);
-  }
+  await NotificationService().initialize();
 
   runApp(const MyApp());
 }

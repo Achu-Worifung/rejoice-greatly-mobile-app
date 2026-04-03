@@ -1,13 +1,30 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class PushNotificationSender {
+  late String _appId;
+  late String _restApiKey;
   static const String _oneSignalApiUrl = 'https://onesignal.com/api/v1/notifications';
-  static const String _appId = 'YOUR_ONESIGNAL_APP_ID';
-  static const String _restApiKey = 'YOUR_REST_API_KEY';
+  
+  PushNotificationSender() {
+    _loadEnvVariables();
+  }
+
+  void _loadEnvVariables() {
+    _appId = dotenv.env['ONESIGNAL_APP_ID'] ?? '';
+    _restApiKey = dotenv.env['ONESIGNAL_REST_API_KEY'] ?? '';
+    
+    if (_appId.isEmpty) {
+      throw Exception('ONESIGNAL_APP_ID not found in .env file');
+    }
+    if (_restApiKey.isEmpty) {
+      throw Exception('ONESIGNAL_REST_API_KEY not found in .env file');
+    }
+  }
 
   // Send to all users
-  static Future<bool> sendToAll({
+  Future<bool> sendToAll({
     required String title,
     required String message,
     Map<String, dynamic>? data,
@@ -28,6 +45,7 @@ class PushNotificationSender {
         }),
       );
 
+      print('SendToAll response: ${response.statusCode} - ${response.body}');
       return response.statusCode == 200;
     } catch (e) {
       print('Error sending notification: $e');
@@ -36,7 +54,7 @@ class PushNotificationSender {
   }
 
   // Send to specific users
-  static Future<bool> sendToUsers({
+  Future<bool> sendToUsers({
     required List<String> userIds,
     required String title,
     required String message,
@@ -58,6 +76,7 @@ class PushNotificationSender {
         }),
       );
 
+      print('SendToUsers response: ${response.statusCode} - ${response.body}');
       return response.statusCode == 200;
     } catch (e) {
       print('Error sending notification: $e');
@@ -66,7 +85,7 @@ class PushNotificationSender {
   }
 
   // Send to users with specific tags
-  static Future<bool> sendToTags({
+  Future<bool> sendToTags({
     required List<Map<String, dynamic>> filters,
     required String title,
     required String message,
@@ -88,6 +107,7 @@ class PushNotificationSender {
         }),
       );
 
+      print('SendToTags response: ${response.statusCode} - ${response.body}');
       return response.statusCode == 200;
     } catch (e) {
       print('Error sending notification: $e');
@@ -96,7 +116,7 @@ class PushNotificationSender {
   }
 
   // Schedule notification
-  static Future<bool> scheduleNotification({
+  Future<String?> scheduleNotification({
     required String title,
     required String message,
     required DateTime sendAfter,
@@ -104,65 +124,56 @@ class PushNotificationSender {
     Map<String, dynamic>? data,
   }) async {
     try {
+      final Map<String, dynamic> payload = {
+        'app_id': _appId,
+        'headings': {'en': title},
+        'contents': {'en': message},
+        'send_after': sendAfter.toUtc().toIso8601String(),
+        if (data != null) 'data': data,
+      };
+
+      if (userIds != null && userIds.isNotEmpty) {
+        payload['include_external_user_ids'] = userIds;
+      } else {
+        payload['included_segments'] = ['All'];
+      }
+
       final response = await http.post(
         Uri.parse(_oneSignalApiUrl),
         headers: {
           'Content-Type': 'application/json; charset=utf-8',
           'Authorization': 'Basic $_restApiKey',
         },
-        body: jsonEncode({
-          'app_id': _appId,
-          if (userIds != null && userIds.isNotEmpty)
-            'include_external_user_ids': userIds
-          else
-            'included_segments': ['All'],
-          'headings': {'en': title},
-          'contents': {'en': message},
-          'send_after': sendAfter.toUtc().toIso8601String(),
-          if (data != null) 'data': data,
-        }),
+        body: jsonEncode(payload),
       );
 
-      return response.statusCode == 200;
+      print('Schedule response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return responseData['id'];
+      }
+      return null;
     } catch (e) {
       print('Error scheduling notification: $e');
-      return false;
+      return null;
     }
   }
 
-  // Schedule recurring notification
-  static Future<bool> scheduleRecurringNotification({
-    required String title,
-    required String message,
-    required DateTime sendAfter,
-    required int delayedOption, // e.g., "timezone" for daily
-    required String deliveryTimeOfDay, // e.g., "9:00AM"
-    List<String>? userIds,
-  }) async {
+  // Cancel scheduled notification
+  Future<bool> cancelNotification(String notificationId) async {
     try {
-      final response = await http.post(
-        Uri.parse(_oneSignalApiUrl),
+      final response = await http.delete(
+        Uri.parse('$_oneSignalApiUrl/$notificationId?app_id=$_appId'),
         headers: {
-          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': 'Basic $_restApiKey',
         },
-        body: jsonEncode({
-          'app_id': _appId,
-          if (userIds != null && userIds.isNotEmpty)
-            'include_external_user_ids': userIds
-          else
-            'included_segments': ['All'],
-          'headings': {'en': title},
-          'contents': {'en': message},
-          'send_after': sendAfter.toUtc().toIso8601String(),
-          'delayed_option': 'timezone',
-          'delivery_time_of_day': deliveryTimeOfDay,
-        }),
       );
 
+      print('Cancel response: ${response.statusCode}');
       return response.statusCode == 200;
     } catch (e) {
-      print('Error scheduling recurring notification: $e');
+      print('Error canceling notification: $e');
       return false;
     }
   }

@@ -40,9 +40,11 @@ class RootPage extends StatelessWidget {
 
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (isComplete) {
-                  Navigator.pushReplacementNamed(context, '/dashboard');
+                  // Navigator.pushReplacementNamed(context, '/dashboard');
+                  Navigator.pushReplacementNamed(context, '/admin');
                 } else {
-                  Navigator.pushReplacementNamed(context, '/complete-signup');
+                  // Navigator.pushReplacementNamed(context, '/complete-signup');
+                  Navigator.pushReplacementNamed(context, '/admin');
                 }
               });
 
