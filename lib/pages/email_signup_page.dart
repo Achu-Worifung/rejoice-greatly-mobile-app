@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/services/auth_service.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class EmailSignupPage extends StatefulWidget {
   const EmailSignupPage({super.key});
@@ -32,7 +33,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
     super.dispose();
   }
 
-void _submit() async {
+  void _submit() async {
     if (!_termsAccepted || !_privacyAccepted) {
       setState(() {
         _error = "You must accept all policies and terms to continue.";
@@ -56,26 +57,23 @@ void _submit() async {
         setState(() => _error = msg);
         return;
       }
-
-
-     
     }
   }
 
   Future<void> _handleGoogle() async {
     final msg = await AuthService().signInWithGoogle();
     if (msg != null) {
-        print(msg);
-        return;
-      }
+      print(msg);
+      return;
+    }
   }
 
   Future<void> _handleApple() async {
     final msg = await AuthService().signInWithApple();
     if (msg != null) {
-        print(msg);
-        return;
-      }
+      print(msg);
+      return;
+    }
   }
 
   @override
@@ -129,8 +127,9 @@ void _submit() async {
                       label: "Name",
                       icon: Icons.person_3_outlined,
                     ),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? "Please enter your name" : null,
+                    validator: (v) => v == null || v.isEmpty
+                        ? "Please enter your name"
+                        : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -144,7 +143,8 @@ void _submit() async {
                       icon: Icons.email_outlined,
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return "Please enter your email";
+                      if (v == null || v.isEmpty)
+                        return "Please enter your email";
                       if (!v.contains("@")) return "Please enter a valid email";
                       return null;
                     },
@@ -156,24 +156,28 @@ void _submit() async {
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     style: const TextStyle(color: Colors.black),
-                    decoration: _inputDecoration(
-                      label: "Password",
-                      icon: Icons.lock_outline,
-                    ).copyWith(
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: Colors.black,
+                    decoration:
+                        _inputDecoration(
+                          label: "Password",
+                          icon: Icons.lock_outline,
+                        ).copyWith(
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: Colors.black,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                          ),
                         ),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return "Please enter your password";
-                      if (v.length < 6) return "Password must be at least 6 characters";
+                      if (v == null || v.isEmpty)
+                        return "Please enter your password";
+                      if (v.length < 6)
+                        return "Password must be at least 6 characters";
                       return null;
                     },
                   ),
@@ -194,19 +198,21 @@ void _submit() async {
                           text: TextSpan(
                             style: const TextStyle(color: Colors.black),
                             children: [
-                              const TextSpan(text: "By signing up, you agree to the ", style: TextStyle(fontSize: 16)),
+                              const TextSpan(
+                                text: "By signing up, you agree to the ",
+                                style: TextStyle(fontSize: 16),
+                              ),
                               TextSpan(
                                 text: "Terms of Service",
                                 style: const TextStyle(
                                   color: Color(0xFF5286FF),
                                   decoration: TextDecoration.underline,
-                                  fontSize: 16
+                                  fontSize: 16,
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
                                     Navigator.pushNamed(context, '/terms');
                                   },
-                                 
                               ),
                               const TextSpan(text: " and "),
                               TextSpan(
@@ -214,7 +220,7 @@ void _submit() async {
                                 style: const TextStyle(
                                   color: Color(0xFF5286FF),
                                   decoration: TextDecoration.underline,
-                                  fontSize: 16
+                                  fontSize: 16,
                                 ),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
@@ -225,7 +231,8 @@ void _submit() async {
                           ),
                         ),
                         value: _termsAccepted,
-                        onChanged: (val) => setState(() => _termsAccepted = val!),
+                        onChanged: (val) =>
+                            setState(() => _termsAccepted = val!),
                         activeColor: const Color(0xFF5286FF),
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
@@ -235,7 +242,8 @@ void _submit() async {
                           style: TextStyle(color: Colors.black, fontSize: 16),
                         ),
                         value: _privacyAccepted,
-                        onChanged: (val) => setState(() => _privacyAccepted = val!),
+                        onChanged: (val) =>
+                            setState(() => _privacyAccepted = val!),
                         activeColor: const Color(0xFF5286FF),
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
@@ -284,99 +292,102 @@ void _submit() async {
                       ),
                     ],
                   ),
-                                    const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // 1. First Button (Google)
                       Expanded(
-                        child: SizedBox(
-                          // width: 70,
-                          height: 70,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                        child: Padding(
+                          padding: const EdgeInsets.all(
+                            4.0,
+                          ), // Reduced padding to save space
+                          child: SizedBox(
+                            height:
+                                50, // Slightly shorter height helps on small screens
                             child: ElevatedButton(
                               onPressed: _handleGoogle,
                               style: ElevatedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Color.fromARGB(12, 123, 231, 231),
-                                  width: 1,
-                                ),
-
                                 backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                                elevation: 2,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ), // Minimal internal padding
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                elevation: 2,
-                                padding: EdgeInsets.zero,
                               ),
-                              child: const Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    FaIcon(
-                                      FontAwesomeIcons.google,
-                                      size: 22,
-                                      color: Colors.black,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      "Sign in with Google",
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 16,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const FaIcon(
+                                    FontAwesomeIcons.google,
+                                    size: 18,
+                                  ), // Smaller icon
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    // Use Flexible to allow the text to shrink aggressively
+                                    child: AutoSizeText(
+                                      "Sign in with Google", // Shortened text also helps
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
                                       ),
+                                      minFontSize:
+                                          8, // Dropped min size to 8 to prevent overflow
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
+
+                      // 2. Second Button (Apple)
                       Expanded(
-                        child: SizedBox(
-                          // width: 70,
-                          height: 70,
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: SizedBox(
+                            height: 50,
                             child: ElevatedButton(
                               onPressed: _handleApple,
                               style: ElevatedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Color.fromARGB(179, 234, 231, 231),
-                                  width: 1,
-                                ),
-
                                 backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                                elevation: 2,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                elevation: 2,
-                                padding: EdgeInsets.zero,
                               ),
-                              child: const Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    FaIcon(
-                                      FontAwesomeIcons.apple,
-                                      size: 22,
-                                      color: Colors.black,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const FaIcon(
+                                    FontAwesomeIcons.apple,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: AutoSizeText(
                                       "Sign in with Apple",
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 16,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
                                       ),
+                                      minFontSize: 8,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -398,14 +409,14 @@ void _submit() async {
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/email-login'),
+                          onTap: () =>
+                              Navigator.pushNamed(context, '/email-login'),
                           child: const Text(
                             "Login",
                             style: TextStyle(
                               color: Color(0xFF5286FF),
                               fontSize: 16,
                               decoration: TextDecoration.underline,
-
                             ),
                           ),
                         ),

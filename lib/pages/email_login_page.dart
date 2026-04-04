@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../routes.dart';
 import '../services/auth_service.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class EmailLoginPage extends StatefulWidget {
   const EmailLoginPage({super.key});
@@ -81,7 +82,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
         scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          
+
           onPressed: () => Navigator.pushNamed(context, '/login'),
         ),
       ),
@@ -239,8 +240,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     children: [
                       Expanded(
                         child: SizedBox(
-                          // width: 70,
-                          height: 70,
+                          height: 60,
                           child: Padding(
                             padding: const EdgeInsets.all(4.0),
                             child: ElevatedButton(
@@ -250,34 +250,39 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                   color: Color.fromARGB(12, 123, 231, 231),
                                   width: 1,
                                 ),
-
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
-                                padding: EdgeInsets.zero,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                               ),
-                              child: const Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    FaIcon(
-                                      FontAwesomeIcons.google,
-                                      size: 22,
-                                      color: Colors.black,
-                                    ),
-                                    SizedBox(width: 2),
-                                    Text(
+                              child: Row(
+                                // Removed Center/const to allow dynamic sizing
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const FaIcon(
+                                    FontAwesomeIcons.google,
+                                    size:
+                                        20, // Slightly reduced to save horizontal space
+                                    color: Colors.black,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: AutoSizeText(
                                       "Sign in with Google",
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.black,
                                         fontSize: 16,
                                       ),
+                                      minFontSize: 8,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -286,10 +291,11 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: SizedBox(
-                          // width: 70,
-                          height: 70,
+                          height: 60,
                           child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                            padding: const EdgeInsets.all(
+                              4.0,
+                            ), // Consistent padding
                             child: ElevatedButton(
                               onPressed: _appleSignUp,
                               style: ElevatedButton.styleFrom(
@@ -297,34 +303,37 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                   color: Color.fromARGB(179, 234, 231, 231),
                                   width: 1,
                                 ),
-
                                 backgroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 elevation: 2,
-                                padding: EdgeInsets.zero,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
                               ),
-                              child: const Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    FaIcon(
-                                      FontAwesomeIcons.apple,
-                                      size: 22,
-                                      color: Colors.black,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const FaIcon(
+                                    FontAwesomeIcons.apple,
+                                    size: 20,
+                                    color: Colors.black,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: AutoSizeText(
                                       "Sign in with Apple",
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: Colors.black,
                                         fontSize: 16,
                                       ),
+                                      minFontSize: 8,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

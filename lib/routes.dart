@@ -19,10 +19,12 @@ class AppRoutes {
   static const String completeSignup = '/complete-signup';
   static const String dashboard = '/dashboard';
   static const String userPrep = '/user-prep';
+  static const String home = '/';
 
 
   static Map<String, WidgetBuilder> getRoutes() {
     return {
+      home: (context) => const AdminDashboard(),
       login: (context) => const AdminDashboard(),
       // login: (context) => const LoginPage(),
       emailLogin: (context) => const EmailLoginPage(),
