@@ -287,7 +287,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
-        leading: const BackButton(color: Colors.black),
+        // leading: const BackButton(color: Colors.black),
         title: const Text(
           'Reminders',
           style: TextStyle(
@@ -400,43 +400,43 @@ class _RemindersWidgetState extends State<RemindersWidget> {
 
             const SizedBox(height: 12),
 
-            // Send button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: (activeCount > 0 && !_isSending && _isInitialized)
-                    ? _sendAll
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF438FFC),
-                  disabledBackgroundColor: Colors.grey[300],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: _isSending
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        activeCount > 0
-                            ? 'Send $activeCount Reminder${activeCount == 1 ? '' : 's'} to $absentCount Members'
-                            : 'No active reminders',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-              ),
-            ),
+            // Send button (have no need for)
+            // SizedBox(
+            //   width: double.infinity,
+            //   child: ElevatedButton(
+            //     onPressed: (activeCount > 0 && !_isSending && _isInitialized)
+            //         ? _sendAll
+            //         : null,
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: const Color(0xFF438FFC),
+            //       disabledBackgroundColor: Colors.grey[300],
+            //       foregroundColor: Colors.white,
+            //       padding: const EdgeInsets.symmetric(vertical: 16),
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(12),
+            //       ),
+            //       elevation: 0,
+            //     ),
+            //     child: _isSending
+            //         ? const SizedBox(
+            //             height: 20,
+            //             width: 20,
+            //             child: CircularProgressIndicator(
+            //               strokeWidth: 2,
+            //               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            //             ),
+            //           )
+            //         : Text(
+            //             activeCount > 0
+            //                 ? 'Send $activeCount Reminder${activeCount == 1 ? '' : 's'} to $absentCount Members'
+            //                 : 'No active reminders',
+            //             style: const TextStyle(
+            //               fontSize: 14,
+            //               fontWeight: FontWeight.w500,
+            //             ),
+            //           ),
+            //   ),
+            // ),
 
             const SizedBox(height: 16),
           ],

@@ -160,7 +160,6 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
-        leading: const BackButton(color: Colors.black),
         title: const Text(
           'Attendance',
           style: TextStyle(

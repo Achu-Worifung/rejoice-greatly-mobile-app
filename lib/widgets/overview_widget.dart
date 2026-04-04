@@ -117,53 +117,55 @@ class _OverviewWidgetState extends State<OverviewWidget> {
     final int totalCount = _totalMembers?.length ?? 0;
     final int rate = _attendanceRate ?? 0;
 
-    return ListView(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+appBar: AppBar(
+  backgroundColor: const Color(0xFFF5F7FA),
+  elevation: 0,
+  leadingWidth: 0,
+  leading: const SizedBox.shrink(),
+  title: Row(
+    children: [
+      ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        child: Image.network(
+          'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST4JjHURtaso7i__VnumOCn8QoUHn-WXURHQ&s',
+          height: 40,
+          width: 40,
+          fit: BoxFit.cover,
+        ),
+      ),
+      const SizedBox(width: 12),
+      const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Name goes here",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.black,
+            ),
+          ),
+          Text(
+            "Admin",
+            style: TextStyle(color: Colors.grey, fontSize: 13),
+          ),
+        ],
+      ),
+    ],
+  ),
+  actions: [
+    IconButton(
+      onPressed: _showDatePicker,
+      icon: const Icon(Icons.calendar_month, color: Colors.grey),
+    ),
+  ],
+),
+      body:  ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // Header row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: Image.network(
-                    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST4JjHURtaso7i__VnumOCn8QoUHn-WXURHQ&s',
-                    height: 50,
-                    width: 50,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      "Name goes here",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    Text(
-                      "Admin",
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _showDatePicker,
-                  icon: const Icon(Icons.calendar_month, color: Colors.grey),
-                ),
-              ],
-            ),
-          ],
-        ),
+        
 
         const SizedBox(height: 8),
 
@@ -370,6 +372,9 @@ class _OverviewWidgetState extends State<OverviewWidget> {
           const SizedBox(height: 16),
         ],
       ],
+    )
+  ,
+      
     );
   }
 
@@ -456,55 +461,63 @@ class _SundayPickerSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+Widget build(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+    // Use MainAxisSize.min if it's a BottomSheet, but we need a scrollable area inside
+    child: Column(
+      mainAxisSize: MainAxisSize.min, // Keeps the sheet compact
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Select a Sunday',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Select a Sunday',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        // FIXED: Wrap the list in Flexible and SingleChildScrollView
+        Flexible(
+          child: SingleChildScrollView(
+            child: Column(
+              children: sundays.map((sunday) {
+                final isSelected = sunday == selected;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.calendar_today,
+                    color: isSelected ? const Color(0xFF438FFC) : Colors.grey,
+                    size: 20,
+                  ),
+                  title: Text(
+                    _format(sunday),
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? const Color(0xFF438FFC) : null,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Color(0xFF438FFC))
+                      : null,
+                  onTap: () => Navigator.pop(context, sunday),
+                );
+              }).toList(),
+            ),
           ),
-          const SizedBox(height: 12),
-          ...sundays.map((sunday) {
-            final isSelected = sunday == selected;
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.calendar_today,
-                color: isSelected ? const Color(0xFF438FFC) : Colors.grey,
-                size: 20,
-              ),
-              title: Text(
-                _format(sunday),
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? const Color(0xFF438FFC) : null,
-                ),
-              ),
-              trailing: isSelected
-                  ? const Icon(Icons.check, color: Color(0xFF438FFC))
-                  : null,
-              onTap: () => Navigator.pop(context, sunday),
-            );
-          }),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }
 
 // ── Attendance chart ─────────────────────────────────────────────────────────
