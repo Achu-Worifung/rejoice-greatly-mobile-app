@@ -64,6 +64,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
 
     final prefs = await SharedPreferences.getInstance();
     String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
+    print("making sure we are using the correct ip address: $ip_addr");
     final Uri uri = Uri.parse("http://$ip_addr:8080/admin/overview");
 
     final String dateStr =

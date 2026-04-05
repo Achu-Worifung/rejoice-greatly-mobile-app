@@ -1,13 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../dataobject/reminder_items.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../dataobject/reminder_items.dart';
 
 class ReminderApiService {
-  // Change this to your actual backend URL
-  String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
-  // 'late' allows one variable to depend on another during initialization
-  late final String _baseUrl = "http://$ip_addr:8080/schedule"; //iOS simulator / web
+  String ipAddr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
+  late final String _baseUrl = "http://$ipAddr:8080/schedule";
 
   final String? churchId;
   final String? authToken;
@@ -15,17 +13,17 @@ class ReminderApiService {
   ReminderApiService({this.churchId, this.authToken});
 
   Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    if (authToken != null) 'Authorization': 'Bearer $authToken',
-  };
+        'Content-Type': 'application/json',
+        if (authToken != null) 'Authorization': 'Bearer $authToken',
+      };
 
-  // ── GET all reminders ──
   Future<List<ReminderItem>> fetchReminders() async {
     try {
       final uri = Uri.parse('$_baseUrl/getschedule');
-
       final response = await http.get(uri, headers: _headers);
-      print("API response body: ${response.body}");
+
+      print("fetchReminders response: ${response.statusCode}");
+      print("fetchReminders body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
@@ -39,11 +37,10 @@ class ReminderApiService {
     }
   }
 
-  // ── GET single reminder ──
   Future<ReminderItem> fetchReminder(String id) async {
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/reminders/$id'),
+        Uri.parse('$_baseUrl/getschedule/$id'),  // ✅ Fixed
         headers: _headers,
       );
 
@@ -58,14 +55,16 @@ class ReminderApiService {
     }
   }
 
-  // ── POST create reminder ──
   Future<ReminderItem> createReminder(ReminderItem reminder) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/reminders'),
+        Uri.parse('$_baseUrl/createschedule'),  // ✅ Fixed
         headers: _headers,
         body: json.encode(reminder.toJson()),
       );
+
+      print("createReminder response: ${response.statusCode}");
+      print("createReminder body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ReminderItem.fromJson(json.decode(response.body));
@@ -78,14 +77,16 @@ class ReminderApiService {
     }
   }
 
-  // ── PUT update reminder ──
   Future<ReminderItem> updateReminder(ReminderItem reminder) async {
     try {
       final response = await http.put(
-        Uri.parse('$_baseUrl/reminders/${reminder.id}'),
+        Uri.parse('$_baseUrl/updateschedule/${reminder.id}'),  // ✅ Fixed
         headers: _headers,
         body: json.encode(reminder.toJson()),
       );
+
+      print("updateReminder response: ${response.statusCode}");
+      print("updateReminder body: ${response.body}");
 
       if (response.statusCode == 200) {
         return ReminderItem.fromJson(json.decode(response.body));
@@ -98,11 +99,10 @@ class ReminderApiService {
     }
   }
 
-  // ── DELETE reminder ──
   Future<bool> deleteReminder(String id) async {
     try {
       final response = await http.delete(
-        Uri.parse('$_baseUrl/reminders/$id'),
+        Uri.parse('$_baseUrl/deleteschedule/$id'),  // ✅ Fixed
         headers: _headers,
       );
 
@@ -112,11 +112,10 @@ class ReminderApiService {
     }
   }
 
-  // ── PATCH toggle active status ──
   Future<ReminderItem> toggleActive(String id, bool isActive) async {
     try {
       final response = await http.patch(
-        Uri.parse('$_baseUrl/reminders/$id/toggle'),
+        Uri.parse('$_baseUrl/toggleschedule/$id'),  // ✅ Fixed
         headers: _headers,
         body: json.encode({'isActive': isActive}),
       );
@@ -132,11 +131,10 @@ class ReminderApiService {
     }
   }
 
-  // ── POST send immediately ──
   Future<bool> sendNow(String id) async {
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/reminders/$id/send'),
+        Uri.parse('$_baseUrl/sendnow/$id'),  // ✅ Fixed
         headers: _headers,
       );
 

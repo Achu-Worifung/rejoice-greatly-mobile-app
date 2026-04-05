@@ -8,48 +8,36 @@ class NotificationService {
 
   String get appId => dotenv.env['ONESIGNAL_APP_ID'] ?? '';
 
-  // Initialize OneSignal
   Future<void> initialize() async {
-    // Load environment variables if not already loaded
     if (!dotenv.isInitialized) {
       await dotenv.load(fileName: ".env");
     }
 
     final appId = dotenv.env['ONESIGNAL_APP_ID'];
-    
     if (appId == null || appId.isEmpty) {
       throw Exception('ONESIGNAL_APP_ID not found in .env file');
     }
 
-    // Set log level for debugging
     OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-
-    // Initialize with App ID from environment
     OneSignal.initialize(appId);
 
-    // Request permission
     await OneSignal.Notifications.requestPermission(true);
 
-    // Set up listeners
     _setupListeners();
   }
 
-  // Setup notification listeners
   void _setupListeners() {
-    // Notification received (foreground)
     OneSignal.Notifications.addForegroundWillDisplayListener((event) {
       print('Notification received in foreground: ${event.notification.body}');
       event.notification.display();
     });
 
-    // Notification clicked
     OneSignal.Notifications.addClickListener((event) {
       print('Notification clicked: ${event.notification.body}');
       print('Additional data: ${event.notification.additionalData}');
       _handleNotificationClick(event.notification);
     });
 
-    // Permission changed
     OneSignal.Notifications.addPermissionObserver((state) {
       print("Notification permission state changed: $state");
     });
@@ -57,10 +45,8 @@ class NotificationService {
 
   void _handleNotificationClick(OSNotification notification) {
     final data = notification.additionalData;
-    if (data != null) {
-      if (data.containsKey('page')) {
-        print('Navigate to: ${data['page']}');
-      }
+    if (data != null && data.containsKey('page')) {
+      print('Navigate to: ${data['page']}');
     }
   }
 

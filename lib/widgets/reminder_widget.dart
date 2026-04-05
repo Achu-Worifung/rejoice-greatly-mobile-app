@@ -12,13 +12,12 @@ class RemindersWidget extends StatefulWidget {
 }
 
 class _RemindersWidgetState extends State<RemindersWidget> {
-  final int absentCount = 47;
   final NotificationService _notificationService = NotificationService();
   final ReminderApiService _apiService = ReminderApiService();
 
-  bool _isSending = false;
   bool _isInitialized = false;
   bool _isLoading = true;
+  bool _isSaving = false;
   String? _errorMessage;
 
   List<ReminderItem> _reminders = [];
@@ -37,15 +36,15 @@ class _RemindersWidgetState extends State<RemindersWidget> {
   Future<void> _initNotifications() async {
     try {
       await _notificationService.initialize();
-      if (mounted) setState(() => _isInitialized = true);
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
     } catch (e) {
       debugPrint('Error initializing notifications: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to initialize notifications: $e'),
-            backgroundColor: Colors.red,
-          ),
+        _showSnackBar(
+          'Failed to initialize notifications: $e',
+          Colors.red,
         );
       }
     }
@@ -84,73 +83,114 @@ class _RemindersWidgetState extends State<RemindersWidget> {
     }
   }
 
-  void _openReminderSheet({ReminderItem? existing}) async {
+  Future<void> _openReminderSheet({ReminderItem? existing}) async {
     final result = await showModalBottomSheet<ReminderItem>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ReminderEditorSheet(existing: existing, apiService: _apiService),
+      builder: (context) => _ReminderEditorSheet(existing: existing),
     );
 
     if (result == null) return;
 
+    await _saveReminder(result, existing: existing);
+  }
+
+  Future<void> _saveReminder(
+    ReminderItem reminder, {
+    ReminderItem? existing,
+  }) async {
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+
     try {
       ReminderItem saved;
+
       if (existing != null && existing.id != null) {
         saved = await _apiService.updateReminder(
-          result.copyWith(id: existing.id),
+          reminder.copyWith(id: existing.id),
         );
-        setState(() {
-          final idx = _reminders.indexWhere((r) => r.id == existing.id);
-          if (idx != -1) _reminders[idx] = saved;
-        });
-        _showSnackBar('Reminder updated successfully', Colors.green);
       } else {
-        saved = await _apiService.createReminder(result);
-        setState(() => _reminders.add(saved));
-        _showSnackBar('Reminder created successfully', Colors.green);
+        saved = await _apiService.createReminder(reminder);
       }
+
+      if (!mounted) return;
+
+      setState(() {
+        final idx = _reminders.indexWhere((r) => r.id == saved.id);
+        if (idx == -1) {
+          _reminders.add(saved);
+        } else {
+          _reminders[idx] = saved;
+        }
+      });
+
+      _showSnackBar(
+        existing != null
+            ? 'Reminder updated successfully'
+            : 'Reminder created successfully',
+        Colors.green,
+      );
     } on ApiException catch (e) {
       _showSnackBar('Error: ${e.message}', Colors.red);
     } catch (e) {
       _showSnackBar('Unexpected error: $e', Colors.red);
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
-  Future<void> _deleteReminder(String id) async {
-    final reminderIndex = _reminders.indexWhere((r) => r.id == id);
+  Future<void> _deleteReminder(ReminderItem reminder) async {
+    if (reminder.id == null) return;
+
+    final reminderIndex = _reminders.indexWhere((r) => r.id == reminder.id);
     if (reminderIndex == -1) return;
+
     final removed = _reminders[reminderIndex];
     setState(() => _reminders.removeAt(reminderIndex));
 
     try {
-      final success = await _apiService.deleteReminder(id);
-      if (success) {
-        _showSnackBar('Reminder deleted', Colors.orange);
-      } else {
+      final success = await _apiService.deleteReminder(reminder.id!);
+
+      if (!success) {
         setState(() => _reminders.insert(reminderIndex, removed));
         _showSnackBar('Failed to delete reminder', Colors.red);
+        return;
       }
+
+      _showSnackBar('Reminder deleted', Colors.orange);
     } on ApiException catch (e) {
       setState(() => _reminders.insert(reminderIndex, removed));
       _showSnackBar('Error: ${e.message}', Colors.red);
+    } catch (e) {
+      setState(() => _reminders.insert(reminderIndex, removed));
+      _showSnackBar('Unexpected error: $e', Colors.red);
     }
   }
 
   Future<void> _toggleReminderActive(ReminderItem reminder, bool value) async {
     final oldValue = reminder.isActive;
     setState(() => reminder.isActive = value);
+
     try {
       if (reminder.id != null) {
         final updated = await _apiService.toggleActive(reminder.id!, value);
         setState(() {
           final idx = _reminders.indexWhere((r) => r.id == reminder.id);
-          if (idx != -1) _reminders[idx] = updated;
+          if (idx != -1) {
+            _reminders[idx] = updated;
+          }
         });
       }
     } on ApiException catch (e) {
       setState(() => reminder.isActive = oldValue);
       _showSnackBar('Error: ${e.message}', Colors.red);
+    } catch (e) {
+      setState(() => reminder.isActive = oldValue);
+      _showSnackBar('Unexpected error: $e', Colors.red);
     }
   }
 
@@ -189,120 +229,172 @@ class _RemindersWidgetState extends State<RemindersWidget> {
             tooltip: 'Refresh',
           ),
           IconButton(
-            icon: const Icon(Icons.add, color: Color(0xFF438FFC), size: 28),
-            onPressed: () => _openReminderSheet(),
+            icon: const Icon(
+              Icons.add,
+              color: Color(0xFF438FFC),
+              size: 28,
+            ),
+            onPressed: _isSaving ? null : () => _openReminderSheet(),
             tooltip: 'New reminder',
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (!_isInitialized)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.orange[50],
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orange[200]!),
-                ),
-                child: const Row(
-                  children: [
-                    SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      'Initializing notifications...',
-                      style: TextStyle(color: Colors.orange, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            if (_errorMessage != null)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.red[200]!),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: Colors.red, size: 18),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style:
-                            const TextStyle(color: Colors.red, fontSize: 13),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, size: 18),
-                      onPressed: _fetchReminders,
-                      color: Colors.red,
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Reminders',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                Text(
-                  '$activeCount active',
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                ),
-              ],
-            ),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _reminders.isEmpty
-                      ? _EmptyState(onAdd: () => _openReminderSheet())
-                      : RefreshIndicator(
-                          onRefresh: _fetchReminders,
-                          child: ListView.separated(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: _reminders.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, i) {
-                              final r = _reminders[i];
-                              return _ReminderCard(
-                                reminder: r,
-                                onTap: () =>
-                                    _openReminderSheet(existing: r),
-                                onToggle: (val) =>
-                                    _toggleReminderActive(r, val),
-                                onDelete: () => _deleteReminder(r.id!),
-                              );
-                            },
+                if (!_isInitialized)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange[50],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.orange[200]!),
+                    ),
+                    child: const Row(
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Initializing notifications...',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 13,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+
+                if (_errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.refresh, size: 18),
+                          onPressed: _fetchReminders,
+                          color: Colors.red,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                const SizedBox(height: 20),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Reminders',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '$activeCount active',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _reminders.isEmpty
+                          ? _EmptyState(onAdd: () => _openReminderSheet())
+                          : RefreshIndicator(
+                              onRefresh: _fetchReminders,
+                              child: ListView.separated(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                itemCount: _reminders.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 10),
+                                itemBuilder: (context, i) {
+                                  final r = _reminders[i];
+                                  return _ReminderCard(
+                                    reminder: r,
+                                    onTap: () => _openReminderSheet(existing: r),
+                                    onToggle: (val) =>
+                                        _toggleReminderActive(r, val),
+                                    onDelete: () => _deleteReminder(r),
+                                  );
+                                },
+                              ),
+                            ),
+                ),
+
+                const SizedBox(height: 16),
+              ],
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          ),
+
+          if (_isSaving)
+            Container(
+              color: Colors.black.withOpacity(0.08),
+              child: const Center(
+                child: Card(
+                  elevation: 0,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Saving reminder...'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
-
-// ── Reminder Card ─────────────────────────────────────────────────────────────
 
 class _ReminderCard extends StatelessWidget {
   final ReminderItem reminder;
@@ -377,7 +469,8 @@ class _ReminderCard extends StatelessWidget {
               builder: (context) => AlertDialog(
                 title: const Text('Delete Reminder'),
                 content: const Text(
-                    'Are you sure you want to delete this reminder?'),
+                  'Are you sure you want to delete this reminder?',
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
@@ -385,8 +478,9 @@ class _ReminderCard extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(true),
-                    style:
-                        TextButton.styleFrom(foregroundColor: Colors.red),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                    ),
                     child: const Text('Delete'),
                   ),
                 ],
@@ -433,8 +527,11 @@ class _ReminderCard extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 4),
                             child: Row(
                               children: [
-                                Icon(Icons.schedule,
-                                    size: 12, color: Colors.green[600]),
+                                Icon(
+                                  Icons.schedule,
+                                  size: 12,
+                                  color: Colors.green[600],
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Scheduled',
@@ -529,8 +626,6 @@ class _MetaChip extends StatelessWidget {
   }
 }
 
-// ── Empty State ──
-
 class _EmptyState extends StatelessWidget {
   final VoidCallback onAdd;
   const _EmptyState({required this.onAdd});
@@ -562,13 +657,10 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Reminder Editor Bottom Sheet ──────────────────────────────────────────────
-
 class _ReminderEditorSheet extends StatefulWidget {
   final ReminderItem? existing;
-  final ReminderApiService apiService;
 
-  const _ReminderEditorSheet({this.existing, required this.apiService});
+  const _ReminderEditorSheet({this.existing});
 
   @override
   State<_ReminderEditorSheet> createState() => _ReminderEditorSheetState();
@@ -597,13 +689,16 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
   void initState() {
     super.initState();
     final e = widget.existing;
+
     _subjectCtrl = TextEditingController(
       text: e?.subject ?? 'We Missed You at Church This Sunday',
     );
+
     _messageCtrl = TextEditingController(
       text: e?.message ??
           'Hello,\n\nWe noticed you were absent at church this Sunday.\nWe hope to see you at the next gathering.\n',
     );
+
     _type = e?.type ?? NotificationType.both;
     _sendTo = e?.sendTo ?? SendTo.absent;
 
@@ -642,7 +737,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -687,7 +781,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                 ],
               ),
             ),
-            // Picker
             SizedBox(
               height: 260,
               child: CupertinoDatePicker(
@@ -722,6 +815,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
 
     final weekdays = {1, 2, 3, 4, 5};
     final weekend = {6, 7};
+
     if (_selectedDays.containsAll(weekdays) && _selectedDays.length == 5) {
       return 'Weekdays';
     }
@@ -734,59 +828,66 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
     return sorted.map((d) => abbr[d]).join(', ');
   }
 
-  void _save() {
-    if (_subjectCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a subject'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (_messageCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a message'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (!_timeSelected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a send time'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final result = ReminderItem(
-      id: widget.existing?.id,
-      subject: _subjectCtrl.text.trim(),
-      message: _messageCtrl.text.trim(),
-      type: _type,
-      scheduledAt: _selectedTime,
-      recurring: _selectedDays.isNotEmpty
-          ? RecurringFrequency.custom
-          : RecurringFrequency.none,
-      recurringDays: _selectedDays.toList()..sort(),
-      sendTo: _sendTo,
-      isActive: widget.existing?.isActive ?? true,
-      churchId: widget.existing?.churchId,
+  DateTime _buildScheduledDateTime() {
+    final now = DateTime.now();
+    return DateTime(
+      now.year,
+      now.month,
+      now.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
     );
-
-    //saving to one signal
-
-    //updating or saving the service to our databse
-    widget.existing != null ? widget.apiService.updateReminder(result) : widget.apiService.createReminder(result);
-
-    Navigator.pop(context, result);
   }
+
+void _save() {
+  if (_subjectCtrl.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please enter a subject'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  if (_messageCtrl.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please enter a message'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  if (!_timeSelected) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please select a send time'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    return;
+  }
+
+  final result = ReminderItem(
+    id: widget.existing?.id,
+    subject: _subjectCtrl.text.trim(),
+    message: _messageCtrl.text.trim(),
+    type: _type,
+    scheduledAt: _buildScheduledDateTime(),
+    recurring: _selectedDays.isNotEmpty
+        ? RecurringFrequency.custom
+        : RecurringFrequency.none,
+    recurringDays: _selectedDays.toList()..sort(),
+    sendTo: _sendTo,
+    isActive: widget.existing?.isActive ?? true,
+    churchId: widget.existing?.churchId,
+    // Backend manages oneSignalNotificationId, so we don't set it here
+  );
+
+  Navigator.pop(context, result);
+}
 
   @override
   Widget build(BuildContext context) {
@@ -807,7 +908,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Handle
             Center(
               child: Container(
                 width: 40,
@@ -820,15 +920,12 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Title
             Text(
               isEditing ? 'Edit Reminder' : 'New Reminder',
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
 
-            // ── Send via ──
             const _SectionLabel(text: 'Send via'),
             const SizedBox(height: 8),
             Row(
@@ -844,6 +941,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                     : t == NotificationType.push
                         ? Icons.notifications_outlined
                         : Icons.send;
+
                 return Expanded(
                   child: GestureDetector(
                     onTap: () => setState(() => _type = t),
@@ -867,11 +965,13 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                       ),
                       child: Column(
                         children: [
-                          Icon(icon,
-                              size: 20,
-                              color: selected
-                                  ? const Color(0xFF438FFC)
-                                  : Colors.grey),
+                          Icon(
+                            icon,
+                            size: 20,
+                            color: selected
+                                ? const Color(0xFF438FFC)
+                                : Colors.grey,
+                          ),
                           const SizedBox(height: 4),
                           Text(
                             label,
@@ -892,7 +992,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
             ),
             const SizedBox(height: 24),
 
-            // ── Send to ──
             const _SectionLabel(text: 'Send to'),
             const SizedBox(height: 8),
             Container(
@@ -909,6 +1008,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                       : f == SendTo.absent
                           ? 'Absent'
                           : 'Present';
+
                   return Expanded(
                     child: GestureDetector(
                       onTap: () => setState(() => _sendTo = f),
@@ -916,8 +1016,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         decoration: BoxDecoration(
-                          color:
-                              selected ? Colors.white : Colors.transparent,
+                          color: selected ? Colors.white : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
                           boxShadow: selected
                               ? [
@@ -950,7 +1049,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
             ),
             const SizedBox(height: 24),
 
-            // ── Subject ──
             const _SectionLabel(text: 'Subject'),
             const SizedBox(height: 8),
             TextField(
@@ -959,7 +1057,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
             ),
             const SizedBox(height: 20),
 
-            // ── Message ──
             const _SectionLabel(text: 'Message'),
             const SizedBox(height: 8),
             TextField(
@@ -971,7 +1068,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
             ),
             const SizedBox(height: 24),
 
-            // ── Time Picker ──
             const _SectionLabel(text: 'Send Time'),
             const SizedBox(height: 4),
             const Text(
@@ -1036,8 +1132,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                               color: _timeSelected
                                   ? Colors.black87
                                   : Colors.grey,
-                              letterSpacing:
-                                  _timeSelected ? 1.0 : 0,
+                              letterSpacing: _timeSelected ? 1.0 : 0,
                             ),
                           ),
                           if (_timeSelected)
@@ -1062,7 +1157,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
             ),
             const SizedBox(height: 24),
 
-            // ── Recurring Days ──
             const _SectionLabel(text: 'Repeat On'),
             const SizedBox(height: 4),
             Text(
@@ -1115,8 +1209,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: const Color(0xFF438FFC)
-                                    .withOpacity(0.3),
+                                color: const Color(0xFF438FFC).withOpacity(0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -1129,8 +1222,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color:
-                              isSelected ? Colors.white : Colors.grey[600],
+                          color: isSelected ? Colors.white : Colors.grey[600],
                         ),
                       ),
                     ),
@@ -1139,7 +1231,7 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
               }).toList(),
             ),
             const SizedBox(height: 8),
-            // Quick select buttons
+
             Row(
               children: [
                 _QuickSelectChip(
@@ -1192,7 +1284,6 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
 
             const SizedBox(height: 32),
 
-            // ── Save Button ──
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -1240,14 +1331,14 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide:
-            const BorderSide(color: Color(0xFF438FFC), width: 1.5),
+        borderSide: const BorderSide(
+          color: Color(0xFF438FFC),
+          width: 1.5,
+        ),
       ),
     );
   }
 }
-
-// ── Reusable Widgets ──
 
 class _SectionLabel extends StatelessWidget {
   final String text;

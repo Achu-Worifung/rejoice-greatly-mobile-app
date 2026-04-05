@@ -11,10 +11,10 @@ class ReminderItem {
   NotificationType type;
   DateTime? scheduledAt;
   RecurringFrequency recurring;
-  List<int> recurringDays; // 1=Mon, 2=Tue, ..., 7=Sun
+  List<int> recurringDays;
   SendTo sendTo;
   bool isActive;
-  String? oneSignalNotificationId;
+  String? oneSignalNotificationId; // read-only from backend
   String? churchId;
   String? createdBy;
   DateTime? createdAt;
@@ -39,7 +39,7 @@ class ReminderItem {
 
   factory ReminderItem.fromJson(Map<String, dynamic> json) {
     return ReminderItem(
-      id: json['id'],
+      id: json['id']?.toString(),
       subject: json['subject'] ?? '',
       message: json['message'] ?? '',
       type: _parseNotificationType(
@@ -47,7 +47,7 @@ class ReminderItem {
         json['sendEmail'] ?? true,
       ),
       scheduledAt: json['scheduledAt'] != null
-          ? DateTime.parse(json['scheduledAt'])
+          ? DateTime.parse(json['scheduledAt']).toLocal()
           : null,
       recurring: (json['recurringDays'] != null &&
               (json['recurringDays'] as List).isNotEmpty)
@@ -58,14 +58,14 @@ class ReminderItem {
           : [],
       sendTo: _parseSendTo(json['sendTo']),
       isActive: json['isActive'] ?? true,
-      oneSignalNotificationId: json['oneSignalId'],
-      churchId: json['churchId'],
-      createdBy: json['createdBy'],
+      oneSignalNotificationId: json['oneSignalId']?.toString(),
+      churchId: json['churchId']?.toString(),
+      createdBy: json['createdBy']?.toString(),
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.parse(json['createdAt']).toLocal()
           : null,
       updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
+          ? DateTime.parse(json['updatedAt']).toLocal()
           : null,
     );
   }
@@ -75,7 +75,8 @@ class ReminderItem {
       if (id != null) 'id': id,
       'subject': subject,
       'message': message,
-      'sendPush': type == NotificationType.push || type == NotificationType.both,
+      'sendPush':
+          type == NotificationType.push || type == NotificationType.both,
       'sendEmail':
           type == NotificationType.email || type == NotificationType.both,
       'scheduledAt': scheduledAt?.toUtc().toIso8601String(),
@@ -83,8 +84,7 @@ class ReminderItem {
       'recurringDays': recurringDays,
       'sendTo': _sendToToString(sendTo),
       'isActive': isActive,
-      if (oneSignalNotificationId != null)
-        'oneSignalId': oneSignalNotificationId,
+      // Don't send oneSignalNotificationId — backend manages it
       if (churchId != null) 'churchId': churchId,
     };
   }
@@ -97,7 +97,7 @@ class ReminderItem {
   }
 
   static SendTo _parseSendTo(String? value) {
-    switch (value?.toUpperCase()) {
+    switch ((value ?? '').toUpperCase()) {
       case 'ALL':
         return SendTo.all;
       case 'PRESENT':
