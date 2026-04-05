@@ -1,6 +1,6 @@
 enum NotificationType { email, push, both }
 
-enum RecurringFrequency { none, weekly, biweekly, monthly }
+enum RecurringFrequency { none, custom }
 
 enum SendTo { all, absent, present }
 
@@ -11,6 +11,7 @@ class ReminderItem {
   NotificationType type;
   DateTime? scheduledAt;
   RecurringFrequency recurring;
+  List<int> recurringDays; // 1=Mon, 2=Tue, ..., 7=Sun
   SendTo sendTo;
   bool isActive;
   String? oneSignalNotificationId;
@@ -26,6 +27,7 @@ class ReminderItem {
     this.type = NotificationType.both,
     this.scheduledAt,
     this.recurring = RecurringFrequency.none,
+    this.recurringDays = const [],
     this.sendTo = SendTo.absent,
     this.isActive = true,
     this.oneSignalNotificationId,
@@ -35,7 +37,6 @@ class ReminderItem {
     this.updatedAt,
   });
 
-  // ── From Spring backend JSON ──
   factory ReminderItem.fromJson(Map<String, dynamic> json) {
     return ReminderItem(
       id: json['id'],
@@ -48,7 +49,13 @@ class ReminderItem {
       scheduledAt: json['scheduledAt'] != null
           ? DateTime.parse(json['scheduledAt'])
           : null,
-      recurring: _parseRecurring(json['recurring']),
+      recurring: (json['recurringDays'] != null &&
+              (json['recurringDays'] as List).isNotEmpty)
+          ? RecurringFrequency.custom
+          : RecurringFrequency.none,
+      recurringDays: json['recurringDays'] != null
+          ? List<int>.from(json['recurringDays'])
+          : [],
       sendTo: _parseSendTo(json['sendTo']),
       isActive: json['isActive'] ?? true,
       oneSignalNotificationId: json['oneSignalId'],
@@ -63,45 +70,30 @@ class ReminderItem {
     );
   }
 
-  // ── To Spring backend JSON ──
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,
       'subject': subject,
       'message': message,
       'sendPush': type == NotificationType.push || type == NotificationType.both,
-      'sendEmail': type == NotificationType.email || type == NotificationType.both,
+      'sendEmail':
+          type == NotificationType.email || type == NotificationType.both,
       'scheduledAt': scheduledAt?.toUtc().toIso8601String(),
       'timezone': 'UTC',
-      'recurring': _recurringToString(recurring),
+      'recurringDays': recurringDays,
       'sendTo': _sendToToString(sendTo),
       'isActive': isActive,
-      if (oneSignalNotificationId != null) 'oneSignalId': oneSignalNotificationId,
+      if (oneSignalNotificationId != null)
+        'oneSignalId': oneSignalNotificationId,
       if (churchId != null) 'churchId': churchId,
     };
   }
-
-  // ── Parsing helpers ──
 
   static NotificationType _parseNotificationType(bool push, bool email) {
     if (push && email) return NotificationType.both;
     if (push) return NotificationType.push;
     if (email) return NotificationType.email;
     return NotificationType.both;
-  }
-
-  static RecurringFrequency _parseRecurring(String? value) {
-    switch (value?.toUpperCase()) {
-      case 'WEEKLY':
-        return RecurringFrequency.weekly;
-      case 'BIWEEKLY':
-        return RecurringFrequency.biweekly;
-      case 'MONTHLY':
-        return RecurringFrequency.monthly;
-      case 'ONCE':
-      default:
-        return RecurringFrequency.none;
-    }
   }
 
   static SendTo _parseSendTo(String? value) {
@@ -113,19 +105,6 @@ class ReminderItem {
       case 'ABSENT':
       default:
         return SendTo.absent;
-    }
-  }
-
-  static String _recurringToString(RecurringFrequency freq) {
-    switch (freq) {
-      case RecurringFrequency.weekly:
-        return 'WEEKLY';
-      case RecurringFrequency.biweekly:
-        return 'BIWEEKLY';
-      case RecurringFrequency.monthly:
-        return 'MONTHLY';
-      case RecurringFrequency.none:
-        return 'ONCE';
     }
   }
 
@@ -147,6 +126,7 @@ class ReminderItem {
     NotificationType? type,
     DateTime? scheduledAt,
     RecurringFrequency? recurring,
+    List<int>? recurringDays,
     SendTo? sendTo,
     bool? isActive,
     String? oneSignalNotificationId,
@@ -159,6 +139,7 @@ class ReminderItem {
       type: type ?? this.type,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       recurring: recurring ?? this.recurring,
+      recurringDays: recurringDays ?? this.recurringDays,
       sendTo: sendTo ?? this.sendTo,
       isActive: isActive ?? this.isActive,
       oneSignalNotificationId:

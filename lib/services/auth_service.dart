@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 
 class AuthService {
@@ -139,12 +141,12 @@ class AuthService {
   Future<bool> _sendUserToBackend(String provider, String? name) async {
     try {
       String? idToken = await _auth.currentUser?.getIdToken();
-
+      String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
       // Use the name passed in, or fallback to the Firebase display name
       String? get_name = name ?? await _auth.currentUser?.displayName;
 
       final res = await http.post(
-        Uri.parse("http://localhost:8080/auth/firebase"),
+        Uri.parse("http://$ip_addr:8080/auth/firebase"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "provider": provider,

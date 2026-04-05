@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../dataobject/admin-type.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AttendanceWidget extends StatefulWidget {
@@ -62,7 +63,8 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
     setState(() => _isLoading = true);
 
     final prefs = await SharedPreferences.getInstance();
-    final Uri uri = Uri.parse("http://localhost:8080/admin/overview");
+    String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
+    final Uri uri = Uri.parse("http://$ip_addr:8080/admin/overview");
 
     final String dateStr =
         "${_selectedSunday.year}-${_selectedSunday.month.toString().padLeft(2, '0')}-${_selectedSunday.day.toString().padLeft(2, '0')}";

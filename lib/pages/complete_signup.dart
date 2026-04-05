@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
@@ -96,9 +97,12 @@ class _CompleteSignupState extends State<CompleteSignup> {
         return;
       }
 
+
+      String ip_addr = dotenv.env['IP_ADDRESS'] ?? '';
+
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse("http://localhost:8080/profile/picture-upload"),
+        Uri.parse("http://$ip_addr:8080/profile/picture-upload"),
       );
 
       request.fields['firebaseUid'] = user.uid;

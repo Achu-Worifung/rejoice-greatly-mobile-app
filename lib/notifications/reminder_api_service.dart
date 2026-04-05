@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../dataobject/reminder_items.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ReminderApiService {
   // Change this to your actual backend URL
-  static const String _baseUrl = 'http://10.0.2.2:8080/api'; // Android emulator
-  // static const String _baseUrl = 'http://localhost:8080/api'; // iOS simulator / web
+  String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
+  // 'late' allows one variable to depend on another during initialization
+  late final String _baseUrl = "http://$ip_addr:8080/schedule"; //iOS simulator / web
 
   final String? churchId;
   final String? authToken;
@@ -13,18 +15,17 @@ class ReminderApiService {
   ReminderApiService({this.churchId, this.authToken});
 
   Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        if (authToken != null) 'Authorization': 'Bearer $authToken',
-      };
+    'Content-Type': 'application/json',
+    if (authToken != null) 'Authorization': 'Bearer $authToken',
+  };
 
   // ── GET all reminders ──
   Future<List<ReminderItem>> fetchReminders() async {
     try {
-      final uri = churchId != null
-          ? Uri.parse('$_baseUrl/reminders?churchId=$churchId')
-          : Uri.parse('$_baseUrl/reminders');
+      final uri = Uri.parse('$_baseUrl/getschedule');
 
       final response = await http.get(uri, headers: _headers);
+      print("API response body: ${response.body}");
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
