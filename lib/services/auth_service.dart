@@ -40,7 +40,7 @@ class AuthService {
           Navigator.pushReplacementNamed(context, '/dashboard');
         }else 
         {
-          Navigator.pushReplacementNamed(context, '/complete-signup');
+          Navigator.pushReplacementNamed(context, '/user-prep');
         }
       }
       return null;
@@ -60,7 +60,7 @@ class AuthService {
           Navigator.pushReplacementNamed(context, '/dashboard');
         }else 
         {
-          Navigator.pushReplacementNamed(context, '/complete-signup');
+          Navigator.pushReplacementNamed(context, '/user-prep');
         }
       }
       else {

@@ -37,8 +37,11 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
 
   DateTime _mostRecentSunday(DateTime from) {
     final daysBack = from.weekday % 7;
-    return DateTime(from.year, from.month, from.day)
-        .subtract(Duration(days: daysBack == 0 ? 0 : from.weekday));
+    return DateTime(
+      from.year,
+      from.month,
+      from.day,
+    ).subtract(Duration(days: daysBack == 0 ? 0 : from.weekday));
   }
 
   List<DateTime> _getSundays({int count = 12}) {
@@ -53,8 +56,19 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
 
   String _formatSunday(DateTime date) {
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return 'Sunday, ${months[date.month]} ${date.day}, ${date.year}';
   }
@@ -63,9 +77,8 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
     setState(() => _isLoading = true);
 
     final prefs = await SharedPreferences.getInstance();
-    String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
-    print("making sure we are using the correct ip address: $ip_addr");
-    final Uri uri = Uri.parse("http://$ip_addr:8080/admin/overview");
+    String ipAddr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
+    final Uri uri = Uri.parse("http://$ipAddr:8080/admin/overview");
 
     final String dateStr =
         "${_selectedSunday.year}-${_selectedSunday.month.toString().padLeft(2, '0')}-${_selectedSunday.day.toString().padLeft(2, '0')}";
@@ -94,11 +107,9 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
             data['totalMemberDTOs'].map((x) => AdminType.fromJson(x)),
           );
         });
-      } else {
-        print("Server error: ${response.statusCode}");
       }
     } catch (e) {
-      print("Error loading attendance: $e");
+      debugPrint("Error loading attendance: $e");
     } finally {
       setState(() => _isLoading = false);
     }
@@ -137,13 +148,12 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
     final sundays = _getSundays();
     final picked = await showModalBottomSheet<DateTime>(
       context: context,
+      isScrollControlled: true, // Allows sheet to height adjust
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _SundayPickerSheet(
-        sundays: sundays,
-        selected: _selectedSunday,
-      ),
+      builder: (context) =>
+          _SundayPickerSheet(sundays: sundays, selected: _selectedSunday),
     );
     if (picked != null && picked != _selectedSunday) {
       setState(() => _selectedSunday = picked);
@@ -177,7 +187,6 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search bar
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -199,16 +208,15 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
-            // Sunday picker chip
             GestureDetector(
               onTap: _showSundayPicker,
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -216,8 +224,11 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today,
-                        size: 16, color: Colors.grey),
+                    const Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -230,10 +241,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
                 ),
               ),
             ),
-
             const SizedBox(height: 12),
-
-            // Filter tabs
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -248,33 +256,28 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
                 ],
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // Member list
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : members.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No members found',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        )
-                      : ListView.separated(
-                          itemCount: members.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            return _MemberTile(
-                              member: members[index],
-                              showStatus: _selectedFilter == 'All',
-                              onTap: () =>
-                                  _showMemberDrawer(members[index]),
-                            );
-                          },
-                        ),
+                  ? const Center(
+                      child: Text(
+                        'No members found',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: members.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        return _MemberTile(
+                          member: members[index],
+                          showStatus: _selectedFilter == 'All',
+                          onTap: () => _showMemberDrawer(members[index]),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -290,20 +293,15 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFFEAF3FF)
-                : Colors.transparent,
+            color: isSelected ? const Color(0xFFEAF3FF) : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             '$label ($count)',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontWeight:
-                  isSelected ? FontWeight.w600 : FontWeight.normal,
-              color: isSelected
-                  ? const Color(0xFF438FFC)
-                  : Colors.black54,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: isSelected ? const Color(0xFF438FFC) : Colors.black54,
               fontSize: 13,
             ),
           ),
@@ -336,7 +334,6 @@ class _MemberTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            // Avatar
             CircleAvatar(
               radius: 22,
               backgroundImage: member.imgURL != null
@@ -353,7 +350,6 @@ class _MemberTile extends StatelessWidget {
                   : null,
             ),
             const SizedBox(width: 12),
-            // Name
             Expanded(
               child: Text(
                 member.name,
@@ -363,11 +359,12 @@ class _MemberTile extends StatelessWidget {
                 ),
               ),
             ),
-            // Status badge (only on "All" tab)
             if (showStatus)
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isPresent
                       ? const Color(0xFFE6F9F0)
@@ -398,19 +395,16 @@ class _MemberTile extends StatelessWidget {
 
 class _MemberDetailDrawer extends StatelessWidget {
   final AdminType member;
-
   const _MemberDetailDrawer({required this.member});
 
   @override
   Widget build(BuildContext context) {
     final isPresent = member.isPresent;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle
           Container(
             width: 40,
             height: 4,
@@ -420,7 +414,6 @@ class _MemberDetailDrawer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          // Avatar
           CircleAvatar(
             radius: 36,
             backgroundImage: member.imgURL != null
@@ -429,24 +422,22 @@ class _MemberDetailDrawer extends StatelessWidget {
             backgroundColor: Colors.grey[200],
             child: member.imgURL == null
                 ? Text(
-                    member.name.isNotEmpty
-                        ? member.name[0].toUpperCase()
-                        : '?',
+                    member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
                     style: const TextStyle(
-                        fontSize: 28, fontWeight: FontWeight.bold),
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   )
                 : null,
           ),
           const SizedBox(height: 12),
           Text(
             member.name,
-            style: const TextStyle(
-                fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 6),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             decoration: BoxDecoration(
               color: isPresent
                   ? const Color(0xFFE6F9F0)
@@ -467,12 +458,8 @@ class _MemberDetailDrawer extends StatelessWidget {
           const Divider(),
           const SizedBox(height: 12),
           _InfoRow(label: 'Member ID', value: member.id),
-          // Placeholder rows — wire up real fields when available
           const SizedBox(height: 8),
-          _InfoRow(
-            label: 'Check-in method',
-            value: isPresent ? 'NFC' : '—',
-          ),
+          _InfoRow(label: 'Check-in method', value: isPresent ? 'NFC' : '—'),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -482,12 +469,15 @@ class _MemberDetailDrawer extends StatelessWidget {
                 backgroundColor: const Color(0xFF438FFC),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text(
                 'Close',
                 style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w500),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
@@ -500,7 +490,6 @@ class _MemberDetailDrawer extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-
   const _InfoRow({required this.label, required this.value});
 
   @override
@@ -508,11 +497,22 @@ class _InfoRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style: const TextStyle(color: Colors.grey, fontSize: 14)),
-        Text(value,
-            style: const TextStyle(
-                fontWeight: FontWeight.w500, fontSize: 14)),
+        Flexible(
+          flex: 2,
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
+          ),
+        ),
+        Flexible(
+          flex: 3,
+          child: Text(
+            value,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+          ),
+        ),
       ],
     );
   }
@@ -524,13 +524,23 @@ class _SundayPickerSheet extends StatelessWidget {
   final List<DateTime> sundays;
   final DateTime selected;
 
-  const _SundayPickerSheet(
-      {required this.sundays, required this.selected});
+  const _SundayPickerSheet({required this.sundays, required this.selected});
 
   String _format(DateTime d) {
     const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return 'Sunday, ${months[d.month]} ${d.day}, ${d.year}';
   }
@@ -556,33 +566,45 @@ class _SundayPickerSheet extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             'Select a Sunday',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
-          ...sundays.map((sunday) {
-            final isSelected = sunday == selected;
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.calendar_today,
-                color: isSelected ? const Color(0xFF438FFC) : Colors.grey,
-                size: 20,
-              ),
-              title: Text(
-                _format(sunday),
-                style: TextStyle(
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
-                  color:
-                      isSelected ? const Color(0xFF438FFC) : null,
-                ),
-              ),
-              trailing: isSelected
-                  ? const Icon(Icons.check, color: Color(0xFF438FFC))
-                  : null,
-              onTap: () => Navigator.pop(context, sunday),
-            );
-          }),
+          const SizedBox(height: 8),
+
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.4,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              padding: EdgeInsets.zero,
+              children: sundays.map((sunday) {
+                final isSelected = sunday == selected;
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    Icons.calendar_today,
+                    color: isSelected ? const Color(0xFF438FFC) : Colors.grey,
+                    size: 20,
+                  ),
+                  title: Text(
+                    _format(sunday),
+                    style: TextStyle(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isSelected
+                          ? const Color(0xFF438FFC)
+                          : Colors.black87,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check, color: Color(0xFF438FFC))
+                      : null,
+                  onTap: () => Navigator.pop(context, sunday),
+                );
+              }).toList(),
+            ),
+          ),
         ],
       ),
     );

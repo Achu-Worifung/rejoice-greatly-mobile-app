@@ -109,7 +109,9 @@ class ReminderNotificationService {
     return ids;
   }
 
-  Future<void> cancelScheduledNotifications(List<String> notificationIds) async {
+  Future<void> cancelScheduledNotifications(
+    List<String> notificationIds,
+  ) async {
     for (final id in notificationIds) {
       await cancelScheduledNotification(id);
     }
@@ -119,9 +121,7 @@ class ReminderNotificationService {
     try {
       final response = await http.delete(
         Uri.parse('$_oneSignalApiUrl/$notificationId?app_id=$_appId'),
-        headers: {
-          'Authorization': 'Basic $_restApiKey',
-        },
+        headers: {'Authorization': 'Basic $_restApiKey'},
       );
 
       print('Cancel response for $notificationId: ${response.statusCode}');
@@ -139,17 +139,16 @@ class ReminderNotificationService {
     required String sendTo,
     List<String>? userIds,
   }) async {
+    print("Local scheduled time: $scheduledAt");
+    print("UTC scheduled time: ${scheduledAt.toUtc()}");
     try {
       final payload = <String, dynamic>{
         'app_id': _appId,
         'target_channel': 'push',
         'headings': {'en': subject},
         'contents': {'en': message},
-        'send_after': scheduledAt.toUtc().toIso8601String(),
-        'data': {
-          'type': 'reminder',
-          'sendTo': sendTo,
-        },
+        'send_after': scheduledAt.toUtc().toIso8601String().replaceAll('T', ' ').replaceAll('Z', ' GMT'),
+        'data': {'type': 'reminder', 'sendTo': sendTo},
       };
 
       _applyAudienceTargeting(payload, sendTo: sendTo, userIds: userIds);
@@ -163,7 +162,9 @@ class ReminderNotificationService {
         body: jsonEncode(payload),
       );
 
-      print('Scheduled push response: ${response.statusCode} - ${response.body}');
+      print(
+        'Scheduled push response: ${response.statusCode} - ${response.body}',
+      );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -191,10 +192,7 @@ class ReminderNotificationService {
         'email_subject': subject,
         'email_body': _formatEmailBody(subject, message),
         'send_after': scheduledAt.toUtc().toIso8601String(),
-        'data': {
-          'type': 'reminder',
-          'sendTo': sendTo,
-        },
+        'data': {'type': 'reminder', 'sendTo': sendTo},
       };
 
       _applyAudienceTargeting(payload, sendTo: sendTo, userIds: userIds);
@@ -208,7 +206,9 @@ class ReminderNotificationService {
         body: jsonEncode(payload),
       );
 
-      print('Scheduled email response: ${response.statusCode} - ${response.body}');
+      print(
+        'Scheduled email response: ${response.statusCode} - ${response.body}',
+      );
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -234,10 +234,7 @@ class ReminderNotificationService {
         'target_channel': 'push',
         'headings': {'en': subject},
         'contents': {'en': message},
-        'data': {
-          'type': 'reminder',
-          'sendTo': sendTo,
-        },
+        'data': {'type': 'reminder', 'sendTo': sendTo},
       };
 
       _applyAudienceTargeting(payload, sendTo: sendTo, userIds: userIds);
@@ -271,10 +268,7 @@ class ReminderNotificationService {
         'target_channel': 'email',
         'email_subject': subject,
         'email_body': _formatEmailBody(subject, message),
-        'data': {
-          'type': 'reminder',
-          'sendTo': sendTo,
-        },
+        'data': {'type': 'reminder', 'sendTo': sendTo},
       };
 
       _applyAudienceTargeting(payload, sendTo: sendTo, userIds: userIds);
@@ -323,7 +317,7 @@ class ReminderNotificationService {
             'key': 'attendance_status',
             'relation': '=',
             'value': 'absent',
-          }
+          },
         ];
       case 'present':
         return [
@@ -332,7 +326,7 @@ class ReminderNotificationService {
             'key': 'attendance_status',
             'relation': '=',
             'value': 'present',
-          }
+          },
         ];
       case 'all':
       default:
@@ -355,10 +349,7 @@ class ReminderNotificationService {
     );
 
     for (final weekday in uniqueDays) {
-      DateTime occurrence = _nextOccurrenceForWeekday(
-        weekday,
-        scheduledAt,
-      );
+      DateTime occurrence = _nextOccurrenceForWeekday(weekday, scheduledAt);
 
       while (!occurrence.isAfter(endDate)) {
         results.add(occurrence);
@@ -372,13 +363,14 @@ class ReminderNotificationService {
 
   DateTime _nextOccurrenceForTime(DateTime timeOnly) {
     final now = DateTime.now();
+
     DateTime candidate = DateTime(
       now.year,
       now.month,
       now.day,
       timeOnly.hour,
       timeOnly.minute,
-    );
+    ).toLocal(); // ADD THIS
 
     if (!candidate.isAfter(now)) {
       candidate = candidate.add(const Duration(days: 1));
@@ -396,7 +388,7 @@ class ReminderNotificationService {
       now.day,
       timeOnly.hour,
       timeOnly.minute,
-    );
+    ).toLocal(); // ADD THIS
 
     int diff = weekday - candidate.weekday;
     if (diff < 0) diff += 7;

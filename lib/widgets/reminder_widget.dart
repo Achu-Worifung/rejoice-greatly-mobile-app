@@ -691,12 +691,12 @@ class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
     final e = widget.existing;
 
     _subjectCtrl = TextEditingController(
-      text: e?.subject ?? 'We Missed You at Church This Sunday',
+      text: e?.subject ?? '',
     );
 
     _messageCtrl = TextEditingController(
       text: e?.message ??
-          'Hello,\n\nWe noticed you were absent at church this Sunday.\nWe hope to see you at the next gathering.\n',
+          '',
     );
 
     _type = e?.type ?? NotificationType.both;

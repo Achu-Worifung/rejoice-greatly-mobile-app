@@ -55,7 +55,7 @@ class _DashboardState extends State<Dashboard> {
               onPressed: () async {
                 final authService = AuthService();
                 await authService.logout();
-                Navigator.pushNamed(context, '/login');
+                Navigator.pushNamed(context, '/admin');
               },
                     ),
           )],

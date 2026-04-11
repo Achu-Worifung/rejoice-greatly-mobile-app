@@ -43,7 +43,7 @@ class LoginPage extends StatelessWidget {
           children: [
             const SizedBox(height: 125),
             const Text(
-              "WELCOME TO REJOICE GREATLY PHX",
+              "WELCOME TO \nREJOICE GREATLY",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,
