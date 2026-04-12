@@ -22,6 +22,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   bool _isLoading = false;
   String? _error;
   bool _isCameraReady = false;
+  bool _canuseImg = true;
 
   @override
   void initState() {
@@ -115,6 +116,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       );
 
       final response = await request.send();
+      // print(response.statusCode);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final prefs = await SharedPreferences.getInstance();
@@ -128,7 +130,11 @@ class _CompleteSignupState extends State<CompleteSignup> {
             isAdmin ? '/admin' : '/dashboard',
           );
         }
-      } else {
+      } else if (response.statusCode == 400)
+      {
+        setState(() => _canuseImg = false);
+        setState(() => _error = "Facial Image not clear enough.");
+      }else {
         setState(() => _error = "Upload failed: ${response.statusCode}");
       }
     } catch (e) {
@@ -179,7 +185,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleButton(Icons.arrow_back, () => Navigator.pop(context)),
+                    _circleButton(Icons.arrow_back, () => Navigator.pop(context), false),
                     const Text(
                       "TAKE A SELFIE",
                       style: TextStyle(
@@ -189,7 +195,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                         letterSpacing: 1,
                       ),
                     ),
-                    _circleButton(Icons.flip_camera_ios, _flipCamera),
+                    _circleButton(Icons.flip_camera_ios, _flipCamera, false),
                   ],
                 ),
                 if (_error != null) ...[
@@ -240,7 +246,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleButton(Icons.close, _retake),
+                    _circleButton(Icons.close, _retake, !_canuseImg),
                     const Text(
                       "USE THIS PHOTO?",
                       style: TextStyle(
@@ -332,10 +338,11 @@ class _CompleteSignupState extends State<CompleteSignup> {
     );
   }
 
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
+  Widget _circleButton(IconData icon, VoidCallback onTap, bool disabled) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: disabled ? null : onTap,
       child: Container(
+
         width: 44,
         height: 44,
         decoration: BoxDecoration(

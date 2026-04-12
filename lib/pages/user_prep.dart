@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-
+import 'package:auto_size_text/auto_size_text.dart';
 
 class UserPrepPage extends StatefulWidget {
   const UserPrepPage({super.key});
@@ -70,11 +70,11 @@ class _UserPrepPageState extends State<UserPrepPage> {
                 ),
               ),
 
-              const SizedBox(height: 36),
+              const SizedBox(height: 25),
 
               CarouselSlider(
                 options: CarouselOptions(
-                  height: 260,
+                  height: 280,
                   // This is the equivalent to onScrollIndexChanged
                   onPageChanged: (index, reason) {
                     setState(() {
@@ -82,7 +82,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     });
                   },
                   viewportFraction:
-                      0.8, // Controls how much of the side items are visible
+                      0.82, // Controls how much of the side items are visible
                   enlargeCenterPage: true, // Optional: makes the middle one pop
                 ),
                 items: _slides.map((slide) => _buildSlide(slide)).toList(),
@@ -146,7 +146,6 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     elevation: 0,
                   ),
                   child: const Text(
-                    
                     "I Understand, Continue",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
@@ -194,9 +193,13 @@ class _UserPrepPageState extends State<UserPrepPage> {
               color: const Color(0xFF00174B),
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
+          const SizedBox(height: 10),
+          AutoSizeText(
             slide['title'] as String,
+            textAlign: TextAlign.center,
+            minFontSize: 18,
+            maxFontSize: 30,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -205,15 +208,15 @@ class _UserPrepPageState extends State<UserPrepPage> {
           ),
           const SizedBox(height: 10),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: AutoSizeText(
               slide['description'] as String,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                height: 1.5,
-              ),
+              style: TextStyle(fontSize: 30),
+              minFontSize: 11,
+              maxFontSize: 14,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
