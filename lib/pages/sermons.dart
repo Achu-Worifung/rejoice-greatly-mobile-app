@@ -37,7 +37,18 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         backgroundColor: Colors.white,
         elevation: 0,
         title: Column(
+
           children: [
+            Text(
+              "SERMONS",
+              style: TextStyle(
+                color: gold,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 12),
             // 1. Search Bar
             Container(
               height: 45,

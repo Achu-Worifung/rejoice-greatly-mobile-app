@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/user_dashboard.dart'; 
 import './sermons.dart';
+import './events_page.dart';
+import './me_page.dart';
 void main() => runApp(const Dashboard());
 
 class Dashboard extends StatelessWidget {
@@ -33,7 +35,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   static const List<Widget> _widgetOptions = <Widget>[
     ChurchDashboard(), // Index 0
     SermonsPage(data: {}), 
-    Center(child: Text('Profile Page')), // Index 2
+    EventsPage(), // Index 2
+    MePage(), // Index 3
   ];
 
   void _onItemTapped(int index) {
@@ -95,7 +98,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           items: [
             _buildNavItem('assets/icons/dashboard.svg', 'Dashboard', 0),
             _buildNavItem('assets/icons/microphone.svg', 'Sermons', 1),
-            _buildNavItem('assets/icons/users.svg', 'Me', 2),
+            _buildNavItem('assets/icons/announcement.svg', 'Events', 2),
+            _buildNavItem('assets/icons/users.svg', 'Me', 3),
           ],
         ),
       ),
