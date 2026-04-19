@@ -87,7 +87,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ),
           BottomNavigationBarItem(
             icon: SvgPicture.asset(
-              'assets/icons/User.svg',
+              'assets/icons/users.svg',
               height: 24.0,
               width: 24.0,
               colorFilter: ColorFilter.mode(
