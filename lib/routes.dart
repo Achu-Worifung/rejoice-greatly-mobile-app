@@ -4,9 +4,9 @@ import 'pages/email_login_page.dart';
 import 'pages/email_signup_page.dart';
 import 'pages/privacy_page.dart';
 import 'pages/terms_page.dart';
-import 'pages/admin_page.dart';
-import 'pages/complete_signup.dart';
 import 'pages/dashboard.dart';
+import 'pages/complete_signup.dart';
+import 'pages/dashboard.dart' as dash;
 import 'pages/user_prep.dart';
 
 class AppRoutes {
@@ -21,12 +21,10 @@ class AppRoutes {
   static const String userPrep = '/user-prep';
   static const String home = '/';
 
-
   static Map<String, WidgetBuilder> getRoutes() {
     return {
-      home: (context) => const UserPrepPage(),
-      login: (context) => const AdminDashboard(),
-      // login: (context) => const LoginPage(),
+      home: (context) => const Dashboard(),
+      login: (context) => const LoginPage(),
       emailLogin: (context) => const EmailLoginPage(),
       emailSignup: (context) => const EmailSignupPage(),
       privacy: (context) => const PrivacyPage(),

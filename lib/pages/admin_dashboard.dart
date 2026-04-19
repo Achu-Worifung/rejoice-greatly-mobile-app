@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/overview_widget.dart';
-void main() => runApp(const Dashboard());
-
-class Dashboard extends StatelessWidget {
-  const Dashboard({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(home: AdminDashboard());
-  }
-}
+import '../widgets/attendance_widget.dart';
+import '../widgets/reminder_widget.dart';
+// import '../widgets/report_widget.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -27,10 +20,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     fontWeight: FontWeight.bold,
   );
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    // OverviewWidget(),
-    // AttendanceWidget(),
-    // RemindersWidget(),
+  // If your widgets are not const, remove `const` from the list.
+  final List<Widget> _widgetOptions = const <Widget>[
+    OverviewWidget(),
+    AttendanceWidget(),
+    RemindersWidget(),
     // ReportsWidget(),
   ];
 
@@ -50,9 +44,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final Color unselectedColor = Colors.black;
 
     return Scaffold(
-      body: _widgetOptions.isNotEmpty
-    ? Center(child: _widgetOptions[_selectedIndex])
-    : const Center(child: Text('No pages available')),
+      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: selectedColor,
@@ -63,7 +55,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         items: [
           BottomNavigationBarItem(
             icon: SvgPicture.asset(
-              'assets/icons/dashboard.svg',
+              'assets/icons/home.svg',
               height: 24.0,
               width: 24.0,
               colorFilter: ColorFilter.mode(
@@ -71,11 +63,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 BlendMode.srcIn,
               ),
             ),
-            label: 'Dashboard',
+            label: 'Overview',
           ),
           BottomNavigationBarItem(
             icon: SvgPicture.asset(
-              'assets/icons/microphone.svg',
+              'assets/icons/attendance.svg',
               height: 24.0,
               width: 24.0,
               colorFilter: ColorFilter.mode(
@@ -83,11 +75,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 BlendMode.srcIn,
               ),
             ),
-            label: 'Sermons',
+            label: 'Attendance',
           ),
           BottomNavigationBarItem(
             icon: SvgPicture.asset(
-              'assets/icons/User.svg',
+              'assets/icons/reminders.svg',
               height: 24.0,
               width: 24.0,
               colorFilter: ColorFilter.mode(
@@ -95,9 +87,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 BlendMode.srcIn,
               ),
             ),
-            label: 'Me',
+            label: 'Reminders',
           ),
-          
+          // BottomNavigationBarItem(
+          //   icon: SvgPicture.asset(
+          //     'assets/icons/reports.svg',
+          //     height: 24.0,
+          //     width: 24.0,
+          //     colorFilter: ColorFilter.mode(
+          //       _selectedIndex == 3 ? selectedColor : unselectedColor,
+          //       BlendMode.srcIn,
+          //     ),
+          //   ),
+          //   label: 'Reports',
+          // ),
         ],
       ),
     );
