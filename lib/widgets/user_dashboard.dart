@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../components/show_streak.dart';
-
+import '../components/upcoming_events_section.dart';
 
 void main() => runApp(const ChurchDashboard());
 
@@ -13,7 +13,7 @@ class ChurchDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, 
+      debugShowCheckedModeBanner: false,
       title: 'Church App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -49,6 +49,7 @@ class _DashboardPageState extends State<DashboardPage> {
     // Initialize once to prevent flickering on rebuilds
     _greetingFuture = _getGreeting();
   }
+
   Future<String> _getGreeting() async {
     final pref = await SharedPreferences.getInstance();
     final name = pref.getString('name') ?? 'Friend'; // Default value
@@ -69,7 +70,8 @@ class _DashboardPageState extends State<DashboardPage> {
   final Map<String, dynamic> dashboardData = {
     'verseOfTheWeek': {
       'reference': 'Psalm 23:1-3',
-      'text': 'The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.',
+      'text':
+          'The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.',
       'version': 'English Standard Version',
     },
     'attendanceStreak': {
@@ -86,35 +88,34 @@ class _DashboardPageState extends State<DashboardPage> {
       'date': 'November 15, 2023',
       'duration': '45 minutes',
       'thumbnailColor': 0xFFD27E09,
+      // Add this line for the web image
+      'imageUrl':
+          'https://images.unsplash.com/photo-1515021212813-f14da1862391?auto=format&fit=crop&q=80&w=200',
     },
     'upcomingEvents': [
       {
         'title': 'Wednesday Bible Study',
         'date': 'Tomorrow, 7:00 PM',
         'location': 'Main Sanctuary',
-        'icon': Icons.menu_book,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=400',
         'color': 0xFF4CAF50,
       },
       {
         'title': 'Youth Worship Night',
         'date': 'Friday, 6:30 PM',
         'location': 'Youth Hall',
-        'icon': Icons.music_note,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400',
         'color': 0xFF9C27B0,
       },
       {
         'title': 'Community Outreach',
         'date': 'Saturday, 9:00 AM',
         'location': 'Downtown Center',
-        'icon': Icons.volunteer_activism,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1469571480357-0a8a01aa197f?w=400',
         'color': 0xFF2196F3,
-      },
-      {
-        'title': 'Sunday Service',
-        'date': 'Sunday, 10:30 AM',
-        'location': 'Main Sanctuary',
-        'icon': Icons.church,
-        'color': 0xFFD27E09,
       },
     ],
     'churchInfo': {
@@ -130,23 +131,23 @@ class _DashboardPageState extends State<DashboardPage> {
     'lastAttendance': 'Last attended: Sunday, Nov 12',
   };
 
-//for the attendace sheet
-void _showAttendanceStats() {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent, // Required for our custom rounded corners
-    isScrollControlled: true,
-    builder: (context) => AttendanceSheet(data: dashboardData),
-  );
-}
-  
+  //for the attendace sheet
+  void _showAttendanceStats() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor:
+          Colors.transparent, // Required for our custom rounded corners
+      isScrollControlled: true,
+      builder: (context) => AttendanceSheet(data: dashboardData),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 50,
-        centerTitle: false, 
+        centerTitle: false,
         title: FutureBuilder<String>(
           future: _greetingFuture,
           builder: (context, snapshot) {
@@ -181,25 +182,28 @@ void _showAttendanceStats() {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              
               // Main Content
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
                 child: Column(
                   children: [
                     // Verse of the week Component
                     verseOfTheWeekCard(data: dashboardData['verseOfTheWeek']),
                     const SizedBox(height: 20),
 
-                    
                     // Latest Sermon Component
                     LatestSermonCard(data: dashboardData['latestSermon']),
                     const SizedBox(height: 20),
-                    
+
                     // Upcoming Events Component
-                    UpcomingEventsSection(events: dashboardData['upcomingEvents']),
+                    UpcomingEventsSection(
+                      events: dashboardData['upcomingEvents'],
+                    ),
                     const SizedBox(height: 20),
-                    
+
                     // Worship With Us Component
                     WorshipWithUsCard(data: dashboardData['churchInfo']),
                     const SizedBox(height: 40),
@@ -212,8 +216,6 @@ void _showAttendanceStats() {
       ),
     );
   }
-
-
 
   Widget _buildQuickStat(String label, String value, IconData icon) {
     return Column(
@@ -238,10 +240,7 @@ void _showAttendanceStats() {
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withOpacity(0.8),
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8)),
         ),
       ],
     );
@@ -251,7 +250,7 @@ void _showAttendanceStats() {
 // Child Component 1: Verse of the Day
 class verseOfTheWeekCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  
+
   const verseOfTheWeekCard({super.key, required this.data});
 
   @override
@@ -261,7 +260,7 @@ class verseOfTheWeekCard extends StatelessWidget {
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -277,27 +276,12 @@ class verseOfTheWeekCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'VERSE OF THE DAY',
+                'VERSE OF THE WEEK',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFFD27E09),
                   letterSpacing: 1.5,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD27E09).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'DAILY',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD27E09),
-                  ),
                 ),
               ),
             ],
@@ -326,10 +310,7 @@ class verseOfTheWeekCard extends StatelessWidget {
               ),
               Text(
                 data['version'],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),
@@ -339,340 +320,125 @@ class verseOfTheWeekCard extends StatelessWidget {
   }
 }
 
-// Child Component 2: Attendance Streak
-
 // Child Component 3: Latest Sermon
 class LatestSermonCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  
+
   const LatestSermonCard({super.key, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Thumbnail Section
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              color: Color(data['thumbnailColor']).withOpacity(0.2),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(25),
-                topRight: Radius.circular(25),
-              ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD27E09),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFD27E09).withOpacity(0.4),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 40,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  const Text(
-                    'Tap to listen',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFFD27E09),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Content Section
-          Padding(
-            padding: const EdgeInsets.all(25),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'LATEST SERMON',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFD27E09),
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  data['title'],
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person_outline,
-                      color: Colors.grey[600],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      data['speaker'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      Icons.access_time,
-                      color: Colors.grey[600],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      data['duration'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      color: Colors.grey[600],
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      data['date'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Play sermon functionality
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD27E09),
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.play_arrow, size: 24),
-                        SizedBox(width: 10),
-                        Text(
-                          'PLAY SERMON',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Child Component 4: Upcoming Events
-class UpcomingEventsSection extends StatelessWidget {
-  final List<dynamic> events;
-  
-  const UpcomingEventsSection({super.key, required this.events});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 1. Title OUTSIDE and ABOVE the card
         const Padding(
-          padding: EdgeInsets.only(left: 5, bottom: 15),
+          padding: EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            'UPCOMING EVENTS',
+            'LATEST SERMON',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: Color(0xFFD27E09),
-              letterSpacing: 1,
+              letterSpacing: 1.2,
             ),
           ),
         ),
-        Column(
-          children: events.map((event) => _buildEventCard(event)).toList(),
+
+        // 2. The Card (White box, square edges)
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.zero, // Square edges
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xFFD27E09).withOpacity(0.1),
+                backgroundImage: NetworkImage(
+                  data['imageUrl'] ?? 'https://via.placeholder.com/150',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      data['title'],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      data['date'],
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.play_circle_fill,
+                  color: Color(0xFFD27E09),
+                  size: 36,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // 3. View More Button OUTSIDE and BELOW (Orange bg, white text)
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            height: 36,
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFD27E09),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: const RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.zero, // Match the square card style
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+              ),
+              child: const Text(
+                'VIEW MORE',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
-
-  Widget _buildEventCard(Map<String, dynamic> event) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Event Icon
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              color: Color(event['color']).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Icon(
-              event['icon'],
-              color: Color(event['color']),
-              size: 30,
-            ),
-          ),
-          
-          const SizedBox(width: 20),
-          
-          // Event Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event['title'],
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      event['date'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      event['location'],
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          // RSVP Button
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFD27E09).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Text(
-              'RSVP',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFD27E09),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
+
+// Child Component 4: Upcoming Events
 
 // Child Component 5: Worship With Us
 class WorshipWithUsCard extends StatelessWidget {
   final Map<String, dynamic> data;
-  
+
   const WorshipWithUsCard({super.key, required this.data});
 
   @override
@@ -704,7 +470,7 @@ class WorshipWithUsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Church Info
           _buildInfoRow(Icons.church, data['name']),
           const SizedBox(height: 15),
@@ -714,18 +480,14 @@ class WorshipWithUsCard extends StatelessWidget {
           const SizedBox(height: 15),
           Row(
             children: [
-              Expanded(
-                child: _buildInfoRow(Icons.phone, data['phone']),
-              ),
+              Expanded(child: _buildInfoRow(Icons.phone, data['phone'])),
               const SizedBox(width: 20),
-              Expanded(
-                child: _buildInfoRow(Icons.email, data['email']),
-              ),
+              Expanded(child: _buildInfoRow(Icons.email, data['email'])),
             ],
           ),
-          
+
           const SizedBox(height: 25),
-          
+
           // Map Placeholder
           Container(
             height: 200,
@@ -758,18 +520,15 @@ class WorshipWithUsCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   data['address'].split('\n').first,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                   textAlign: TextAlign.center,
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 25),
-          
+
           // Action Buttons
           Row(
             children: [
@@ -833,11 +592,7 @@ class WorshipWithUsCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(
-          icon,
-          color: const Color(0xFFD27E09),
-          size: 24,
-        ),
+        Icon(icon, color: const Color(0xFFD27E09), size: 24),
         const SizedBox(width: 15),
         Expanded(
           child: Text(
