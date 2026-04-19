@@ -1,4 +1,9 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import '../components/show_streak.dart';
+
 
 void main() => runApp(const ChurchDashboard());
 
@@ -8,6 +13,7 @@ class ChurchDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false, 
       title: 'Church App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -17,22 +23,51 @@ class ChurchDashboard extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFFFFF7EB),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFFD27E09),
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFFD27E09),
           elevation: 0,
         ),
       ),
-      home:  DashboardPage(),
+      home: const DashboardPage(),
     );
   }
 }
 
-class DashboardPage extends StatelessWidget {
-   DashboardPage({super.key});
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  late Future<String> _greetingFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize once to prevent flickering on rebuilds
+    _greetingFuture = _getGreeting();
+  }
+  Future<String> _getGreeting() async {
+    final pref = await SharedPreferences.getInstance();
+    final name = pref.getString('name') ?? 'Friend'; // Default value
+
+    final hour = DateTime.now().hour;
+    String greeting;
+    if (hour < 12) {
+      greeting = 'Good morning';
+    } else if (hour < 18) {
+      greeting = 'Good afternoon';
+    } else {
+      greeting = 'Good evening';
+    }
+    return '$greeting, $name!';
+  }
 
   // Static data that will be passed to all child components
   final Map<String, dynamic> dashboardData = {
-    'verseOfTheDay': {
+    'verseOfTheWeek': {
       'reference': 'Psalm 23:1-3',
       'text': 'The Lord is my shepherd; I shall not want. He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.',
       'version': 'English Standard Version',
@@ -95,29 +130,67 @@ class DashboardPage extends StatelessWidget {
     'lastAttendance': 'Last attended: Sunday, Nov 12',
   };
 
+//for the attendace sheet
+void _showAttendanceStats() {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent, // Required for our custom rounded corners
+    isScrollControlled: true,
+    builder: (context) => AttendanceSheet(data: dashboardData),
+  );
+}
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        toolbarHeight: 50,
+        centerTitle: false, 
+        title: FutureBuilder<String>(
+          future: _greetingFuture,
+          builder: (context, snapshot) {
+            final greeting = snapshot.data ?? 'Welcome';
+            return AutoSizeText(
+              greeting,
+              maxLines: 1,
+              minFontSize: 16,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFFD27E09),
+              ),
+            );
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: SvgPicture.asset(
+              'assets/icons/lightning.svg',
+              color: const Color(0xFFD27E09),
+              width: 24,
+              height: 24,
+            ),
+            onPressed: _showAttendanceStats,
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // App Header
-              _buildHeader(),
               
               // Main Content
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Column(
                   children: [
-                    // Verse of the Day Component
-                    VerseOfTheDayCard(data: dashboardData['verseOfTheDay']),
+                    // Verse of the week Component
+                    verseOfTheWeekCard(data: dashboardData['verseOfTheWeek']),
                     const SizedBox(height: 20),
-                    
-                    // Attendance Streak Component
-                    AttendanceStreakCard(data: dashboardData['attendanceStreak']),
-                    const SizedBox(height: 20),
+
                     
                     // Latest Sermon Component
                     LatestSermonCard(data: dashboardData['latestSermon']),
@@ -140,66 +213,7 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD27E09),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Welcome and User Info
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                dashboardData['userGreeting'],
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                dashboardData['lastAttendance'],
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 25),
-          
-          // Quick Stats Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildQuickStat('Prayers', '12', Icons.favorite),
-              _buildQuickStat('Giving', '\$245', Icons.monetization_on),
-              _buildQuickStat('Volunteer', '8 hrs', Icons.people),
-              _buildQuickStat('Study', '5 days', Icons.book),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildQuickStat(String label, String value, IconData icon) {
     return Column(
@@ -235,10 +249,10 @@ class DashboardPage extends StatelessWidget {
 }
 
 // Child Component 1: Verse of the Day
-class VerseOfTheDayCard extends StatelessWidget {
+class verseOfTheWeekCard extends StatelessWidget {
   final Map<String, dynamic> data;
   
-  const VerseOfTheDayCard({super.key, required this.data});
+  const verseOfTheWeekCard({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -326,142 +340,6 @@ class VerseOfTheDayCard extends StatelessWidget {
 }
 
 // Child Component 2: Attendance Streak
-class AttendanceStreakCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  
-  const AttendanceStreakCard({super.key, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFD27E09),
-            const Color(0xFFD27E09).withOpacity(0.9),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFD27E09).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          const Text(
-            'ATTENDANCE STREAK',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStreakStat(
-                value: data['currentStreak'].toString(),
-                label: data['streakLabel'],
-                icon: Icons.local_fire_department,
-                isMain: true,
-              ),
-              _buildStreakStat(
-                value: data['totalAttendance'].toString(),
-                label: data['totalLabel'],
-                icon: Icons.calendar_today,
-              ),
-              _buildStreakStat(
-                value: data['bestStreak'].toString(),
-                label: data['bestLabel'],
-                icon: Icons.star,
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          LinearProgressIndicator(
-            value: data['currentStreak'] / 30,
-            backgroundColor: Colors.white.withOpacity(0.3),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-            borderRadius: BorderRadius.circular(10),
-            minHeight: 8,
-          ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Keep going! ${30 - data['currentStreak']} days to reach your goal',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white.withOpacity(0.9),
-                ),
-              ),
-              Text(
-                '${((data['currentStreak'] / 30) * 100).toStringAsFixed(0)}%',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStreakStat({
-    required String value,
-    required String label,
-    required IconData icon,
-    bool isMain = false,
-  }) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(isMain ? 0.3 : 0.2),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: isMain ? 28 : 24,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: isMain ? 28 : 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.white.withOpacity(0.9),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // Child Component 3: Latest Sermon
 class LatestSermonCard extends StatelessWidget {
