@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../components/show_streak.dart';
 import '../components/upcoming_events_section.dart';
+import '../components/worship_with_us.dart';
+import '../components/sermon_card.dart';
 
 void main() => runApp(const ChurchDashboard());
 
@@ -195,7 +197,57 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 20),
 
                     // Latest Sermon Component
-                    LatestSermonCard(data: dashboardData['latestSermon']),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 1. Title OUTSIDE and ABOVE the card
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 8),
+                          child: Text(
+                            'LATEST SERMON',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFD27E09),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                        LatestSermonCard(data: dashboardData['latestSermon']),
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            height: 36,
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {},
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD27E09),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: BorderRadius
+                                      .zero, // Match the square card style
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                              ),
+                              child: const Text(
+                                'VIEW MORE',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 20),
 
                     // Upcoming Events Component
@@ -321,290 +373,114 @@ class verseOfTheWeekCard extends StatelessWidget {
 }
 
 // Child Component 3: Latest Sermon
-class LatestSermonCard extends StatelessWidget {
-  final Map<String, dynamic> data;
+// class LatestSermonCard extends StatelessWidget {
+//   final Map<String, dynamic> data;
 
-  const LatestSermonCard({super.key, required this.data});
+//   const LatestSermonCard({super.key, required this.data});
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 1. Title OUTSIDE and ABOVE the card
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            'LATEST SERMON',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFD27E09),
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.start,
+//       children: [
+//         // 1. Title OUTSIDE and ABOVE the card
+//         const Padding(
+//           padding: EdgeInsets.only(left: 4, bottom: 8),
+//           child: Text(
+//             'LATEST SERMON',
+//             style: TextStyle(
+//               fontSize: 13,
+//               fontWeight: FontWeight.bold,
+//               color: Color(0xFFD27E09),
+//               letterSpacing: 1.2,
+//             ),
+//           ),
+//         ),
 
-        // 2. The Card (White box, square edges)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.zero, // Square edges
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: const Color(0xFFD27E09).withOpacity(0.1),
-                backgroundImage: NetworkImage(
-                  data['imageUrl'] ?? 'https://via.placeholder.com/150',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      data['title'],
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      data['date'],
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.play_circle_fill,
-                  color: Color(0xFFD27E09),
-                  size: 36,
-                ),
-              ),
-            ],
-          ),
-        ),
+//         // 2. The Card (White box, square edges)
+//         Container(
+//           width: double.infinity,
+//           padding: const EdgeInsets.all(12),
+//           decoration: const BoxDecoration(
+//             color: Colors.white,
+//             borderRadius: BorderRadius.zero, // Square edges
+//           ),
+//           child: Row(
+//             children: [
+//               CircleAvatar(
+//                 radius: 28,
+//                 backgroundColor: const Color(0xFFD27E09).withOpacity(0.1),
+//                 backgroundImage: NetworkImage(
+//                   data['imageUrl'] ?? 'https://via.placeholder.com/150',
+//                 ),
+//               ),
+//               const SizedBox(width: 12),
+//               Expanded(
+//                 child: Column(
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   mainAxisSize: MainAxisSize.min,
+//                   children: [
+//                     Text(
+//                       data['title'],
+//                       maxLines: 1,
+//                       overflow: TextOverflow.ellipsis,
+//                       style: const TextStyle(
+//                         fontSize: 16,
+//                         fontWeight: FontWeight.bold,
+//                         color: Colors.black87,
+//                       ),
+//                     ),
+//                     const SizedBox(height: 2),
+//                     Text(
+//                       data['date'],
+//                       style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+//                     ),
+//                   ],
+//                 ),
+//               ),
+//               IconButton(
+//                 onPressed: () {},
+//                 icon: const Icon(
+//                   Icons.play_circle_fill,
+//                   color: Color(0xFFD27E09),
+//                   size: 36,
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ),
 
-        // 3. View More Button OUTSIDE and BELOW (Orange bg, white text)
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: SizedBox(
-            height: 36,
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD27E09),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.zero, // Match the square card style
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-              ),
-              child: const Text(
-                'VIEW MORE',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// Child Component 4: Upcoming Events
-
-// Child Component 5: Worship With Us
-class WorshipWithUsCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-
-  const WorshipWithUsCard({super.key, required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'WORSHIP WITH US',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFD27E09),
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Church Info
-          _buildInfoRow(Icons.church, data['name']),
-          const SizedBox(height: 15),
-          _buildInfoRow(Icons.location_on, data['address']),
-          const SizedBox(height: 15),
-          _buildInfoRow(Icons.access_time, data['serviceTimes']),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              Expanded(child: _buildInfoRow(Icons.phone, data['phone'])),
-              const SizedBox(width: 20),
-              Expanded(child: _buildInfoRow(Icons.email, data['email'])),
-            ],
-          ),
-
-          const SizedBox(height: 25),
-
-          // Map Placeholder
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: const Color(0xFFD27E09).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: const Color(0xFFD27E09).withOpacity(0.2),
-                width: 2,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.map,
-                  size: 60,
-                  color: const Color(0xFFD27E09).withOpacity(0.6),
-                ),
-                const SizedBox(height: 15),
-                const Text(
-                  '📍 Church Location',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFD27E09),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  data['address'].split('\n').first,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 25),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    // Open maps functionality
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD27E09),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  icon: const Icon(Icons.directions),
-                  label: const Text(
-                    'GET DIRECTIONS',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Share functionality
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFD27E09),
-                    side: const BorderSide(color: Color(0xFFD27E09)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  icon: const Icon(Icons.share),
-                  label: const Text(
-                    'SHARE',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: const Color(0xFFD27E09), size: 24),
-        const SizedBox(width: 15),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black87,
-              height: 1.6,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
+//         // 3. View More Button OUTSIDE and BELOW (Orange bg, white text)
+//         const SizedBox(height: 12),
+//         Align(
+//           alignment: Alignment.centerRight,
+//           child: SizedBox(
+//             height: 36,
+//             width: double.infinity,
+//             child: ElevatedButton(
+//               onPressed: () {},
+//               style: ElevatedButton.styleFrom(
+//                 backgroundColor: const Color(0xFFD27E09),
+//                 foregroundColor: Colors.white,
+//                 elevation: 0,
+//                 shape: const RoundedRectangleBorder(
+//                   borderRadius:
+//                       BorderRadius.zero, // Match the square card style
+//                 ),
+//                 padding: const EdgeInsets.symmetric(horizontal: 20),
+//               ),
+//               child: const Text(
+//                 'VIEW MORE',
+//                 style: TextStyle(
+//                   fontSize: 12,
+//                   fontWeight: FontWeight.bold,
+//                   letterSpacing: 1,
+//                 ),
+//               ),
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }
