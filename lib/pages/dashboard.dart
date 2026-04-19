@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/overview_widget.dart';
+import '../widgets/user_dashboard.dart';
 void main() => runApp(const Dashboard());
 
 class Dashboard extends StatelessWidget {
@@ -28,7 +29,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   );
 
   static const List<Widget> _widgetOptions = <Widget>[
-    // OverviewWidget(),
+    ChurchDashboard(),
     // AttendanceWidget(),
     // RemindersWidget(),
     // ReportsWidget(),
