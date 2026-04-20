@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/overview_widget.dart';
 import '../widgets/attendance_widget.dart';
 import '../widgets/reminder_widget.dart';
+import './content_moderation.dart';
 // import '../widgets/report_widget.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -25,7 +26,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     OverviewWidget(),
     AttendanceWidget(),
     RemindersWidget(),
-    // ReportsWidget(),
+    ContentModerationPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -89,18 +90,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             label: 'Reminders',
           ),
-          // BottomNavigationBarItem(
-          //   icon: SvgPicture.asset(
-          //     'assets/icons/reports.svg',
-          //     height: 24.0,
-          //     width: 24.0,
-          //     colorFilter: ColorFilter.mode(
-          //       _selectedIndex == 3 ? selectedColor : unselectedColor,
-          //       BlendMode.srcIn,
-          //     ),
-          //   ),
-          //   label: 'Reports',
-          // ),
+          BottomNavigationBarItem(
+            icon: SvgPicture.asset(
+              'assets/icons/content.svg',
+              height: 24.0,
+              width: 24.0,
+              colorFilter: ColorFilter.mode(
+                _selectedIndex == 3 ? selectedColor : unselectedColor,
+                BlendMode.srcIn,
+              ),
+            ),
+            label: 'Content',
+          ),
         ],
       ),
     );

@@ -430,6 +430,7 @@ class AttendanceStreakCard extends StatelessWidget {
     return Column(
       children: [
         Container(
+
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(isMain ? 0.3 : 0.2),
@@ -616,7 +617,8 @@ class LatestSermonCard extends StatelessWidget {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Play sermon functionality
+                      Navigator.pushNamed(context, '/terms');
+                      print("button pressed");
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD27E09),

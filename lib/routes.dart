@@ -6,8 +6,8 @@ import 'pages/privacy_page.dart';
 import 'pages/terms_page.dart';
 import 'pages/dashboard.dart';
 import 'pages/complete_signup.dart';
-import 'pages/dashboard.dart' as dash;
 import 'pages/user_prep.dart';
+import 'pages/admin_dashboard.dart' as admin_page;
 
 class AppRoutes {
   static const String login = '/login';
@@ -29,7 +29,7 @@ class AppRoutes {
       emailSignup: (context) => const EmailSignupPage(),
       privacy: (context) => const PrivacyPage(),
       terms: (context) => const TermsPage(),
-      admin: (context) => const AdminDashboard(),
+      admin: (context) => const admin_page.AdminDashboard(),
       completeSignup: (context) => const CompleteSignup(),
       dashboard: (context) => const Dashboard(),
       userPrep: (context) => const UserPrepPage(),
