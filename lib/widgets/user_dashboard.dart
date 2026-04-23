@@ -9,7 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import "../components/sermon_card.dart";
 import '../components/upcoming_events_section.dart';
-// import 'components/worship_with_us.dart';
+import '../components/worship_with_us.dart';
 
 void main() => runApp(const ChurchDashboard());
 
@@ -219,6 +219,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     return UpcomingEventsSection(events: formattedEvents);
                   },
                 ),
+                SizedBox(height: 40),
+                WorshipWithUsCard(data: {"name":"REJOICE GREATLY PHX", "address":"2323 E Magnolia St, Phoenix, AZ 85012", "serviceTimes":"10:00 AM", }),
               ],
             ),
           ),
