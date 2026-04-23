@@ -8,22 +8,21 @@ class UpcomingEventsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (events.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceBetween, // Pushes items to opposite ends
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Expanded(
-                // Allows the title to take available space and scale
                 child: AutoSizeText(
                   'UPCOMING EVENTS',
                   minFontSize: 12,
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -42,12 +41,11 @@ class UpcomingEventsSection extends StatelessWidget {
                     ),
                   ),
                   child: const Text(
-                    'View All',
+                    'vIEW ALL',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFD27E09),
-                      decoration: TextDecoration.none,
                     ),
                   ),
                 ),
@@ -56,12 +54,12 @@ class UpcomingEventsSection extends StatelessWidget {
           ),
         ),
 
-        // Horizontal Scroll Implementation
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.only(left: 16, bottom: 20),
           child: Row(
-            children: events.map((event) => _buildEventCard(event)).toList(),
+            // Use cast to ensure type safety during mapping
+            children: events.map((event) => _buildEventCard(Map<String, dynamic>.from(event))).toList(),
           ),
         ),
       ],
@@ -70,27 +68,26 @@ class UpcomingEventsSection extends StatelessWidget {
 
   Widget _buildEventCard(Map<String, dynamic> event) {
     return Container(
-      width: 160, // Fixed width for horizontal items
+      width: 160,
       margin: const EdgeInsets.only(right: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Slightly Vertical Image
           Container(
-            height: 200, // Makes it taller than wide
+            height: 200,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.zero, // Keep square look
+              color: Colors.grey[300], // Placeholder color while loading image
               image: DecorationImage(
                 image: NetworkImage(event['imageUrl']),
                 fit: BoxFit.cover,
+                // Error handling for broken links
+                onError: (exception, stackTrace) => const Icon(Icons.broken_image),
               ),
             ),
           ),
           const SizedBox(height: 10),
-
-          // 2. Event Title
           Text(
-            event['title'].toUpperCase(),
+            (event['title'] as String).toUpperCase(),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -101,8 +98,6 @@ class UpcomingEventsSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-
-          // 3. Event Date
           Text(
             event['date'],
             style: const TextStyle(

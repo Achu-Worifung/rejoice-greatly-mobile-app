@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import "../components/sermon_card.dart";
-// import 'components/upcoming_events_section.dart';
+import '../components/upcoming_events_section.dart';
 // import 'components/worship_with_us.dart';
 
 void main() => runApp(const ChurchDashboard());
@@ -44,6 +44,7 @@ class _DashboardPageState extends State<DashboardPage> {
   late Future<String> _greetingFuture;
   late Future<Map<String, dynamic>> _verseFuture;
   late Future<List<dynamic>> _sermonFuture;
+  late Future<List<dynamic>> _eventsFuture;
 
   @override
   void initState() {
@@ -51,19 +52,32 @@ class _DashboardPageState extends State<DashboardPage> {
     _greetingFuture = _getGreeting();
     _verseFuture = _fetchCurrentVerse();
     _sermonFuture = _fetchSermons();
+    _eventsFuture = _fetchUpcomingEvents();
   }
 
   // --- API LOGIC ---
   String ip_address = dotenv.env['IP_ADDRESS'] ?? 'localhost';
 
   Future<Map<String, dynamic>> _fetchCurrentVerse() async {
-    final response = await http.get(Uri.parse('http://$ip_address:8080/weekly-verse/current'));
+    final response = await http.get(
+      Uri.parse('http://$ip_address:8080/weekly-verse/current'),
+    );
     if (response.statusCode == 200) return json.decode(response.body);
     throw Exception('Failed to load verse');
   }
 
+  Future<List<dynamic>> _fetchUpcomingEvents() async {
+    final response = await http.get(
+      Uri.parse('http://$ip_address:8080/events/upcoming'),
+    );
+    if (response.statusCode == 200) return json.decode(response.body);
+    throw Exception('Failed to load events');
+  }
+
   Future<List<dynamic>> _fetchSermons() async {
-    final response = await http.get(Uri.parse('http://$ip_address:8080/sermons'));
+    final response = await http.get(
+      Uri.parse('http://$ip_address:8080/sermons'),
+    );
     if (response.statusCode == 200) return json.decode(response.body);
     throw Exception('Failed to load sermons');
   }
@@ -93,20 +107,20 @@ class _DashboardPageState extends State<DashboardPage> {
           builder: (context, snapshot) => AutoSizeText(
             snapshot.data ?? 'Welcome',
             style: const TextStyle(
-              fontSize: 22, 
-              fontWeight: FontWeight.bold, 
-              color: Color(0xFFD27E09)
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFD27E09),
             ),
           ),
         ),
         actions: [
           IconButton(
             icon: SvgPicture.asset(
-              'assets/icons/lightning.svg', 
-              color: const Color(0xFFD27E09), 
-              width: 24
+              'assets/icons/lightning.svg',
+              color: const Color(0xFFD27E09),
+              width: 24,
             ),
-            onPressed: () {}, 
+            onPressed: () {},
           ),
           const SizedBox(width: 8),
         ],
@@ -125,14 +139,22 @@ class _DashboardPageState extends State<DashboardPage> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const LoadingPlaceholder();
                     }
-                    if (snapshot.hasError) return const Center(child: Text("Error loading verse"));
-                    
+                    if (snapshot.hasError)
+                      return const Center(child: Text("Error loading verse"));
+
                     final v = snapshot.data!;
-                    return verseOfTheWeekCard(data: {
-                      'text': v['content'],
-                      'version': v['version'],
-                      'reference': _formatReference(v['book'], v['chapter'], v['startVerse'], v['endVerse']),
-                    });
+                    return verseOfTheWeekCard(
+                      data: {
+                        'text': v['content'],
+                        'version': v['version'],
+                        'reference': _formatReference(
+                          v['book'],
+                          v['chapter'],
+                          v['startVerse'],
+                          v['endVerse'],
+                        ),
+                      },
+                    );
                   },
                 ),
 
@@ -146,28 +168,57 @@ class _DashboardPageState extends State<DashboardPage> {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const LoadingPlaceholder();
                     }
-                    if (snapshot.hasError || snapshot.data == null || snapshot.data!.isEmpty) {
+                    if (snapshot.hasError ||
+                        snapshot.data == null ||
+                        snapshot.data!.isEmpty) {
                       return const Center(child: Text("No sermons available"));
                     }
 
                     // Get the most recent sermon from your Spring Boot List
                     final s = snapshot.data!.last;
-                    
+
                     // Map Spring Boot fields to your LatestSermonCard's expected keys
                     final mappedSermon = {
                       'title': s['title'],
-                      'date': s['datePreached'], // Maps 'datePreached' to 'date'
+                      'date':
+                          s['datePreached'], // Maps 'datePreached' to 'date'
                       'imageUrl': s['imageUrl'],
                     };
 
                     return LatestSermonCard(data: mappedSermon);
                   },
                 ),
-                
+
                 const SizedBox(height: 12),
                 _buildViewMoreButton(),
 
                 const SizedBox(height: 40),
+                FutureBuilder<List<dynamic>>(
+                  future:
+                      _eventsFuture, // Initialize this in initState: _eventsFuture = _fetchUpcomingEvents();
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError || snapshot.data == null) {
+                      return const SizedBox.shrink(); // Hide section if error
+                    }
+
+                    // Map the EventInstance list to the format your component expects
+                    final formattedEvents = snapshot.data!.map((e) {
+                      final template = e['template'] ?? {};
+                      return {
+                        'title': template['title'] ?? 'Church Event',
+                        'date': e['date'] ?? '',
+                        'imageUrl':
+                            template['posterUrl'] ??
+                            'https://via.placeholder.com/150',
+                      };
+                    }).toList();
+
+                    return UpcomingEventsSection(events: formattedEvents);
+                  },
+                ),
               ],
             ),
           ),
@@ -178,19 +229,23 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildViewMoreButton() {
     return SizedBox(
-      height: 36, 
+      height: 36,
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFD27E09), 
-          foregroundColor: Colors.white, 
+          backgroundColor: const Color(0xFFD27E09),
+          foregroundColor: Colors.white,
           elevation: 0,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero)
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
         onPressed: () {},
         child: const Text(
-          'VIEW MORE', 
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1)
+          'VIEW MORE',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
         ),
       ),
     );
@@ -210,31 +265,51 @@ class verseOfTheWeekCard extends StatelessWidget {
       padding: const EdgeInsets.all(25),
       decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'VERSE OF THE WEEK', 
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFD27E09), letterSpacing: 1.5)
+            'VERSE OF THE WEEK',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFD27E09),
+              letterSpacing: 1.5,
+            ),
           ),
           const SizedBox(height: 15),
           Text(
-            data['text'] ?? '', 
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.6)
+            data['text'] ?? '',
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+              height: 1.6,
+            ),
           ),
           const SizedBox(height: 15),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                data['reference'] ?? '', 
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFFD27E09))
+                data['reference'] ?? '',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFD27E09),
+                ),
               ),
               Text(
-                data['version'] ?? '', 
-                style: const TextStyle(fontSize: 12, color: Colors.grey)
+                data['version'] ?? '',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
           ),
@@ -251,16 +326,16 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8), 
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
-        title, 
+        title,
         style: const TextStyle(
-          fontSize: 13, 
-          fontWeight: FontWeight.bold, 
-          color: Color(0xFFD27E09), 
-          letterSpacing: 1.2
-        )
-      )
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFFD27E09),
+          letterSpacing: 1.2,
+        ),
+      ),
     );
   }
 }
@@ -271,9 +346,9 @@ class LoadingPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Padding(
-        padding: EdgeInsets.all(20), 
-        child: CircularProgressIndicator(color: Color(0xFFD27E09))
-      )
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(color: Color(0xFFD27E09)),
+      ),
     );
   }
 }
