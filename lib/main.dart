@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Rejoice Greatly PHX',
-      initialRoute: '/admin', // start at RootPage
+      initialRoute: '/', // start at RootPage
       routes: {'/': (context) => const RootPage(), ...AppRoutes.getRoutes()},
       debugShowCheckedModeBanner: false,
     );
