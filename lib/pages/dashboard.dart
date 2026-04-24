@@ -1,42 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../widgets/user_dashboard.dart'; 
+import '../widgets/user_dashboard.dart';
 import './sermons.dart';
 import './events_page.dart';
 import './me_page.dart';
-void main() => runApp(const Dashboard());
 
-class Dashboard extends StatelessWidget {
+class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFD27E09)),
-      ),
-      home: const AdminDashboard(),
-    );
-  }
+  State<Dashboard> createState() => _DashboardState();
 }
 
-class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
-
-  @override
-  State<AdminDashboard> createState() => _AdminDashboardState();
-}
-
-class _AdminDashboardState extends State<AdminDashboard> {
+class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0;
 
-  // Ensure these indices match your _buildNavItem calls
   static const List<Widget> _widgetOptions = <Widget>[
-    ChurchDashboard(), // Index 0
-    SermonsPage(data: {}), 
-    EventsPage(), // Index 2
-    MePage(), // Index 3
+    DashboardPage(), 
+    SermonsPage(data: {}),
+    EventsPage(),
+    MePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -45,14 +28,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
-  // Moved INSIDE the class so it can access _selectedIndex
   BottomNavigationBarItem _buildNavItem(String assetPath, String label, int index) {
     final Color selectedColor = const Color(0xFFD27E09);
     final Color unselectedColor = Colors.grey.shade400;
-    
-    // Check if current item is active
     final Color color = _selectedIndex == index ? selectedColor : unselectedColor;
-    
+
     return BottomNavigationBarItem(
       icon: Padding(
         padding: const EdgeInsets.only(bottom: 4),
@@ -69,7 +49,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    // Sync with your gold theme
     const Color goldColor = Color(0xFFD27E09);
 
     return Scaffold(
@@ -80,7 +59,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
-            top: BorderSide(color: Colors.grey.shade200, width: 1), 
+            top: BorderSide(color: Colors.grey.shade200, width: 1),
           ),
         ),
         child: BottomNavigationBar(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../dataobject/reminder_items.dart';
 import '../notifications/reminder_api_service.dart';
-import '../notifications/notification_service.dart';
+// import '../notifications/notification_service.dart';
 
 class RemindersWidget extends StatefulWidget {
   const RemindersWidget({super.key});
@@ -12,7 +12,7 @@ class RemindersWidget extends StatefulWidget {
 }
 
 class _RemindersWidgetState extends State<RemindersWidget> {
-  final NotificationService _notificationService = NotificationService();
+  // final NotificationService _notificationService = NotificationService();
   final ReminderApiService _apiService = ReminderApiService();
 
   bool _isInitialized = false;
@@ -35,7 +35,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
 
   Future<void> _initNotifications() async {
     try {
-      await _notificationService.initialize();
+      // await _notificationService.initialize();
       if (mounted) {
         setState(() => _isInitialized = true);
       }

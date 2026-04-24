@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,36 +10,14 @@ import "../components/sermon_card.dart";
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
 
-void main() => runApp(const ChurchDashboard());
-
-class ChurchDashboard extends StatelessWidget {
-  const ChurchDashboard({super.key});
+class DashboardPage  extends StatefulWidget {
+  const DashboardPage ({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Church App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD27E09),
-          primary: const Color(0xFFD27E09),
-        ),
-        scaffoldBackgroundColor: const Color(0xFFFFF7EB),
-      ),
-      home: const DashboardPage(),
-    );
-  }
+  State<DashboardPage > createState() => _DashboardPageState();
 }
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
-
-  @override
-  State<DashboardPage> createState() => _DashboardPageState();
-}
-
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage > {
   late Future<String> _greetingFuture;
   late Future<Map<String, dynamic>> _verseFuture;
   late Future<List<dynamic>> _sermonFuture;
@@ -55,7 +32,6 @@ class _DashboardPageState extends State<DashboardPage> {
     _eventsFuture = _fetchUpcomingEvents();
   }
 
-  // --- API LOGIC ---
   String ip_address = dotenv.env['IP_ADDRESS'] ?? 'localhost';
 
   Future<Map<String, dynamic>> _fetchCurrentVerse() async {
@@ -82,7 +58,6 @@ class _DashboardPageState extends State<DashboardPage> {
     throw Exception('Failed to load sermons');
   }
 
-  // --- HELPERS ---
   String _formatReference(String book, int chapter, int start, int? end) {
     if (end == null || start == end) return "$book $chapter:$start";
     return "$book $chapter:$start-$end";
@@ -101,16 +76,52 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 50,
-        title: FutureBuilder<String>(
-          future: _greetingFuture,
-          builder: (context, snapshot) => AutoSizeText(
-            snapshot.data ?? 'Welcome',
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFD27E09),
+        backgroundColor: const Color(0xFFF5F7FA),
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 16.0),
+          child: Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.network(
+                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST4JjHURtaso7i__VnumOCn8QoUHn-WXURHQ&s',
+                height: 40,
+                width: 40,
+                fit: BoxFit.cover,
+              ),
             ),
+          ),
+        ),
+        titleSpacing: 12,
+        title: GestureDetector(
+          onTap: () {
+            Navigator.pushNamed(context, '/profile');
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FutureBuilder<String>(
+                future: _greetingFuture,
+                builder: (context, snapshot) {
+                  final displayGreeting =
+                      snapshot.hasData ? snapshot.data! : 'Hello!';
+                  return AutoSizeText(
+                    displayGreeting,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD27E09),
+                    ),
+                  );
+                },
+              ),
+              const Text(
+                "Rejoice Greatly - PHX",
+                style: TextStyle(color: Colors.grey, fontSize: 13),
+              ),
+            ],
           ),
         ),
         actions: [
@@ -132,16 +143,15 @@ class _DashboardPageState extends State<DashboardPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. DYNAMIC VERSE OF THE WEEK
                 FutureBuilder<Map<String, dynamic>>(
                   future: _verseFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const LoadingPlaceholder();
                     }
-                    if (snapshot.hasError)
+                    if (snapshot.hasError) {
                       return const Center(child: Text("Error loading verse"));
-
+                    }
                     final v = snapshot.data!;
                     return verseOfTheWeekCard(
                       data: {
@@ -157,10 +167,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     );
                   },
                 ),
-
                 const SizedBox(height: 20),
-
-                // 2. DYNAMIC LATEST SERMON SECTION
                 const SectionHeader(title: 'LATEST SERMON'),
                 FutureBuilder<List<dynamic>>(
                   future: _sermonFuture,
@@ -173,54 +180,46 @@ class _DashboardPageState extends State<DashboardPage> {
                         snapshot.data!.isEmpty) {
                       return const Center(child: Text("No sermons available"));
                     }
-
-                    // Get the most recent sermon from your Spring Boot List
                     final s = snapshot.data!.last;
-
-                    // Map Spring Boot fields to your LatestSermonCard's expected keys
-                    final mappedSermon = {
+                    return LatestSermonCard(data: {
                       'title': s['title'],
-                      'date':
-                          s['datePreached'], // Maps 'datePreached' to 'date'
+                      'date': s['datePreached'],
                       'imageUrl': s['imageUrl'],
-                    };
-
-                    return LatestSermonCard(data: mappedSermon);
+                    });
                   },
                 ),
-
                 const SizedBox(height: 12),
                 _buildViewMoreButton(),
-
                 const SizedBox(height: 40),
                 FutureBuilder<List<dynamic>>(
-                  future:
-                      _eventsFuture, // Initialize this in initState: _eventsFuture = _fetchUpcomingEvents();
+                  future: _eventsFuture,
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError || snapshot.data == null) {
-                      return const SizedBox.shrink(); // Hide section if error
+                      return const SizedBox.shrink();
                     }
-
-                    // Map the EventInstance list to the format your component expects
                     final formattedEvents = snapshot.data!.map((e) {
                       final template = e['template'] ?? {};
                       return {
                         'title': template['title'] ?? 'Church Event',
                         'date': e['date'] ?? '',
-                        'imageUrl':
-                            template['posterUrl'] ??
+                        'imageUrl': template['posterUrl'] ??
                             'https://via.placeholder.com/150',
                       };
                     }).toList();
-
                     return UpcomingEventsSection(events: formattedEvents);
                   },
                 ),
-                SizedBox(height: 40),
-                WorshipWithUsCard(data: {"name":"REJOICE GREATLY PHX", "address":"2323 E Magnolia St, Phoenix, AZ 85012", "serviceTimes":"10:00 AM", }),
+                const SizedBox(height: 40),
+                WorshipWithUsCard(
+                  data: {
+                    "name": "REJOICE GREATLY PHX",
+                    "address": "2323 E Magnolia St, Phoenix, AZ 85012",
+                    "serviceTimes": "10:00 AM",
+                  },
+                ),
               ],
             ),
           ),
@@ -238,7 +237,8 @@ class _DashboardPageState extends State<DashboardPage> {
           backgroundColor: const Color(0xFFD27E09),
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape:
+              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
         onPressed: () {},
         child: const Text(
@@ -268,11 +268,7 @@ class verseOfTheWeekCard extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 15,
-            offset: Offset(0, 5),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5)),
         ],
       ),
       child: Column(
@@ -344,6 +340,7 @@ class SectionHeader extends StatelessWidget {
 
 class LoadingPlaceholder extends StatelessWidget {
   const LoadingPlaceholder({super.key});
+
   @override
   Widget build(BuildContext context) {
     return const Center(

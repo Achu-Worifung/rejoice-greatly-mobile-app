@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:church_app/routes.dart'; // Ensure this matches your project name
-import 'package:church_app/pages/login_page.dart'; // Import your actual Login Page
+import 'package:church_app/pages/login_page.dart';
+import 'package:church_app/main.dart';
 
 class RootPage extends StatelessWidget {
   const RootPage({super.key});
 
-  /// Helper function to read from SharedPreferences
-  /// This sits outside the build method for clarity
   Future<bool> _checkIfSignupComplete() async {
     final prefs = await SharedPreferences.getInstance();
-    // Default to false if the key doesn't exist yet
     return prefs.getBool("signupComplete") ?? false;
   }
 
@@ -27,31 +24,35 @@ class RootPage extends StatelessWidget {
         }
 
         if (authSnapshot.hasData) {
-          return FutureBuilder<bool>(
-            future: _checkIfSignupComplete(),
-            builder: (context, completeSnapshot) {
-              if (completeSnapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
+  return FutureBuilder<bool>(
+    future: _checkIfSignupComplete(),
+    builder: (context, completeSnapshot) {
+      if (completeSnapshot.connectionState == ConnectionState.waiting) {
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
 
-              bool isComplete = completeSnapshot.data ?? false;
+      final bool isComplete = completeSnapshot.data ?? false;
 
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (isComplete) {
-                  // Navigator.pushReplacementNamed(context, '/dashboard');
-                  Navigator.pushReplacementNamed(context, '/admin');
-                } else {
-                  // Navigator.pushReplacementNamed(context, '/complete-signup');
-                  Navigator.pushReplacementNamed(context, '/admin');
-                }
-              });
-
-              return const Scaffold(body: SizedBox.shrink());
-            },
-          );
+     
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        print('postFrameCallback firing...');
+        print('navigatorKey.currentState in callback: ${navigatorKey.currentState}');
+        
+        if (isComplete) {
+          navigatorKey.currentState?.pushReplacementNamed('/dashboard');
+        } else {
+          navigatorKey.currentState?.pushReplacementNamed('/complete-signup');
         }
+      });
+
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    },
+  );
+}
 
         return const LoginPage();
       },
