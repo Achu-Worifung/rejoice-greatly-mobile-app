@@ -18,6 +18,11 @@
 		<string>To record audio with video, please grant microphone access.</string>
 
 		<key>CADisableMinimumFrameDurationOnPhone</key>
+		<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <true/>
+</dict>
 		<true />
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>

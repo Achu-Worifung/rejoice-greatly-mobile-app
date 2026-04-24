@@ -6,12 +6,15 @@ import 'routes.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 import 'pages/RootPage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_web/webview_flutter_web.dart';
 // import 'notifications/notification_service.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  WebViewPlatform.instance = WebWebViewPlatform();
   await dotenv.load(fileName: ".env");
   // await NotificationService().initialize();
 

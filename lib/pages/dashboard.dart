@@ -4,6 +4,7 @@ import '../widgets/user_dashboard.dart';
 import './sermons.dart';
 import './events_page.dart';
 import './me_page.dart';
+import './cafe.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -19,7 +20,7 @@ class _DashboardState extends State<Dashboard> {
     DashboardPage(), 
     SermonsPage(data: {}),
     EventsPage(),
-    MePage(),
+    Cafe(),
   ];
 
   void _onItemTapped(int index) {
@@ -78,7 +79,7 @@ class _DashboardState extends State<Dashboard> {
             _buildNavItem('assets/icons/dashboard.svg', 'Dashboard', 0),
             _buildNavItem('assets/icons/microphone.svg', 'Sermons', 1),
             _buildNavItem('assets/icons/announcement.svg', 'Events', 2),
-            _buildNavItem('assets/icons/users.svg', 'Me', 3),
+            _buildNavItem('assets/icons/cafe.svg', 'Cafe', 3),
           ],
         ),
       ),

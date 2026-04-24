@@ -7,17 +7,18 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import "../components/sermon_card.dart";
+import "../components/show_streak.dart";
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
 
-class DashboardPage  extends StatefulWidget {
-  const DashboardPage ({super.key});
+class DashboardPage extends StatefulWidget {
+  const DashboardPage({super.key});
 
   @override
-  State<DashboardPage > createState() => _DashboardPageState();
+  State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage > {
+class _DashboardPageState extends State<DashboardPage> {
   late Future<String> _greetingFuture;
   late Future<Map<String, dynamic>> _verseFuture;
   late Future<List<dynamic>> _sermonFuture;
@@ -72,6 +73,16 @@ class _DashboardPageState extends State<DashboardPage > {
     return 'Good evening, $name!';
   }
 
+  void _showAttendanceStats() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor:
+          Colors.transparent, // Required for our custom rounded corners
+      isScrollControlled: true,
+      builder: (context) => AttendanceSheet(data: {}),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,8 +115,9 @@ class _DashboardPageState extends State<DashboardPage > {
               FutureBuilder<String>(
                 future: _greetingFuture,
                 builder: (context, snapshot) {
-                  final displayGreeting =
-                      snapshot.hasData ? snapshot.data! : 'Hello!';
+                  final displayGreeting = snapshot.hasData
+                      ? snapshot.data!
+                      : 'Hello!';
                   return AutoSizeText(
                     displayGreeting,
                     maxLines: 1,
@@ -131,7 +143,7 @@ class _DashboardPageState extends State<DashboardPage > {
               color: const Color(0xFFD27E09),
               width: 24,
             ),
-            onPressed: () {},
+            onPressed: _showAttendanceStats,
           ),
           const SizedBox(width: 8),
         ],
@@ -181,11 +193,13 @@ class _DashboardPageState extends State<DashboardPage > {
                       return const Center(child: Text("No sermons available"));
                     }
                     final s = snapshot.data!.last;
-                    return LatestSermonCard(data: {
-                      'title': s['title'],
-                      'date': s['datePreached'],
-                      'imageUrl': s['imageUrl'],
-                    });
+                    return LatestSermonCard(
+                      data: {
+                        'title': s['title'],
+                        'date': s['datePreached'],
+                        'imageUrl': s['imageUrl'],
+                      },
+                    );
                   },
                 ),
                 const SizedBox(height: 12),
@@ -205,7 +219,8 @@ class _DashboardPageState extends State<DashboardPage > {
                       return {
                         'title': template['title'] ?? 'Church Event',
                         'date': e['date'] ?? '',
-                        'imageUrl': template['posterUrl'] ??
+                        'imageUrl':
+                            template['posterUrl'] ??
                             'https://via.placeholder.com/150',
                       };
                     }).toList();
@@ -237,8 +252,7 @@ class _DashboardPageState extends State<DashboardPage > {
           backgroundColor: const Color(0xFFD27E09),
           foregroundColor: Colors.white,
           elevation: 0,
-          shape:
-              const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         ),
         onPressed: () {},
         child: const Text(
@@ -268,7 +282,11 @@ class verseOfTheWeekCard extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 5)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 15,
+            offset: Offset(0, 5),
+          ),
         ],
       ),
       child: Column(
