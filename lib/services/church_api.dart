@@ -3,12 +3,79 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Spring Boot API (`/events`, `/sermons`, `/weekly-verse`, etc.) — one place for base URL and calls.
 class ChurchApi {
   ChurchApi._();
 
+  static const String _accountJsonKey = 'account_json';
+
   static String get baseUrl => 'http://${dotenv.env['IP_ADDRESS'] ?? 'localhost'}:8080';
+
+  /// Persists the last [AuthAccount]-shaped map from `POST /auth/firebase` for offline display.
+  static Future<void> cacheAccountJson(Map<String, dynamic> account) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_accountJsonKey, json.encode(account));
+  }
+
+  static Future<Map<String, dynamic>?> getCachedAccountJson() async {
+    final p = await SharedPreferences.getInstance();
+    final s = p.getString(_accountJsonKey);
+    if (s == null || s.isEmpty) return null;
+    try {
+      return json.decode(s) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Refreshes the member account from `POST /auth/firebase` (same as login) and updates the cache.
+  static Future<Map<String, dynamic>> refreshAccountWithFirebaseToken(
+    String idToken, {
+    String provider = 'app',
+    String? name,
+  }) async {
+    final body = <String, dynamic>{
+      'idToken': idToken,
+      'provider': provider,
+    };
+    if (name != null) body['name'] = name;
+
+    final r = await http.post(
+      Uri.parse('$baseUrl/auth/firebase'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+    if (r.statusCode != 200) {
+      throw Exception('auth/firebase failed: ${r.statusCode}');
+    }
+    final map = json.decode(r.body) as Map<String, dynamic>;
+    await cacheAccountJson(map);
+    return map;
+  }
+
+  static int _asInt(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse('$v') ?? 0;
+  }
+
+  /// Shapes [AuthAccount] JSON for [AttendanceSheet] (dashboard lightning modal).
+  static Map<String, dynamic> accountToAttendanceSheetData(Map<String, dynamic> a) {
+    return {
+      'attendanceStreak': {
+        'streakLabel': 'Current streak',
+        'currentStreak': _asInt(a['currentStreak']),
+        'totalLabel': 'Total attendances',
+        'totalAttendance': _asInt(a['totalAttendance']),
+        'bestLabel': 'Longest streak',
+        'bestStreak': _asInt(a['longestStreak']),
+        'absences': _asInt(a['totalAbsences']),
+        'absenceStreak': _asInt(a['absenceStreak']),
+      },
+    };
+  }
 
   static Future<Map<String, dynamic>> getCurrentVerse() async {
     final r = await http.get(Uri.parse('$baseUrl/weekly-verse/current'));

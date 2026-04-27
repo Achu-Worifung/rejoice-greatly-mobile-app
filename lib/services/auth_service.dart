@@ -8,8 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
-
+import 'church_api.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -178,6 +177,8 @@ class AuthService {
         if (img is String && img.isNotEmpty) {
           await prefs.setString('imgURL', img);
         }
+        await prefs.setString('authProvider', provider);
+        await ChurchApi.cacheAccountJson(userData);
 
         print("Backend success: User $extractedName saved locally.");
         return signupComplete;

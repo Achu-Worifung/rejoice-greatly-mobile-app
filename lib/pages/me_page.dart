@@ -1,4 +1,10 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import '../services/church_api.dart';
+import '../theme/church_colors.dart';
 
 class MePage extends StatefulWidget {
   const MePage({super.key});
@@ -8,251 +14,404 @@ class MePage extends StatefulWidget {
 }
 
 class _MePageState extends State<MePage> {
-  final Color gold = const Color(0xFFD27E09);
-  Map<String, dynamic> userStats = {};
+  late Future<Map<String, dynamic>?> _accountFuture;
 
   @override
   void initState() {
     super.initState();
-    // You can fetch user stats here if needed
-    userStats = {
-      'currentStreak': 7,
-      'longestStreak': 22,
-      'consecutiveSundays': 3, // New metric
-      'goalProgress': 0.75, // New goal (e.g., attended 3 of 4 target events)
-      'sundayAttendance': [
-        {'date': 'Oct 22', 'attended': true, 'height': 0.8},
-        {'date': 'Oct 29', 'attended': true, 'height': 1.0},
-        {'date': 'Nov 5', 'attended': false, 'height': 0.1}, // Missed
-        {'date': 'Nov 12', 'attended': true, 'height': 0.9},
-        {'date': 'Nov 19', 'attended': true, 'height': 1.0},
-      ],
-      'attendanceHistory': [
-        {'event': 'Sunday Service', 'date': 'Nov 19, 2023'},
-        {'event': 'Wednesday Bible Study', 'date': 'Nov 15, 2023'},
-        {'event': 'Sunday Service', 'date': 'Nov 12, 2023'},
-        {'event': 'Youth Worship Night', 'date': 'Nov 10, 2023'},
-        {'event': 'Sunday Service', 'date': 'Oct 29, 2023'},
-      ],
-    };
+    _accountFuture = _loadAccount();
   }
 
-  @override
+  Future<Map<String, dynamic>?> _loadAccount() async {
+    try {
+      final u = FirebaseAuth.instance.currentUser;
+      if (u == null) {
+        return ChurchApi.getCachedAccountJson();
+      }
+      final t = await u.getIdToken();
+      final p = await SharedPreferences.getInstance();
+      final prov = p.getString('authProvider') ?? 'app';
+      if (t == null || t.isEmpty) {
+        return ChurchApi.getCachedAccountJson();
+      }
+      return await ChurchApi.refreshAccountWithFirebaseToken(
+        t,
+        provider: prov,
+        name: u.displayName,
+      );
+    } catch (_) {
+      return ChurchApi.getCachedAccountJson();
+    }
+  }
+
+  void _onBack() {
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+    } else {
+      nav.pushReplacementNamed('/dashboard');
+    }
+  }
+
+  int _i(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse('$v') ?? 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7EB),
+      backgroundColor: ChurchColors.background,
       appBar: AppBar(
-        title: const Text('MY PROGRESS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Color(0xFFD27E09))),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: ChurchColors.accent),
+          onPressed: _onBack,
+        ),
+        title: const Text(
+          'My profile',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.3,
+            color: ChurchColors.accent,
+          ),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: ChurchColors.background,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. STATS ROW (Reusing the Circular Indicators)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              color: Colors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildCircularStat(
-                    label: 'CURRENT STREAK',
-                    value: '${userStats['currentStreak']} Weeks',
-                    icon: Icons.local_fire_department,
-                    color: Colors.orange,
-                    progress: userStats['currentStreak'] / userStats['longestStreak'], // Current vs. Best
-                  ),
-                  const SizedBox(width: 12),
-                  _buildCircularStat(
-                    label: 'LONGEST STREAK',
-                    value: '${userStats['longestStreak']} Weeks',
-                    icon: Icons.emoji_events,
-                    color: gold,
-                    progress: 1.0, // Best is always 100%
-                  ),
-                ],
+      body: FutureBuilder<Map<String, dynamic>?>(
+        future: _accountFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: ChurchColors.button),
+            );
+          }
+          final a = snapshot.data;
+          if (a == null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person_off_outlined, size: 48, color: ChurchColors.muted),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No account data yet',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                        color: ChurchColors.bodyText,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Sign in and sync with the church app to see your stats.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: ChurchColors.muted, fontSize: 14),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: _onBack,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: ChurchColors.button,
+                        foregroundColor: ChurchColors.buttonText,
+                      ),
+                      child: const Text('Back to app'),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
+            );
+          }
 
-            // **New:** Goal Progress (Gamification)
-            _buildGoalProgress(),
+          final name = a['name'] as String? ?? 'Member';
+          final email = a['email'] as String? ?? '';
+          final churchSubtitle = dotenv.env['CHURCH_SUBTITLE'] ?? 'Rejoice Greatly - PHX';
 
-            const SizedBox(height: 24),
-
-            // 2. SUNDAY CONSISTENCY (Chart & Specific Tracker)
-            const Padding(
-              padding: EdgeInsets.only(left: 4, bottom: 12),
-              child: Text('SUNDAY CONSISTENCY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFD27E09))),
-            ),
-            
-            // Reusing the Custom Bar Chart (Flat aesthetic)
-            Container(
-              padding: const EdgeInsets.all(20),
-              color: Colors.white,
-              height: 200,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: (userStats['sundayAttendance'] as List).map((data) {
-                  return _buildBar(data['date'], data['height'], data['attended']);
-                }).toList(),
-              ),
-            ),
-            
-            // New Detail: Consecutive Sundays indicator
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              margin: const EdgeInsets.only(top: 2),
-              child: _buildConsecutiveSundayTracker(),
-            ),
-
-            const SizedBox(height: 24),
-
-            // 3. ATTENDANCE HISTORY LIST
-            const Padding(
-              padding: EdgeInsets.only(left: 4, bottom: 12),
-              child: Text('RECENT ACTIVITY', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFD27E09))),
-            ),
-            Column(
-              children: (userStats['attendanceHistory'] as List).map((item) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 2),
-                  color: Colors.white,
-                  child: ListTile(
-                    leading: Icon(Icons.check_circle, color: gold, size: 20),
-                    title: Text(item['event'], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                    subtitle: Text(item['date'], style: const TextStyle(fontSize: 12)),
-                    trailing: const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+          return RefreshIndicator(
+            color: ChurchColors.button,
+            onRefresh: () async {
+              setState(() {
+                _accountFuture = _loadAccount();
+              });
+              await _accountFuture;
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                _ProfileHeader(
+                  name: name,
+                  email: email,
+                  churchLine: churchSubtitle,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'ATTENDANCE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: ChurchColors.accent,
+                    letterSpacing: 1.1,
                   ),
-                );
-              }).toList(),
+                ),
+                const SizedBox(height: 12),
+                _StatGrid(
+                  currentStreak: _i(a['currentStreak']),
+                  longestStreak: _i(a['longestStreak']),
+                  totalAttendance: _i(a['totalAttendance']),
+                  totalAbsences: _i(a['totalAbsences']),
+                  absenceStreak: _i(a['absenceStreak']),
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  'Streaks reflect Sundays recorded in your church’s system.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: ChurchColors.muted.withValues(alpha: 0.9),
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
+}
 
-  // Circular Stat Widget (Simplified from Dashboard)
-  Widget _buildCircularStat({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-    required double progress,
-  }) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 70,
-              height: 70,
-              child: CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 5,
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-                backgroundColor: color.withOpacity(0.1),
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.name,
+    required this.email,
+    required this.churchLine,
+  });
+
+  final String name;
+  final String email;
+  final String churchLine;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: _avatarUrl(),
+      builder: (context, snap) {
+        final url = snap.data;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: ChurchColors.cardDecoration(),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: SizedBox(
+                  width: 72,
+                  height: 72,
+                  child: url != null && url.isNotEmpty
+                      ? Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => _placeholder(),
+                        )
+                      : _placeholder(),
+                ),
               ),
-            ),
-            Icon(icon, color: color, size: 28),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(
-          value,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-        ),
-        Text(
-          label,
-          style: TextStyle(fontSize: 9, color: Colors.grey[600], fontWeight: FontWeight.bold, letterSpacing: 0.5),
-        ),
-      ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: ChurchColors.bodyText,
+                      ),
+                    ),
+                    if (email.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: ChurchColors.muted),
+                      ),
+                    ],
+                    const SizedBox(height: 6),
+                    Text(
+                      churchLine,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: ChurchColors.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  // **New:** Goal Progress (Linear tracking)
-Widget _buildGoalProgress() {
-  // Use a local variable with a null check
-  final double progress = userStats['goalProgress'] ?? 0.0;
-  final int percentage = (progress * 100).toInt();
+  static Future<String?> _avatarUrl() async {
+    final p = await SharedPreferences.getInstance();
+    final s = p.getString('imgURL');
+    if (s != null && s.isNotEmpty) return s;
+    return FirebaseAuth.instance.currentUser?.photoURL;
+  }
 
-  return Container(
-    padding: const EdgeInsets.all(16),
-    color: Colors.white,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  static Widget _placeholder() {
+    return Container(
+      color: ChurchColors.button.withValues(alpha: 0.1),
+      child: const Icon(Icons.person, size: 40, color: ChurchColors.accent),
+    );
+  }
+}
+
+class _StatGrid extends StatelessWidget {
+  const _StatGrid({
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.totalAttendance,
+    required this.totalAbsences,
+    required this.absenceStreak,
+  });
+
+  final int currentStreak;
+  final int longestStreak;
+  final int totalAttendance;
+  final int totalAbsences;
+  final int absenceStreak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('MONTHLY ATTENDANCE GOAL', 
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-            Text('$percentage%', 
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: gold)),
+            Expanded(
+              child: _StatTile(
+                label: 'Current streak',
+                value: '$currentStreak',
+                icon: Icons.local_fire_department,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatTile(
+                label: 'Longest streak',
+                value: '$longestStreak',
+                icon: Icons.emoji_events_outlined,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: progress, // Now safely defaults to 0.0
-          backgroundColor: gold.withOpacity(0.1),
-          valueColor: AlwaysStoppedAnimation<Color>(gold),
-          minHeight: 6,
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                label: 'Total attendances',
+                value: '$totalAttendance',
+                icon: Icons.check_circle_outline,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatTile(
+                label: 'Total absences',
+                value: '$totalAbsences',
+                icon: Icons.remove_circle_outline,
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
-}
-  // **New:** Specific Sunday-only streak tracker
-  Widget _buildConsecutiveSundayTracker() {
-    int count = userStats['consecutiveSundays'];
-    return Row(
-      children: [
-        Icon(Icons.calendar_month_outlined, color: Colors.grey.shade400, size: 18),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            'Consecutive Sundays attended:',
-            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-          ),
-        ),
-        Text(
-          '$count Weeks',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: gold),
+        const SizedBox(height: 12),
+        _StatTile(
+          label: 'Current absence streak',
+          value: '$absenceStreak',
+          icon: Icons.trending_down,
+          fullWidth: true,
         ),
       ],
     );
   }
+}
 
-  // Reused Simple Bar (Flat aesthetic)
-  Widget _buildBar(String label, double heightPercentage, bool attended) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Container(
-            width: 30,
-            alignment: Alignment.bottomCenter,
-            child: FractionallySizedBox(
-              heightFactor: heightPercentage,
-              child: Container(
-                width: 30,
-                color: attended ? gold : gold.withOpacity(0.1),
-              ),
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.fullWidth = false,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final bool fullWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(16),
+      decoration: ChurchColors.cardDecoration(
+        shadow: const [],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: ChurchColors.button.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: ChurchColors.button, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: ChurchColors.muted,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: ChurchColors.bodyText,
+                    height: 1.1,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-      ],
+        ],
+      ),
     );
   }
 }

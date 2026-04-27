@@ -107,7 +107,7 @@ class _DashboardPageState extends State<DashboardPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => AttendanceSheet(data: const {}),
+      builder: (context) => const AttendanceStatsLoader(),
     );
   }
 
