@@ -1,10 +1,7 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
+import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 
 class EventsPage extends StatefulWidget {
@@ -24,8 +21,6 @@ class _EventsPageState extends State<EventsPage> {
   String? _error;
   final TextEditingController _searchController = TextEditingController();
 
-  String get _apiBase => 'http://${dotenv.env['IP_ADDRESS'] ?? 'localhost'}:8080';
-
   @override
   void initState() {
     super.initState();
@@ -44,30 +39,8 @@ class _EventsPageState extends State<EventsPage> {
       _error = null;
     });
     try {
-      final r = await http.get(Uri.parse('$_apiBase/events/upcoming'));
-      if (r.statusCode != 200) {
-        throw Exception('Server returned ${r.statusCode}');
-      }
-      final list = json.decode(r.body) as List<dynamic>;
-      final out = <Map<String, dynamic>>[];
-      for (final e in list) {
-        final m = e as Map<String, dynamic>;
-        if (m['cancelled'] == true) continue;
-        final t = m['template'] as Map<String, dynamic>? ?? {};
-        final dateStr = m['date'] as String? ?? '';
-        if (dateStr.isEmpty) continue;
-        out.add({
-          'title': t['title'] ?? 'Church event',
-          'time': _formatTime(m['specificTime'] as String?, t['defaultTime'] as String?),
-          'date': dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr,
-          'location': t['location'] ?? '',
-          'imageUrl': t['posterUrl'] ??
-              'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600',
-          'category': (t['category'] as String?)?.trim().isNotEmpty == true
-              ? t['category'] as String
-              : 'General',
-        });
-      }
+      final list = await ChurchApi.getUpcomingEvents();
+      final out = ChurchApi.mapEventInstances(list);
       if (!mounted) return;
       setState(() {
         _rawEvents = out;
@@ -83,17 +56,6 @@ class _EventsPageState extends State<EventsPage> {
         _grouped = {};
       });
     }
-  }
-
-  String _formatTime(String? specific, String? def) {
-    final raw = specific ?? def;
-    if (raw == null || raw.isEmpty) return '';
-    final parts = raw.split(':');
-    if (parts.length < 2) return raw;
-    final h = int.tryParse(parts[0]) ?? 0;
-    final m = int.tryParse(parts[1].split('.').first) ?? 0;
-    final d = DateTime(2000, 1, 1, h, m);
-    return DateFormat.jm().format(d);
   }
 
   List<String> get _categories {

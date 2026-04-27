@@ -11,7 +11,7 @@ class UpcomingEventsSection extends StatelessWidget {
     this.onViewAll,
   });
 
-  final List<dynamic> events;
+  final List<Map<String, dynamic>> events;
   final VoidCallback? onViewAll;
 
   @override
@@ -59,15 +59,15 @@ class UpcomingEventsSection extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 248,
+          // Poster (3:4 @ 168w) + gap + date line; fixed height prevents overflow.
+          height: 276,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.only(bottom: 4),
             itemCount: events.length,
             separatorBuilder: (context, _) => const SizedBox(width: 14),
             itemBuilder: (context, i) {
-              final event = Map<String, dynamic>.from(events[i] as Map);
-              return _EventStripCard(event: event);
+              return _EventStripCard(event: events[i]);
             },
           ),
         ),
@@ -152,6 +152,8 @@ class _EventStripCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               dateLine,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 12,
                 color: ChurchColors.accent,

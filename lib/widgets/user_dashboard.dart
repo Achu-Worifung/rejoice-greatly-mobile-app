@@ -1,15 +1,15 @@
-import 'dart:convert';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../components/sermon_card.dart';
 import '../components/show_streak.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
+import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -28,53 +28,64 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   late Future<String> _greetingFuture;
+  late Future<String?> _avatarUrlFuture;
   late Future<Map<String, dynamic>> _verseFuture;
   late Future<List<dynamic>> _sermonFuture;
-  late Future<List<dynamic>> _eventsFuture;
+  late Future<List<Map<String, dynamic>>> _eventsFuture;
 
   @override
   void initState() {
     super.initState();
     _greetingFuture = _getGreeting();
-    _verseFuture = _fetchCurrentVerse();
-    _sermonFuture = _fetchSermons();
-    _eventsFuture = _fetchUpcomingEvents();
+    _avatarUrlFuture = _loadProfilePhotoUrl();
+    _verseFuture = ChurchApi.getCurrentVerse();
+    _sermonFuture = _fetchSermonsNewestFirst();
+    _eventsFuture = _fetchDashboardEventCards();
   }
 
-  String get _ipAddress => dotenv.env['IP_ADDRESS'] ?? 'localhost';
-
-  String get _apiBase => 'http://$_ipAddress:8080';
+  Future<String?> _loadProfilePhotoUrl() async {
+    final p = await SharedPreferences.getInstance();
+    final fromBackend = p.getString('imgURL');
+    if (fromBackend != null && fromBackend.isNotEmpty) {
+      return fromBackend;
+    }
+    return FirebaseAuth.instance.currentUser?.photoURL;
+  }
 
   Future<void> _refresh() async {
     setState(() {
       _greetingFuture = _getGreeting();
-      _verseFuture = _fetchCurrentVerse();
-      _sermonFuture = _fetchSermons();
-      _eventsFuture = _fetchUpcomingEvents();
+      _avatarUrlFuture = _loadProfilePhotoUrl();
+      _verseFuture = ChurchApi.getCurrentVerse();
+      _sermonFuture = _fetchSermonsNewestFirst();
+      _eventsFuture = _fetchDashboardEventCards();
     });
     await Future.wait([_verseFuture, _sermonFuture, _eventsFuture]);
   }
 
-  Future<Map<String, dynamic>> _fetchCurrentVerse() async {
-    final response = await http.get(Uri.parse('$_apiBase/weekly-verse/current'));
-    if (response.statusCode == 200) return json.decode(response.body) as Map<String, dynamic>;
-    throw Exception('Failed to load verse');
+  Future<List<dynamic>> _fetchSermonsNewestFirst() async {
+    final list = await ChurchApi.getSermons();
+    final copy = List<dynamic>.from(list);
+    copy.sort((a, b) {
+      final da = (a as Map<String, dynamic>)['datePreached'] as String? ?? '';
+      final db = (b as Map<String, dynamic>)['datePreached'] as String? ?? '';
+      return db.compareTo(da);
+    });
+    return copy;
   }
 
-  Future<List<dynamic>> _fetchUpcomingEvents() async {
-    final response = await http.get(Uri.parse('$_apiBase/events/upcoming'));
-    if (response.statusCode == 200) {
-      return json.decode(response.body) as List<dynamic>;
-    }
-    throw Exception('Failed to load events');
-  }
-
-  Future<List<dynamic>> _fetchSermons() async {
-    final response = await http.get(Uri.parse('$_apiBase/sermons'));
-    if (response.statusCode == 200) {
-      return json.decode(response.body) as List<dynamic>;
-    }
-    throw Exception('Failed to load sermons');
+  /// Dashboard rail uses `GET /events/top4` (featured instances).
+  Future<List<Map<String, dynamic>>> _fetchDashboardEventCards() async {
+    final raw = await ChurchApi.getTop4Events();
+    return ChurchApi.mapEventInstances(raw)
+        .map(
+          (e) => {
+            'title': e['title'],
+            'date': e['date'],
+            'imageUrl': e['imageUrl'],
+          },
+        )
+        .toList();
   }
 
   String _formatReference(String book, int chapter, int start, int? end) {
@@ -100,6 +111,18 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Widget _avatarPlaceholder() {
+    return Container(
+      height: 40,
+      width: 40,
+      decoration: BoxDecoration(
+        color: ChurchColors.card,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Icon(Icons.person, color: ChurchColors.accent),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -111,20 +134,24 @@ class _DashboardPageState extends State<DashboardPage> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 16.0),
           child: Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.network(
-                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST4JjHURtaso7i__VnumOCn8QoUHn-WXURHQ&s',
-                height: 40,
-                width: 40,
-                fit: BoxFit.cover,
-                errorBuilder: (BuildContext c, Object e, StackTrace? s) => Container(
-                  height: 40,
-                  width: 40,
-                  color: ChurchColors.card,
-                  child: const Icon(Icons.person, color: ChurchColors.accent),
-                ),
-              ),
+            child: FutureBuilder<String?>(
+              future: _avatarUrlFuture,
+              builder: (context, snap) {
+                final url = snap.data;
+                if (url == null || url.isEmpty) {
+                  return _avatarPlaceholder();
+                }
+                return ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.network(
+                    url,
+                    height: 40,
+                    width: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (BuildContext c, Object e, StackTrace? s) => _avatarPlaceholder(),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -152,9 +179,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   );
                 },
               ),
-              const Text(
-                'Rejoice Greatly - PHX',
-                style: TextStyle(color: ChurchColors.muted, fontSize: 13),
+              Text(
+                dotenv.env['CHURCH_SUBTITLE'] ?? 'Rejoice Greatly - PHX',
+                style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
             ],
           ),
@@ -224,7 +251,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           message: 'No sermons available yet.',
                         );
                       }
-                      final s = snapshot.data!.last as Map<String, dynamic>;
+                      final s = snapshot.data!.first as Map<String, dynamic>;
                       return LatestSermonCard(
                         data: {
                           'title': s['title'] ?? 'Sermon',
@@ -237,7 +264,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 12),
                   _buildViewMoreButton(),
                   const SizedBox(height: 32),
-                  FutureBuilder<List<dynamic>>(
+                  FutureBuilder<List<Map<String, dynamic>>>(
                     future: _eventsFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -255,17 +282,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       if (data == null || data.isEmpty) {
                         return const SizedBox.shrink();
                       }
-                      final formattedEvents = data.map((e) {
-                        final m = e as Map<String, dynamic>;
-                        final template = m['template'] as Map<String, dynamic>? ?? {};
-                        return {
-                          'title': template['title'] ?? 'Church Event',
-                          'date': m['date'] ?? '',
-                          'imageUrl': template['posterUrl'] ?? 'https://via.placeholder.com/150',
-                        };
-                      }).toList();
                       return UpcomingEventsSection(
-                        events: formattedEvents,
+                        events: data,
                         onViewAll: widget.onViewAllEvents,
                       );
                     },
@@ -273,9 +291,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 8),
                   WorshipWithUsCard(
                     data: {
-                      'name': 'REJOICE GREATLY PHX',
-                      'address': '2323 E Magnolia St, Phoenix, AZ 85012',
-                      'serviceTimes': '10:00 AM',
+                      'name': dotenv.env['CHURCH_NAME'] ?? 'REJOICE GREATLY PHX',
+                      'address': dotenv.env['CHURCH_ADDRESS'] ?? '2323 E Magnolia St, Phoenix, AZ 85012',
+                      'serviceTimes': dotenv.env['CHURCH_SERVICE_TIMES'] ?? '10:00 AM',
                     },
                   ),
                 ],

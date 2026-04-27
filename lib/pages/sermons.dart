@@ -1,11 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 
 class SermonsPage extends StatefulWidget {
@@ -23,8 +22,6 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
   String? _error;
   Set<String> _savedIds = {};
   final TextEditingController _searchController = TextEditingController();
-
-  String get _apiBase => 'http://${dotenv.env['IP_ADDRESS'] ?? 'localhost'}:8080';
 
   @override
   void initState() {
@@ -71,11 +68,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
       _error = null;
     });
     try {
-      final r = await http.get(Uri.parse('$_apiBase/sermons'));
-      if (r.statusCode != 200) {
-        throw Exception('Server returned ${r.statusCode}');
-      }
-      final list = json.decode(r.body) as List<dynamic>;
+      final list = await ChurchApi.getSermons();
       final items = <Map<String, dynamic>>[];
       for (final e in list) {
         if (e is Map) {
@@ -280,14 +273,13 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
       return;
     }
     try {
-      final r = await http.get(Uri.parse('$_apiBase/sermons/$id'));
-      if (r.statusCode == 200) {
-        final detail = json.decode(r.body) as Map<String, dynamic>;
-        if (!mounted) return;
-        _showSermonPanel(s, detail);
-        return;
-      }
-    } catch (_) {}
+      final detail = await ChurchApi.getSermonById(id);
+      if (!mounted) return;
+      _showSermonPanel(s, detail);
+      return;
+    } catch (_) {
+      // fall through to show base payload only
+    }
     if (!mounted) return;
     _showSermonPanel(s, null);
   }

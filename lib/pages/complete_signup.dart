@@ -103,7 +103,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse("http://$ip_addr:8080/profile/picture-upload"),
+        Uri.parse("http://$ip_addr:8080/auth/picture-upload"),
       );
 
       request.fields['firebaseUid'] = user.uid;

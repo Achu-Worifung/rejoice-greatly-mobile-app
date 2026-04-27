@@ -174,6 +174,10 @@ class AuthService {
         await prefs.setString("name", extractedName);
         await prefs.setBool("isAdmin", isAdmin);
         await prefs.setBool("signupComplete", signupComplete);
+        final img = userData['imgURL'];
+        if (img is String && img.isNotEmpty) {
+          await prefs.setString('imgURL', img);
+        }
 
         print("Backend success: User $extractedName saved locally.");
         return signupComplete;
