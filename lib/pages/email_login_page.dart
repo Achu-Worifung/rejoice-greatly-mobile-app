@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../routes.dart';
 import '../services/auth_service.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import '../theme/church_colors.dart';
+import '../widgets/church_app_bar.dart';
 
 class EmailLoginPage extends StatefulWidget {
   const EmailLoginPage({super.key});
@@ -74,15 +76,13 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 80, // adds space to the top
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(""),
-        scrolledUnderElevation: 0,
+      backgroundColor: ChurchColors.background,
+      appBar: ChurchAppBar.of(
+        toolbarHeight: 56,
+        centerTitle: true,
+        title: const SizedBox.shrink(),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-
+          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
           onPressed: () => Navigator.pushNamed(context, '/login'),
         ),
       ),
@@ -90,7 +90,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: Colors.white,
+        color: ChurchColors.background,
         child: ListView(
           padding: const EdgeInsets.all(10),
           children: [

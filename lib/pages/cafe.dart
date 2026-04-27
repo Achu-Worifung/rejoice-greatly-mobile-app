@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../theme/church_colors.dart';
+import '../widgets/church_app_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
@@ -47,10 +49,11 @@ class _CafeState extends State<Cafe> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Cafe'),
+        backgroundColor: ChurchColors.background,
+        appBar: ChurchAppBar.pageTitle(
+          'Cafe',
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
             onPressed: () async {
               if (await _controller.canGoBack()) {
                 _controller.goBack();

@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import '../widgets/church_app_bar.dart';
 
 class MePage extends StatefulWidget {
   const MePage({super.key});
@@ -63,24 +64,12 @@ class _MePageState extends State<MePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      appBar: AppBar(
+      appBar: ChurchAppBar.pageTitle(
+        'My profile',
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: ChurchColors.accent),
+          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
           onPressed: _onBack,
         ),
-        title: const Text(
-          'My profile',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.3,
-            color: ChurchColors.accent,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: ChurchColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
       ),
       body: FutureBuilder<Map<String, dynamic>?>(
         future: _accountFuture,

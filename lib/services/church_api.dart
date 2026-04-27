@@ -94,6 +94,29 @@ class ChurchApi {
     return json.decode(r.body) as List<dynamic>;
   }
 
+  /// Uses **top4** when non-empty; otherwise first **4** of **upcoming** (sorted by date).
+  /// This covers backends where `top4` is empty or not populated yet.
+  static Future<List<dynamic>> getDashboardEventInstances() async {
+    try {
+      final top = await getTop4Events();
+      if (top.isNotEmpty) return top;
+    } catch (_) {
+      // Fall through to upcoming
+    }
+    final upcoming = await getUpcomingEvents();
+    if (upcoming.isEmpty) return [];
+    final list = List<dynamic>.from(upcoming);
+    list.sort((a, b) {
+      String dateOf(Object? x) {
+        if (x is! Map) return '';
+        return x['date'] as String? ?? '';
+      }
+      return dateOf(a).compareTo(dateOf(b));
+    });
+    if (list.length <= 4) return list;
+    return list.sublist(0, 4);
+  }
+
   /// Full upcoming list for the Events tab — `GET /events/upcoming`.
   static Future<List<dynamic>> getUpcomingEvents() async {
     final r = await http.get(Uri.parse('$baseUrl/events/upcoming'));
@@ -123,13 +146,18 @@ class ChurchApi {
   static List<Map<String, dynamic>> mapEventInstances(List<dynamic> list) {
     final out = <Map<String, dynamic>>[];
     for (final e in list) {
-      final m = e as Map<String, dynamic>;
+      if (e is! Map) continue;
+      final m = Map<String, dynamic>.from(e);
       if (m['cancelled'] == true) continue;
-      final t = m['template'] as Map<String, dynamic>? ?? {};
+      final t = m['template'] is Map
+          ? Map<String, dynamic>.from(m['template'] as Map)
+          : <String, dynamic>{};
       final dateStr = m['date'] as String? ?? '';
       if (dateStr.isEmpty) continue;
       out.add({
-        'title': t['title'] ?? 'Church event',
+        'title': (t['title'] as String?)?.trim().isNotEmpty == true
+            ? t['title'] as String
+            : (m['title'] as String?) ?? 'Church event',
         'time': _formatTime(m['specificTime'] as String?, t['defaultTime'] as String?),
         'date': dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr,
         'location': t['location'] ?? '',

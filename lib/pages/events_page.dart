@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import '../widgets/church_app_bar.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -92,11 +93,9 @@ class _EventsPageState extends State<EventsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      appBar: AppBar(
-        backgroundColor: ChurchColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 128,
+      appBar: ChurchAppBar.of(
+        toolbarHeight: 132,
+        centerTitle: true,
         title: _buildHeader(),
       ),
       body: _buildBody(),
@@ -189,16 +188,12 @@ class _EventsPageState extends State<EventsPage> {
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const Text(
           'UPCOMING EVENTS',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            color: ChurchColors.accent,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.3,
-          ),
+          style: ChurchAppBar.kickerStyle,
         ),
         const SizedBox(height: 14),
         TextField(

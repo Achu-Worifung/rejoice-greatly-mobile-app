@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/services/auth_service.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:church_app/theme/church_colors.dart';
+import 'package:church_app/widgets/church_app_bar.dart';
 
 class EmailSignupPage extends StatefulWidget {
   const EmailSignupPage({super.key});
@@ -79,19 +81,18 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
+      backgroundColor: ChurchColors.background,
+      appBar: ChurchAppBar.of(
+        title: const SizedBox.shrink(),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
           onPressed: () => Navigator.pushNamed(context, '/login'),
         ),
       ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: Colors.white,
+        color: ChurchColors.background,
         child: ListView(
           padding: const EdgeInsets.all(10),
           children: [

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../components/Moderation_Card.dart';
+import '../theme/church_colors.dart';
+import '../widgets/church_app_bar.dart';
 
 class ContentModerationPage extends StatefulWidget {
   const ContentModerationPage({super.key});
@@ -10,8 +12,6 @@ class ContentModerationPage extends StatefulWidget {
 
 class _ContentModerationPageState extends State<ContentModerationPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final Color gold = const Color(0xFFD27E09);
-
   @override
   void initState() {
     super.initState();
@@ -21,21 +21,21 @@ class _ContentModerationPageState extends State<ContentModerationPage> with Sing
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF7EB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('CONTENT MODERATION', 
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+      backgroundColor: ChurchColors.background,
+      appBar: ChurchAppBar.of(
+        title: const Text('Content moderation', style: ChurchAppBar.titleStyle),
+        centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: gold,
-          labelColor: gold,
-          unselectedLabelColor: Colors.grey,
+          indicatorColor: ChurchColors.button,
+          indicatorWeight: 3,
+          labelColor: ChurchColors.accent,
+          unselectedLabelColor: ChurchColors.muted,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
           tabs: const [
-            Tab(text: 'SERMONS'),
-            Tab(text: 'EVENTS'),
-            Tab(text: 'VERSES'),
+            Tab(text: 'Sermons'),
+            Tab(text: 'Events'),
+            Tab(text: 'Verses'),
           ],
         ),
       ),
@@ -48,10 +48,10 @@ class _ContentModerationPageState extends State<ContentModerationPage> with Sing
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: gold,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        backgroundColor: ChurchColors.button,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onPressed: () => _openEditor(context),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: ChurchColors.buttonText),
       ),
     );
   }

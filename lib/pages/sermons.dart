@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import '../widgets/church_app_bar.dart';
 
 class SermonsPage extends StatefulWidget {
   const SermonsPage({super.key});
@@ -125,22 +126,13 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      appBar: AppBar(
-        toolbarHeight: 118,
-        backgroundColor: ChurchColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
+      appBar: ChurchAppBar.of(
+        toolbarHeight: 112,
+        centerTitle: true,
         title: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'SERMONS',
-              style: TextStyle(
-                color: ChurchColors.accent,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.3,
-              ),
-            ),
+            const Text('SERMONS', style: ChurchAppBar.kickerStyle),
             const SizedBox(height: 12),
             TextField(
               controller: _searchController,

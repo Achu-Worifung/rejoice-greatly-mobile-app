@@ -11,6 +11,7 @@ import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import 'church_app_bar.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
@@ -26,12 +27,18 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
+class _DashboardEventsLoad {
+  _DashboardEventsLoad({required this.items, this.error});
+  final List<Map<String, dynamic>> items;
+  final String? error;
+}
+
 class _DashboardPageState extends State<DashboardPage> {
   late Future<String> _greetingFuture;
   late Future<String?> _avatarUrlFuture;
   late Future<Map<String, dynamic>> _verseFuture;
   late Future<List<dynamic>> _sermonFuture;
-  late Future<List<Map<String, dynamic>>> _eventsFuture;
+  late Future<_DashboardEventsLoad> _eventsFuture;
 
   @override
   void initState() {
@@ -74,18 +81,23 @@ class _DashboardPageState extends State<DashboardPage> {
     return copy;
   }
 
-  /// Dashboard rail uses `GET /events/top4` (featured instances).
-  Future<List<Map<String, dynamic>>> _fetchDashboardEventCards() async {
-    final raw = await ChurchApi.getTop4Events();
-    return ChurchApi.mapEventInstances(raw)
-        .map(
-          (e) => {
-            'title': e['title'],
-            'date': e['date'],
-            'imageUrl': e['imageUrl'],
-          },
-        )
-        .toList();
+  /// `top4` when available, else first 4 of `upcoming` (see [ChurchApi.getDashboardEventInstances]).
+  Future<_DashboardEventsLoad> _fetchDashboardEventCards() async {
+    try {
+      final raw = await ChurchApi.getDashboardEventInstances();
+      final list = ChurchApi.mapEventInstances(raw)
+          .map(
+            (e) => {
+              'title': e['title'],
+              'date': e['date'],
+              'imageUrl': e['imageUrl'],
+            },
+          )
+          .toList();
+      return _DashboardEventsLoad(items: list, error: null);
+    } catch (e) {
+      return _DashboardEventsLoad(items: [], error: e.toString());
+    }
   }
 
   String _formatReference(String book, int chapter, int start, int? end) {
@@ -127,34 +139,8 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      appBar: AppBar(
-        backgroundColor: ChurchColors.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0),
-          child: Center(
-            child: FutureBuilder<String?>(
-              future: _avatarUrlFuture,
-              builder: (context, snap) {
-                final url = snap.data;
-                if (url == null || url.isEmpty) {
-                  return _avatarPlaceholder();
-                }
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    url,
-                    height: 40,
-                    width: 40,
-                    fit: BoxFit.cover,
-                    errorBuilder: (BuildContext c, Object e, StackTrace? s) => _avatarPlaceholder(),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
+      appBar: ChurchAppBar.of(
+        centerTitle: false,
         titleSpacing: 12,
         title: GestureDetector(
           onTap: () {
@@ -173,7 +159,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     maxLines: 1,
                     style: const TextStyle(
                       fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       color: ChurchColors.accent,
                     ),
                   );
@@ -186,6 +172,31 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushNamed(context, '/profile');
+          },
+          padding: const EdgeInsets.only(left: 8),
+          icon: FutureBuilder<String?>(
+            future: _avatarUrlFuture,
+            builder: (context, snap) {
+              final url = snap.data;
+              if (url == null || url.isEmpty) {
+                return _avatarPlaceholder();
+              }
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.network(
+                  url,
+                  height: 40,
+                  width: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (BuildContext c, Object e, StackTrace? s) => _avatarPlaceholder(),
+                ),
+              );
+            },
+          ),
+        ),
         actions: [
           IconButton(
             icon: SvgPicture.asset(
@@ -195,7 +206,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             onPressed: _showAttendanceStats,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
       body: SafeArea(
@@ -264,26 +275,46 @@ class _DashboardPageState extends State<DashboardPage> {
                   const SizedBox(height: 12),
                   _buildViewMoreButton(),
                   const SizedBox(height: 32),
-                  FutureBuilder<List<Map<String, dynamic>>>(
+                  FutureBuilder<_DashboardEventsLoad>(
                     future: _eventsFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Center(
-                            child: CircularProgressIndicator(color: ChurchColors.button),
-                          ),
+                        return const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SectionHeader(title: 'UPCOMING EVENTS'),
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Center(
+                                child: CircularProgressIndicator(color: ChurchColors.button),
+                              ),
+                            ),
+                          ],
                         );
                       }
                       if (snapshot.hasError) {
-                        return const SizedBox.shrink();
+                        return _DashboardEventsError(
+                          message: snapshot.error.toString(),
+                          onRetry: _refresh,
+                          onViewAll: widget.onViewAllEvents,
+                        );
                       }
                       final data = snapshot.data;
-                      if (data == null || data.isEmpty) {
+                      if (data == null) {
                         return const SizedBox.shrink();
                       }
+                      if (data.error != null) {
+                        return _DashboardEventsError(
+                          message: data.error!,
+                          onRetry: _refresh,
+                          onViewAll: widget.onViewAllEvents,
+                        );
+                      }
+                      if (data.items.isEmpty) {
+                        return _DashboardEventsEmpty(onViewAll: widget.onViewAllEvents);
+                      }
                       return UpcomingEventsSection(
-                        events: data,
+                        events: data.items,
                         onViewAll: widget.onViewAllEvents,
                       );
                     },
@@ -484,6 +515,122 @@ class _EmptyInlineCard extends StatelessWidget {
           style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
         ),
       ),
+    );
+  }
+}
+
+class _DashboardEventsError extends StatelessWidget {
+  const _DashboardEventsError({
+    required this.message,
+    required this.onRetry,
+    this.onViewAll,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+  final VoidCallback? onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(title: 'UPCOMING EVENTS'),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: ChurchColors.cardDecoration(),
+          child: Column(
+            children: [
+              const Icon(Icons.wifi_tethering_error_outlined, color: ChurchColors.muted, size: 32),
+              const SizedBox(height: 8),
+              const Text(
+                "Couldn't load events",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: ChurchColors.bodyText,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () => onRetry(),
+                    child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
+                  ),
+                  if (onViewAll != null) ...[
+                    const Text('|', style: TextStyle(color: ChurchColors.muted)),
+                    TextButton(
+                      onPressed: onViewAll,
+                      child: const Text('Open Events tab', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashboardEventsEmpty extends StatelessWidget {
+  const _DashboardEventsEmpty({this.onViewAll});
+
+  final VoidCallback? onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionHeader(title: 'UPCOMING EVENTS'),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: ChurchColors.cardDecoration(),
+          child: Column(
+            children: [
+              const Icon(Icons.event_busy_outlined, size: 36, color: ChurchColors.muted),
+              const SizedBox(height: 10),
+              const Text(
+                'No upcoming events right now',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: ChurchColors.bodyText,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'When your church adds events, they will show up here. Check the Events tab for the full schedule.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.35),
+              ),
+              if (onViewAll != null) ...[
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: onViewAll,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ChurchColors.button,
+                    foregroundColor: ChurchColors.buttonText,
+                    minimumSize: const Size.fromHeight(40),
+                  ),
+                  child: const Text('VIEW ALL EVENTS'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
