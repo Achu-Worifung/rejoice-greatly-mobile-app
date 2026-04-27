@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../theme/church_colors.dart';
+
 class WorshipWithUsCard extends StatelessWidget {
   final Map<String, dynamic> data;
 
   const WorshipWithUsCard({super.key, required this.data});
-
-  static const _brand = Color(0xFFD27E09);
 
   // ── Directions ──────────────────────────────────────────────────────────────
   Future<void> _openDirections(BuildContext context) async {
@@ -86,16 +86,14 @@ class WorshipWithUsCard extends StatelessWidget {
 
         Container(
           width: double.infinity,
-          clipBehavior: Clip.hardEdge,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: const Color(0xFFE8E8E8)),
-            boxShadow: [
+          clipBehavior: Clip.antiAlias,
+          decoration: ChurchColors.cardDecoration(
+            color: ChurchColors.card,
+            shadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: const Color(0xFF633A02).withValues(alpha: 0.07),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -106,7 +104,7 @@ class WorshipWithUsCard extends StatelessWidget {
                 onTap: () => _openDirections(context),
                 child: const _MapPlaceholder(),
               ),
-              Container(height: 3, color: _brand),
+              Container(height: 3, color: ChurchColors.button),
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                 child: Column(
@@ -174,7 +172,7 @@ class _SectionLabel extends StatelessWidget {
           width: 3,
           height: 14,
           decoration: BoxDecoration(
-            color: const Color(0xFFD27E09),
+            color: ChurchColors.button,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -184,7 +182,7 @@ class _SectionLabel extends StatelessWidget {
           style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Color(0xFFD27E09),
+            color: ChurchColors.accent,
             letterSpacing: 1.8,
           ),
         ),
@@ -203,7 +201,7 @@ class _MapPlaceholder extends StatelessWidget {
         Container(
           height: 160,
           width: double.infinity,
-          color: const Color(0xFFF5ECD7),
+          color: ChurchColors.card,
           child: CustomPaint(painter: _MapGridPainter()),
         ),
         const Center(
@@ -211,7 +209,7 @@ class _MapPlaceholder extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(height: 20),
-              Icon(Icons.location_pin, size: 36, color: Color(0xFFD27E09)),
+              Icon(Icons.location_pin, size: 36, color: ChurchColors.accent),
               SizedBox(height: 4),
               Text(
                 'TAP FOR MAP',
@@ -219,7 +217,7 @@ class _MapPlaceholder extends StatelessWidget {
                   fontSize: 9,
                   letterSpacing: 1.5,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFFD27E09),
+                  color: ChurchColors.accent,
                 ),
               ),
             ],
@@ -234,7 +232,7 @@ class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFFD27E09).withOpacity(0.08)
+      ..color = ChurchColors.button.withValues(alpha: 0.08)
       ..strokeWidth = 1;
 
     const step = 24.0;
@@ -246,7 +244,7 @@ class _MapGridPainter extends CustomPainter {
     }
 
     final roadPaint = Paint()
-      ..color = const Color(0xFFD27E09).withOpacity(0.15)
+      ..color = ChurchColors.button.withValues(alpha: 0.15)
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
 
@@ -291,10 +289,10 @@ class _InfoRow extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: const Color(0xFFFDF3E3),
-            borderRadius: BorderRadius.circular(4),
+            color: ChurchColors.button.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 18, color: const Color(0xFFD27E09)),
+          child: Icon(icon, size: 18, color: ChurchColors.accent),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -367,10 +365,10 @@ class _PrimaryButton extends StatelessWidget {
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFD27E09),
-          foregroundColor: Colors.white,
+          backgroundColor: ChurchColors.button,
+          foregroundColor: ChurchColors.buttonText,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -391,9 +389,9 @@ class _IconOutlineButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFD27E09),
-          side: const BorderSide(color: Color(0xFFD27E09), width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          foregroundColor: ChurchColors.button,
+          side: const BorderSide(color: ChurchColors.button, width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: EdgeInsets.zero,
         ),
         child: Icon(icon, size: 20),

@@ -6,13 +6,21 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-import "../components/sermon_card.dart";
-import "../components/show_streak.dart";
+import '../components/sermon_card.dart';
+import '../components/show_streak.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
+import '../theme/church_colors.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({
+    super.key,
+    this.onViewAllSermons,
+    this.onViewAllEvents,
+  });
+
+  final VoidCallback? onViewAllSermons;
+  final VoidCallback? onViewAllEvents;
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -33,35 +41,45 @@ class _DashboardPageState extends State<DashboardPage> {
     _eventsFuture = _fetchUpcomingEvents();
   }
 
-  String ip_address = dotenv.env['IP_ADDRESS'] ?? 'localhost';
+  String get _ipAddress => dotenv.env['IP_ADDRESS'] ?? 'localhost';
+
+  String get _apiBase => 'http://$_ipAddress:8080';
+
+  Future<void> _refresh() async {
+    setState(() {
+      _greetingFuture = _getGreeting();
+      _verseFuture = _fetchCurrentVerse();
+      _sermonFuture = _fetchSermons();
+      _eventsFuture = _fetchUpcomingEvents();
+    });
+    await Future.wait([_verseFuture, _sermonFuture, _eventsFuture]);
+  }
 
   Future<Map<String, dynamic>> _fetchCurrentVerse() async {
-    final response = await http.get(
-      Uri.parse('http://$ip_address:8080/weekly-verse/current'),
-    );
-    if (response.statusCode == 200) return json.decode(response.body);
+    final response = await http.get(Uri.parse('$_apiBase/weekly-verse/current'));
+    if (response.statusCode == 200) return json.decode(response.body) as Map<String, dynamic>;
     throw Exception('Failed to load verse');
   }
 
   Future<List<dynamic>> _fetchUpcomingEvents() async {
-    final response = await http.get(
-      Uri.parse('http://$ip_address:8080/events/upcoming'),
-    );
-    if (response.statusCode == 200) return json.decode(response.body);
+    final response = await http.get(Uri.parse('$_apiBase/events/upcoming'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body) as List<dynamic>;
+    }
     throw Exception('Failed to load events');
   }
 
   Future<List<dynamic>> _fetchSermons() async {
-    final response = await http.get(
-      Uri.parse('http://$ip_address:8080/sermons'),
-    );
-    if (response.statusCode == 200) return json.decode(response.body);
+    final response = await http.get(Uri.parse('$_apiBase/sermons'));
+    if (response.statusCode == 200) {
+      return json.decode(response.body) as List<dynamic>;
+    }
     throw Exception('Failed to load sermons');
   }
 
   String _formatReference(String book, int chapter, int start, int? end) {
-    if (end == null || start == end) return "$book $chapter:$start";
-    return "$book $chapter:$start-$end";
+    if (end == null || start == end) return '$book $chapter:$start';
+    return '$book $chapter:$start-$end';
   }
 
   Future<String> _getGreeting() async {
@@ -76,18 +94,19 @@ class _DashboardPageState extends State<DashboardPage> {
   void _showAttendanceStats() {
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-          Colors.transparent, // Required for our custom rounded corners
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => AttendanceSheet(data: {}),
+      builder: (context) => AttendanceSheet(data: const {}),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ChurchColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F7FA),
+        backgroundColor: ChurchColors.background,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.only(left: 16.0),
@@ -99,6 +118,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 height: 40,
                 width: 40,
                 fit: BoxFit.cover,
+                errorBuilder: (BuildContext c, Object e, StackTrace? s) => Container(
+                  height: 40,
+                  width: 40,
+                  color: ChurchColors.card,
+                  child: const Icon(Icons.person, color: ChurchColors.accent),
+                ),
               ),
             ),
           ),
@@ -115,23 +140,21 @@ class _DashboardPageState extends State<DashboardPage> {
               FutureBuilder<String>(
                 future: _greetingFuture,
                 builder: (context, snapshot) {
-                  final displayGreeting = snapshot.hasData
-                      ? snapshot.data!
-                      : 'Hello!';
+                  final displayGreeting = snapshot.hasData ? snapshot.data! : 'Hello!';
                   return AutoSizeText(
                     displayGreeting,
                     maxLines: 1,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFD27E09),
+                      color: ChurchColors.accent,
                     ),
                   );
                 },
               ),
               const Text(
-                "Rejoice Greatly - PHX",
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                'Rejoice Greatly - PHX',
+                style: TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
             ],
           ),
@@ -140,7 +163,7 @@ class _DashboardPageState extends State<DashboardPage> {
           IconButton(
             icon: SvgPicture.asset(
               'assets/icons/lightning.svg',
-              color: const Color(0xFFD27E09),
+              colorFilter: const ColorFilter.mode(ChurchColors.accent, BlendMode.srcIn),
               width: 24,
             ),
             onPressed: _showAttendanceStats,
@@ -149,93 +172,114 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FutureBuilder<Map<String, dynamic>>(
-                  future: _verseFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const LoadingPlaceholder();
-                    }
-                    if (snapshot.hasError) {
-                      return const Center(child: Text("Error loading verse"));
-                    }
-                    final v = snapshot.data!;
-                    return verseOfTheWeekCard(
-                      data: {
-                        'text': v['content'],
-                        'version': v['version'],
-                        'reference': _formatReference(
-                          v['book'],
-                          v['chapter'],
-                          v['startVerse'],
-                          v['endVerse'],
-                        ),
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                const SectionHeader(title: 'LATEST SERMON'),
-                FutureBuilder<List<dynamic>>(
-                  future: _sermonFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const LoadingPlaceholder();
-                    }
-                    if (snapshot.hasError ||
-                        snapshot.data == null ||
-                        snapshot.data!.isEmpty) {
-                      return const Center(child: Text("No sermons available"));
-                    }
-                    final s = snapshot.data!.last;
-                    return LatestSermonCard(
-                      data: {
-                        'title': s['title'],
-                        'date': s['datePreached'],
-                        'imageUrl': s['imageUrl'],
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildViewMoreButton(),
-                const SizedBox(height: 40),
-                FutureBuilder<List<dynamic>>(
-                  future: _eventsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError || snapshot.data == null) {
-                      return const SizedBox.shrink();
-                    }
-                    final formattedEvents = snapshot.data!.map((e) {
-                      final template = e['template'] ?? {};
-                      return {
-                        'title': template['title'] ?? 'Church Event',
-                        'date': e['date'] ?? '',
-                        'imageUrl':
-                            template['posterUrl'] ??
-                            'https://via.placeholder.com/150',
-                      };
-                    }).toList();
-                    return UpcomingEventsSection(events: formattedEvents);
-                  },
-                ),
-                const SizedBox(height: 40),
-                WorshipWithUsCard(
-                  data: {
-                    "name": "REJOICE GREATLY PHX",
-                    "address": "2323 E Magnolia St, Phoenix, AZ 85012",
-                    "serviceTimes": "10:00 AM",
-                  },
-                ),
-              ],
+        child: RefreshIndicator(
+          color: ChurchColors.button,
+          onRefresh: _refresh,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FutureBuilder<Map<String, dynamic>>(
+                    future: _verseFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const LoadingPlaceholder();
+                      }
+                      if (snapshot.hasError) {
+                        return _ErrorCard(
+                          message: "We couldn't load this week's verse.",
+                          onRetry: _refresh,
+                        );
+                      }
+                      final v = snapshot.data!;
+                      return VerseOfTheWeekCard(
+                        data: {
+                          'text': v['content'],
+                          'version': v['version'],
+                          'reference': _formatReference(
+                            v['book'] as String,
+                            (v['chapter'] as num).toInt(),
+                            (v['startVerse'] as num).toInt(),
+                            v['endVerse'] == null ? null : (v['endVerse'] as num).toInt(),
+                          ),
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  const SectionHeader(title: 'LATEST SERMON'),
+                  FutureBuilder<List<dynamic>>(
+                    future: _sermonFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const LoadingPlaceholder();
+                      }
+                      if (snapshot.hasError ||
+                          snapshot.data == null ||
+                          snapshot.data!.isEmpty) {
+                        return const _EmptyInlineCard(
+                          message: 'No sermons available yet.',
+                        );
+                      }
+                      final s = snapshot.data!.last as Map<String, dynamic>;
+                      return LatestSermonCard(
+                        data: {
+                          'title': s['title'] ?? 'Sermon',
+                          'date': s['datePreached'] ?? '',
+                          'imageUrl': s['imageUrl'],
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildViewMoreButton(),
+                  const SizedBox(height: 32),
+                  FutureBuilder<List<dynamic>>(
+                    future: _eventsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: CircularProgressIndicator(color: ChurchColors.button),
+                          ),
+                        );
+                      }
+                      if (snapshot.hasError) {
+                        return const SizedBox.shrink();
+                      }
+                      final data = snapshot.data;
+                      if (data == null || data.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+                      final formattedEvents = data.map((e) {
+                        final m = e as Map<String, dynamic>;
+                        final template = m['template'] as Map<String, dynamic>? ?? {};
+                        return {
+                          'title': template['title'] ?? 'Church Event',
+                          'date': m['date'] ?? '',
+                          'imageUrl': template['posterUrl'] ?? 'https://via.placeholder.com/150',
+                        };
+                      }).toList();
+                      return UpcomingEventsSection(
+                        events: formattedEvents,
+                        onViewAll: widget.onViewAllEvents,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  WorshipWithUsCard(
+                    data: {
+                      'name': 'REJOICE GREATLY PHX',
+                      'address': '2323 E Magnolia St, Phoenix, AZ 85012',
+                      'serviceTimes': '10:00 AM',
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -245,22 +289,24 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildViewMoreButton() {
     return SizedBox(
-      height: 36,
+      height: 44,
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFD27E09),
-          foregroundColor: Colors.white,
+          backgroundColor: ChurchColors.button,
+          foregroundColor: ChurchColors.buttonText,
           elevation: 0,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        onPressed: () {},
+        onPressed: widget.onViewAllSermons,
         child: const Text(
           'VIEW MORE',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1,
+            letterSpacing: 1.2,
           ),
         ),
       ),
@@ -270,62 +316,69 @@ class _DashboardPageState extends State<DashboardPage> {
 
 // --- DASHBOARD COMPONENTS ---
 
-class verseOfTheWeekCard extends StatelessWidget {
+class VerseOfTheWeekCard extends StatelessWidget {
+  const VerseOfTheWeekCard({super.key, required this.data});
+
   final Map<String, dynamic> data;
-  const verseOfTheWeekCard({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(25),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 15,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(22),
+      decoration: ChurchColors.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'VERSE OF THE WEEK',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFFD27E09),
-              letterSpacing: 1.5,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ChurchColors.button.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'VERSE OF THE WEEK',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: ChurchColors.accent,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 16),
           Text(
             data['text'] ?? '',
             style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-              height: 1.6,
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+              color: ChurchColors.bodyText,
+              height: 1.65,
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                data['reference'] ?? '',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFD27E09),
+              Expanded(
+                child: Text(
+                  data['reference'] ?? '',
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: ChurchColors.accent,
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 data['version'] ?? '',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
               ),
             ],
           ),
@@ -336,20 +389,21 @@ class verseOfTheWeekCard extends StatelessWidget {
 }
 
 class SectionHeader extends StatelessWidget {
-  final String title;
   const SectionHeader({super.key, required this.title});
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const EdgeInsets.only(left: 2, bottom: 10),
       child: Text(
         title,
         style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFFD27E09),
-          letterSpacing: 1.2,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: ChurchColors.accent,
+          letterSpacing: 1.3,
         ),
       ),
     );
@@ -364,7 +418,53 @@ class LoadingPlaceholder extends StatelessWidget {
     return const Center(
       child: Padding(
         padding: EdgeInsets.all(20),
-        child: CircularProgressIndicator(color: Color(0xFFD27E09)),
+        child: CircularProgressIndicator(color: ChurchColors.button),
+      ),
+    );
+  }
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.message, required this.onRetry});
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: ChurchColors.cardDecoration(),
+      child: Column(
+        children: [
+          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: ChurchColors.muted)),
+          TextButton(
+            onPressed: () => onRetry(),
+            child: const Text('Try again', style: TextStyle(color: ChurchColors.accent, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyInlineCard extends StatelessWidget {
+  const _EmptyInlineCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: ChurchColors.cardDecoration(),
+      child: Center(
+        child: Text(
+          message,
+          style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
+        ),
       ),
     );
   }

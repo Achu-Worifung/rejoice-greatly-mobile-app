@@ -1,5 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Add intl to your pubspec.yaml for date formatting
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+
+import '../theme/church_colors.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -9,153 +15,291 @@ class EventsPage extends StatefulWidget {
 }
 
 class _EventsPageState extends State<EventsPage> {
-  final Color gold = const Color(0xFFD27E09);
-  String searchQuery = "";
-  String selectedFilter = "All";
+  String _searchQuery = '';
+  String _selectedFilter = 'All';
 
-  // This will hold our grouped data
-  Map<String, List<Map<String, dynamic>>> groupedEvents = {};
+  List<Map<String, dynamic>> _rawEvents = [];
+  Map<String, List<Map<String, dynamic>>> _grouped = {};
+  bool _loading = true;
+  String? _error;
+  final TextEditingController _searchController = TextEditingController();
+
+  String get _apiBase => 'http://${dotenv.env['IP_ADDRESS'] ?? 'localhost'}:8080';
 
   @override
   void initState() {
     super.initState();
-    _fetchAndProcessEvents();
+    _load();
   }
 
-  final List<Map<String, dynamic>> staticEvents = [
-    {
-      'title': 'Youth Worship Night',
-      'time': '6:30 PM',
-      'date': '2023-11-24', // Friday
-      'location': 'Youth Hall',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400',
-      'category': 'Youth',
-    },
-    {
-      'title': 'Wednesday Bible Study',
-      'time': '7:00 PM',
-      'date': '2023-11-22', // Wednesday
-      'location': 'Main Sanctuary',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=400',
-      'category': 'Study',
-    },
-    {
-      'title': 'Morning Prayer',
-      'time': '6:00 AM',
-      'date': '2023-11-22', // Same day as Bible Study
-      'location': 'Prayer Room',
-      'imageUrl':
-          'https://images.unsplash.com/photo-1444464666168-49d633b867ad?w=400',
-      'category': 'Prayer',
-    },
-  ];
-  void _fetchAndProcessEvents() {
-    // 1. Filter the raw data based on search/category
-    var filtered = staticEvents.where((event) {
-      final matchesSearch = event['title'].toLowerCase().contains(
-        searchQuery.toLowerCase(),
-      );
-      final matchesFilter =
-          selectedFilter == "All" || event['category'] == selectedFilter;
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final r = await http.get(Uri.parse('$_apiBase/events/upcoming'));
+      if (r.statusCode != 200) {
+        throw Exception('Server returned ${r.statusCode}');
+      }
+      final list = json.decode(r.body) as List<dynamic>;
+      final out = <Map<String, dynamic>>[];
+      for (final e in list) {
+        final m = e as Map<String, dynamic>;
+        if (m['cancelled'] == true) continue;
+        final t = m['template'] as Map<String, dynamic>? ?? {};
+        final dateStr = m['date'] as String? ?? '';
+        if (dateStr.isEmpty) continue;
+        out.add({
+          'title': t['title'] ?? 'Church event',
+          'time': _formatTime(m['specificTime'] as String?, t['defaultTime'] as String?),
+          'date': dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr,
+          'location': t['location'] ?? '',
+          'imageUrl': t['posterUrl'] ??
+              'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?w=600',
+          'category': (t['category'] as String?)?.trim().isNotEmpty == true
+              ? t['category'] as String
+              : 'General',
+        });
+      }
+      if (!mounted) return;
+      setState(() {
+        _rawEvents = out;
+        _applyFilters();
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+        _rawEvents = [];
+        _grouped = {};
+      });
+    }
+  }
+
+  String _formatTime(String? specific, String? def) {
+    final raw = specific ?? def;
+    if (raw == null || raw.isEmpty) return '';
+    final parts = raw.split(':');
+    if (parts.length < 2) return raw;
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = int.tryParse(parts[1].split('.').first) ?? 0;
+    final d = DateTime(2000, 1, 1, h, m);
+    return DateFormat.jm().format(d);
+  }
+
+  List<String> get _categories {
+    final s = <String>{'All'};
+    for (final e in _rawEvents) {
+      s.add(e['category'] as String? ?? 'General');
+    }
+    return s.toList()..sort();
+  }
+
+  void _applyFilters() {
+    var filtered = _rawEvents.where((event) {
+      final title = (event['title'] as String? ?? '').toLowerCase();
+      final loc = (event['location'] as String? ?? '').toLowerCase();
+      final q = _searchQuery.toLowerCase();
+      final matchesSearch = q.isEmpty || title.contains(q) || loc.contains(q);
+      final cat = event['category'] as String? ?? 'General';
+      final matchesFilter = _selectedFilter == 'All' || cat == _selectedFilter;
       return matchesSearch && matchesFilter;
     }).toList();
 
-    // 2. Sort by date
-    filtered.sort((a, b) => a['date'].compareTo(b['date']));
+    filtered.sort((a, b) => (a['date'] as String).compareTo(b['date'] as String));
 
-    // 3. Group by date string
-    Map<String, List<Map<String, dynamic>>> tempGrouped = {};
-    for (var event in filtered) {
-      String date = event['date'];
-      if (tempGrouped[date] == null) tempGrouped[date] = [];
-      tempGrouped[date]!.add(event);
+    final temp = <String, List<Map<String, dynamic>>>{};
+    for (final event in filtered) {
+      final date = event['date'] as String;
+      temp.putIfAbsent(date, () => []);
+      temp[date]!.add(event);
     }
-
-    setState(() {
-      groupedEvents = tempGrouped;
-    });
+    _grouped = temp;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
-      backgroundColor: const Color(0xFFFFF7EB),
+      backgroundColor: ChurchColors.background,
       appBar: AppBar(
-          //  toolbarHeight: 120,
-        backgroundColor: Colors.white,
+        backgroundColor: ChurchColors.background,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        toolbarHeight: 140,
+        toolbarHeight: 128,
         title: _buildHeader(),
       ),
-      body: groupedEvents.isEmpty
-          ? const Center(child: Text("No events found"))
-          : ListView.builder(
-              itemCount: groupedEvents.keys.length,
-              itemBuilder: (context, index) {
-                String dateKey = groupedEvents.keys.elementAt(index);
-                List<Map<String, dynamic>> eventsForDate =
-                    groupedEvents[dateKey]!;
-                return _buildDateSection(dateKey, eventsForDate);
-              },
-            ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: ChurchColors.button));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_outlined, size: 48, color: ChurchColors.muted),
+              const SizedBox(height: 12),
+              Text(
+                "Couldn't load events",
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: ChurchColors.bodyText,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _load,
+                style: FilledButton.styleFrom(
+                  backgroundColor: ChurchColors.button,
+                  foregroundColor: ChurchColors.buttonText,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_grouped.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.event_available_outlined, size: 56, color: ChurchColors.muted.withValues(alpha: 0.6)),
+              const SizedBox(height: 16),
+              const Text(
+                'No upcoming events match your filters',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: ChurchColors.bodyText,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Try another category or clear search.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: ChurchColors.muted, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: ChurchColors.button,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 24),
+        itemCount: _grouped.length,
+        itemBuilder: (context, index) {
+          final key = _grouped.keys.elementAt(index);
+          return _buildDateSection(key, _grouped[key]!);
+        },
+      ),
     );
   }
 
   Widget _buildHeader() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-                Text(
-          "UPCOMING EVENTS",
+        const Text(
+          'UPCOMING EVENTS',
+          textAlign: TextAlign.center,
           style: TextStyle(
-            color: gold,
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            color: ChurchColors.accent,
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.3,
           ),
         ),
-        SizedBox(height: 12),
-
-        // Search Bar
-        Container(
-          height: 40,
-          color: Colors.grey.shade100,
-          child: TextField(
-            onChanged: (val) {
-              searchQuery = val;
-              _fetchAndProcessEvents();
-            },
-            decoration: InputDecoration(
-              hintText: "Search events...",
-              prefixIcon: Icon(Icons.search, color: gold, size: 20),
-              border: InputBorder.none,
+        const SizedBox(height: 14),
+        TextField(
+          controller: _searchController,
+          onChanged: (val) {
+            setState(() {
+              _searchQuery = val;
+              _applyFilters();
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search by title or location...',
+            prefixIcon: const Icon(Icons.search, color: ChurchColors.muted, size: 22),
+            filled: true,
+            fillColor: ChurchColors.card,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.5)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: ChurchColors.button, width: 1.2),
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        // Filter Chips
+        const SizedBox(height: 12),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: ["All", "Youth", "Study", "Prayer", "Social"].map((cat) {
-              bool isSel = selectedFilter == cat;
+            children: _categories.map((cat) {
+              final isSel = _selectedFilter == cat;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(cat),
+                child: FilterChip(
+                  showCheckmark: false,
+                  label: Text(
+                    cat,
+                    style: TextStyle(
+                      fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                      color: isSel ? ChurchColors.buttonText : ChurchColors.accent,
+                      fontSize: 12,
+                    ),
+                  ),
                   selected: isSel,
                   onSelected: (val) {
-                    setState(() => selectedFilter = cat);
-                    _fetchAndProcessEvents();
+                    setState(() {
+                      if (val) {
+                        _selectedFilter = cat;
+                        _applyFilters();
+                      }
+                    });
                   },
-                  selectedColor: gold,
-                  labelStyle: TextStyle(color: isSel ? Colors.white : gold),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero,
+                  backgroundColor: ChurchColors.card,
+                  selectedColor: ChurchColors.button,
+                  side: BorderSide(
+                    color: isSel ? ChurchColors.button : ChurchColors.divider,
                   ),
-                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
               );
             }).toList(),
@@ -166,52 +310,228 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   Widget _buildDateSection(String date, List<Map<String, dynamic>> events) {
-    // Format the date header (e.g., Wednesday, Nov 22)
-    DateTime dt = DateTime.parse(date);
-    String formattedDate = DateFormat('EEEE, MMM d').format(dt).toUpperCase();
+    final dt = DateTime.parse(date);
+    final header = DateFormat('EEEE, MMM d, y').format(dt).toUpperCase();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
           child: Text(
-            formattedDate,
-            style: TextStyle(
-              color: gold,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
+            header,
+            style: const TextStyle(
+              color: ChurchColors.accent,
+              fontWeight: FontWeight.w800,
+              fontSize: 11,
+              letterSpacing: 0.6,
             ),
           ),
         ),
-        ...events.map((e) => _buildEventTile(e)).toList(),
+        ...events.map(_buildEventCard),
       ],
     );
   }
 
-  Widget _buildEventTile(Map<String, dynamic> event) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      color: Colors.white,
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: NetworkImage(event['imageUrl']),
-              fit: BoxFit.cover,
+  Widget _buildEventCard(Map<String, dynamic> event) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Material(
+        color: ChurchColors.card,
+        elevation: 0,
+        borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+        child: InkWell(
+          onTap: () => _openEvent(event),
+          borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+              border: Border.all(color: ChurchColors.divider.withValues(alpha: 0.45)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      width: 86,
+                      height: 86,
+                      child: Image.network(
+                        event['imageUrl'] as String? ?? '',
+                        fit: BoxFit.cover,
+                        errorBuilder: (BuildContext c, Object e, StackTrace? s) => Container(
+                          color: ChurchColors.button.withValues(alpha: 0.08),
+                          child: const Icon(Icons.event, color: ChurchColors.accent, size: 32),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          event['title'] as String? ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: ChurchColors.bodyText,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.schedule, size: 15, color: ChurchColors.muted),
+                            const SizedBox(width: 4),
+                            Text(
+                              event['time'] as String? ?? 'Time TBA',
+                              style: const TextStyle(
+                                color: ChurchColors.muted,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if ((event['location'] as String? ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2),
+                                child: Icon(Icons.place_outlined, size: 15, color: ChurchColors.muted),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  event['location'] as String,
+                                  style: const TextStyle(
+                                    color: ChurchColors.muted,
+                                    fontSize: 12,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: ChurchColors.button.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              (event['category'] as String? ?? 'General').toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w800,
+                                color: ChurchColors.accent,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: ChurchColors.muted),
+                ],
+              ),
             ),
           ),
         ),
-        title: Text(
-          event['title'],
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text("${event['time']} • ${event['location']}"),
-        trailing: Icon(Icons.chevron_right, color: gold),
-        onTap: () {},
+      ),
+    );
+  }
+
+  void _openEvent(Map<String, dynamic> event) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.42,
+          minChildSize: 0.32,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: ChurchColors.card,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: ListView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(22),
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: ChurchColors.divider,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    event['title'] as String? ?? '',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: ChurchColors.bodyText,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _sheetRow(Icons.schedule, event['time'] as String? ?? ''),
+                  if ((event['location'] as String? ?? '').isNotEmpty)
+                    _sheetRow(Icons.place_outlined, event['location'] as String),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ChurchColors.button,
+                      foregroundColor: ChurchColors.buttonText,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _sheetRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: ChurchColors.accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: ChurchColors.bodyText, fontSize: 15, height: 1.35),
+            ),
+          ),
+        ],
       ),
     );
   }

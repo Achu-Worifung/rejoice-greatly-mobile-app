@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:intl/intl.dart';
+
+import '../theme/church_colors.dart';
 
 class UpcomingEventsSection extends StatelessWidget {
-  final List<dynamic> events;
+  const UpcomingEventsSection({
+    super.key,
+    required this.events,
+    this.onViewAll,
+  });
 
-  const UpcomingEventsSection({super.key, required this.events});
+  final List<dynamic> events;
+  final VoidCallback? onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -14,9 +22,8 @@ class UpcomingEventsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.only(bottom: 12),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Expanded(
                 child: AutoSizeText(
@@ -24,89 +31,135 @@ class UpcomingEventsSection extends StatelessWidget {
                   minFontSize: 12,
                   maxLines: 1,
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFD27E09),
-                    letterSpacing: 1,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: ChurchColors.accent,
+                    letterSpacing: 1.2,
                   ),
                 ),
               ),
-              GestureDetector(
-                onTap: () => print("View All clicked!"),
-                child: Container(
-                  padding: const EdgeInsets.only(bottom: 1),
-                  decoration: const BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Color(0xFFD27E09), width: 1.5),
-                    ),
-                  ),
-                  child: const Text(
-                    'vIEW ALL',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFD27E09),
-                    ),
+              TextButton(
+                onPressed: onViewAll,
+                style: TextButton.styleFrom(
+                  foregroundColor: ChurchColors.accent,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: const Text(
+                  'VIEW ALL',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    decoration: TextDecoration.underline,
+                    decorationColor: ChurchColors.accent,
                   ),
                 ),
               ),
             ],
           ),
         ),
-
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(left: 16, bottom: 20),
-          child: Row(
-            // Use cast to ensure type safety during mapping
-            children: events.map((event) => _buildEventCard(Map<String, dynamic>.from(event))).toList(),
+        SizedBox(
+          height: 248,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(bottom: 4),
+            itemCount: events.length,
+            separatorBuilder: (context, _) => const SizedBox(width: 14),
+            itemBuilder: (context, i) {
+              final event = Map<String, dynamic>.from(events[i] as Map);
+              return _EventStripCard(event: event);
+            },
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildEventCard(Map<String, dynamic> event) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.grey[300], // Placeholder color while loading image
-              image: DecorationImage(
-                image: NetworkImage(event['imageUrl']),
-                fit: BoxFit.cover,
-                // Error handling for broken links
-                onError: (exception, stackTrace) => const Icon(Icons.broken_image),
+class _EventStripCard extends StatelessWidget {
+  const _EventStripCard({required this.event});
+
+  final Map<String, dynamic> event;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = (event['title'] as String?) ?? 'Event';
+    final rawDate = event['date'] as String? ?? '';
+    String dateLine = rawDate;
+    if (rawDate.length >= 10) {
+      try {
+        final d = DateTime.parse(rawDate.substring(0, 10));
+        dateLine = DateFormat('MMM d, y').format(d);
+      } catch (_) {}
+    }
+
+    return SizedBox(
+      width: 168,
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+              child: AspectRatio(
+                aspectRatio: 3 / 4,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      event['imageUrl'] as String? ?? '',
+                      fit: BoxFit.cover,
+                      errorBuilder: (BuildContext c, Object e, StackTrace? s) => Container(
+                        color: ChurchColors.card,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.event, size: 40, color: ChurchColors.muted),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.55),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 10,
+                      right: 10,
+                      bottom: 10,
+                      child: Text(
+                        title.toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            (event['title'] as String).toUpperCase(),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              height: 1.2,
+            const SizedBox(height: 8),
+            Text(
+              dateLine,
+              style: const TextStyle(
+                fontSize: 12,
+                color: ChurchColors.accent,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            event['date'],
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFFD27E09),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
