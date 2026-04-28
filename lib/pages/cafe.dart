@@ -51,7 +51,7 @@ class _CafeState extends State<Cafe> {
       child: Scaffold(
         backgroundColor: ChurchColors.background,
         appBar: ChurchAppBar.pageTitle(
-          'Cafe',
+          'Mood Changing Cafe',
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
             onPressed: () async {

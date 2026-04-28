@@ -13,6 +13,7 @@ import '../pages/sermon_detail_page.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import 'church_app_bar.dart';
+import '../widgets/dashboard_label_title.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
@@ -249,7 +250,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  const SectionHeader(title: 'LATEST SERMON'),
+                  const DashboardLabelText(label: 'LATEST SERMON'),
                   FutureBuilder<List<dynamic>>(
                     future: _sermonFuture,
                     builder: (context, snapshot) {
@@ -281,7 +282,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         return const Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SectionHeader(title: 'UPCOMING EVENTS'),
+                            DashboardLabelText(label: 'UPCOMING EVENTS'),
                             Padding(
                               padding: EdgeInsets.symmetric(vertical: 20),
                               child: Center(
@@ -436,28 +437,6 @@ class VerseOfTheWeekCard extends StatelessWidget {
   }
 }
 
-class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 2, bottom: 10),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: ChurchColors.accent,
-          letterSpacing: 1.3,
-        ),
-      ),
-    );
-  }
-}
-
 class LoadingPlaceholder extends StatelessWidget {
   const LoadingPlaceholder({super.key});
 
@@ -534,7 +513,7 @@ class _DashboardEventsError extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'UPCOMING EVENTS'),
+        const DashboardLabelText(label: 'UPCOMING EVENTS'),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -591,7 +570,7 @@ class _DashboardEventsEmpty extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(title: 'UPCOMING EVENTS'),
+        const DashboardLabelText(label: 'UPCOMING EVENTS'),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -633,3 +612,4 @@ class _DashboardEventsEmpty extends StatelessWidget {
     );
   }
 }
+

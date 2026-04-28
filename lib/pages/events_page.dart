@@ -98,7 +98,14 @@ class _EventsPageState extends State<EventsPage> {
       appBar: ChurchAppBar.of(
        toolbarHeight: 138,
         centerTitle: true,
-        title: _buildHeader(),
+        title: Column ( 
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+           
+          ],
+        )
       ),
       body: _buildBody(),
     );
@@ -195,6 +202,7 @@ class _EventsPageState extends State<EventsPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          const SizedBox(height: 40), 
           // Gradient Title with Accents
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

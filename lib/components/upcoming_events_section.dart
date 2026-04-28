@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/church_colors.dart';
+import '../widgets/dashboard_label_title.dart';
 
 class UpcomingEventsSection extends StatelessWidget {
   const UpcomingEventsSection({
@@ -14,6 +14,8 @@ class UpcomingEventsSection extends StatelessWidget {
   final List<Map<String, dynamic>> events;
   final VoidCallback? onViewAll;
 
+
+
   @override
   Widget build(BuildContext context) {
     if (events.isEmpty) return const SizedBox.shrink();
@@ -24,20 +26,10 @@ class UpcomingEventsSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Expanded(
-                child: AutoSizeText(
-                  'UPCOMING EVENTS',
-                  minFontSize: 12,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: ChurchColors.accent,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
+              const DashboardLabelText(label: 'UPCOMING EVENTS'),
               TextButton(
                 onPressed: onViewAll,
                 style: TextButton.styleFrom(
@@ -50,7 +42,7 @@ class UpcomingEventsSection extends StatelessWidget {
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
-                    decoration: TextDecoration.underline,
+                    // decoration: TextDecoration.underline,
                     decorationColor: ChurchColors.accent,
                   ),
                 ),
@@ -166,3 +158,5 @@ class _EventStripCard extends StatelessWidget {
     );
   }
 }
+
+

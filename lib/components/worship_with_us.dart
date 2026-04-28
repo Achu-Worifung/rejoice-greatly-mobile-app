@@ -3,6 +3,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/church_colors.dart';
+import '../widgets/dashboard_label_title.dart';
 
 class WorshipWithUsCard extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -81,7 +82,7 @@ class WorshipWithUsCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionLabel(label: 'WORSHIP WITH US'),
+        const DashboardLabelText(label: 'WORSHIP WITH US'),
         const SizedBox(height: 10),
 
         Container(
@@ -159,37 +160,6 @@ class WorshipWithUsCard extends StatelessWidget {
 // ─────────────────────────────────────────────
 // Sub-widgets
 // ─────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 14,
-          decoration: BoxDecoration(
-            color: ChurchColors.button,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: ChurchColors.accent,
-            letterSpacing: 1.8,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _MapPlaceholder extends StatelessWidget {
   const _MapPlaceholder();
