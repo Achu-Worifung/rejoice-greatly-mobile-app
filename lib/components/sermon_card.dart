@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../theme/church_colors.dart';
 
 class LatestSermonCard extends StatelessWidget {
-  const LatestSermonCard({super.key, required this.data});
+  const LatestSermonCard({super.key, required this.data, this.onPlay});
 
   final Map<String, dynamic> data;
+  final VoidCallback? onPlay;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +58,7 @@ class LatestSermonCard extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: onPlay,
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(

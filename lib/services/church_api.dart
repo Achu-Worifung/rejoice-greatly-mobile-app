@@ -162,6 +162,7 @@ class ChurchApi {
         'date': dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr,
         'location': t['location'] ?? '',
         'imageUrl': t['posterUrl'],
+        'description': (t['description'] as String?)?.trim() ?? '',
         'category': (t['category'] as String?)?.trim().isNotEmpty == true
             ? t['category'] as String
             : 'General',

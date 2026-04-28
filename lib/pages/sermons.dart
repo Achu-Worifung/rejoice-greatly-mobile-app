@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'sermon_detail_page.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
+import '../widgets/church_tab_page_header.dart';
 
 class SermonsPage extends StatefulWidget {
   const SermonsPage({super.key});
@@ -127,46 +129,24 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
-        toolbarHeight: 112,
+        toolbarHeight: 138,
         centerTitle: true,
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('SERMONS', style: ChurchAppBar.kickerStyle),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _search = v),
-              decoration: InputDecoration(
-                hintText: 'Search title, speaker, or topic...',
-                prefixIcon: const Icon(Icons.search, color: ChurchColors.muted, size: 22),
-                filled: true,
-                fillColor: ChurchColors.card,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.5)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.5)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: ChurchColors.button, width: 1.2),
-                ),
-              ),
-            ),
-          ],
-        ),
+        title: _buildHeader(),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: ChurchColors.button,
           indicatorWeight: 3,
           labelColor: ChurchColors.accent,
           unselectedLabelColor: ChurchColors.muted,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 0.6),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+            letterSpacing: 0.6,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
           tabs: const [
             Tab(text: 'ALL'),
             Tab(text: 'SAVED'),
@@ -178,6 +158,134 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         children: [
           _buildSermonList(onlySaved: false),
           _buildSermonList(onlySaved: true),
+        ],
+      ),
+    );
+  }
+
+  // ✨ PREMIUM HEADER — matches EventsPage
+  Widget _buildHeader() {
+    return Padding(
+      padding: ChurchTabPageHeader.kTitlePadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Gradient Title with Sparkle Accents
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon(
+              //   Icons.auto_awesome_rounded,
+              //   size: 16,
+              //   color: ChurchColors.accent.withValues(alpha: 0.6),
+              // ),
+              // const SizedBox(width: 10),
+              Flexible(
+                child: ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      ChurchColors.accent,
+                      ChurchColors.button,
+                      ChurchColors.accent,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ).createShader(bounds),
+                  child: const Text(
+                    'SERMONS',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 19,
+                      letterSpacing: 1.6,
+                      height: 1.1,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              // const SizedBox(width: 10),
+              // Icon(
+              //   Icons.auto_awesome_rounded,
+              //   size: 16,
+              //   color: ChurchColors.accent.withValues(alpha: 0.6),
+              // ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          // Soft Gradient Divider
+          Container(
+            height: 2,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(1),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  ChurchColors.accent.withValues(alpha: 0.5),
+                  ChurchColors.button,
+                  ChurchColors.accent.withValues(alpha: 0.5),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Elevated Search Field
+          Container(
+            decoration: BoxDecoration(
+              color: ChurchColors.card,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _search = v),
+              decoration: InputDecoration(
+                hintText: 'Search sermons...',
+                hintStyle: TextStyle(
+                  color: ChurchColors.muted.withValues(alpha: 0.6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: ChurchColors.muted,
+                  size: 20,
+                ),
+                filled: true,
+                fillColor: Colors.transparent,
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 11,
+                  horizontal: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: ChurchColors.divider.withValues(alpha: 0.25),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(
+                    color: ChurchColors.button.withValues(alpha: 0.7),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -198,7 +306,11 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
               const SizedBox(height: 12),
               const Text(
                 "Couldn't load sermons",
-                style: TextStyle(fontWeight: FontWeight.w800, color: ChurchColors.bodyText, fontSize: 16),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: ChurchColors.bodyText,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -258,153 +370,8 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
     );
   }
 
-  Future<void> _openSermon(Map<String, dynamic> s) async {
-    final id = s['id'];
-    if (id == null) {
-      _showSermonPanel(s, null);
-      return;
-    }
-    try {
-      final detail = await ChurchApi.getSermonById(id);
-      if (!mounted) return;
-      _showSermonPanel(s, detail);
-      return;
-    } catch (_) {
-      // fall through to show base payload only
-    }
-    if (!mounted) return;
-    _showSermonPanel(s, null);
-  }
-
-  void _showSermonPanel(Map<String, dynamic> base, Map<String, dynamic>? detail) {
-    final merged = <String, dynamic>{...base, if (detail != null) ...detail};
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.55,
-          minChildSize: 0.4,
-          maxChildSize: 0.92,
-          expand: false,
-          builder: (context, scroll) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: ChurchColors.card,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: ListView(
-                controller: scroll,
-                padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: ChurchColors.divider,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: _sermonImage(merged['imageUrl'] as String?),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    merged['title'] as String? ?? 'Sermon',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: ChurchColors.bodyText,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    [
-                      merged['speaker'],
-                      if (merged['datePreached'] != null)
-                        _formatDate(merged['datePreached'] as String?),
-                      if ((merged['duration'] as String?)?.isNotEmpty == true) merged['duration'],
-                    ].whereType<String>().where((e) => e.isNotEmpty).join(' · '),
-                    style: const TextStyle(
-                      color: ChurchColors.muted,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if ((merged['category'] as String?)?.isNotEmpty == true) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: ChurchColors.button.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        (merged['category'] as String).toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: ChurchColors.accent,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                  if ((merged['description'] as String?)?.isNotEmpty == true) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      merged['description'] as String,
-                      style: const TextStyle(
-                        color: ChurchColors.bodyText,
-                        fontSize: 15,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _formatDate(String? s) {
-    if (s == null || s.length < 10) return s ?? '';
-    try {
-      return DateFormat.yMMMd().format(DateTime.parse(s.substring(0, 10)));
-    } catch (_) {
-      return s;
-    }
-  }
-
-  Widget _sermonImage(String? url) {
-    if (url == null || url.isEmpty) {
-      return Container(
-        color: ChurchColors.button.withValues(alpha: 0.1),
-        child: const Center(
-          child: Icon(Icons.mic, size: 48, color: ChurchColors.accent),
-        ),
-      );
-    }
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (BuildContext c, Object e, StackTrace? s) => Container(
-        color: ChurchColors.button.withValues(alpha: 0.1),
-        child: const Center(child: Icon(Icons.mic, size: 48, color: ChurchColors.accent)),
-      ),
-    );
+  void _openSermon(Map<String, dynamic> s) {
+    openSermonDetailPage(context, Map<String, dynamic>.from(s));
   }
 }
 
@@ -484,6 +451,21 @@ class _SermonRow extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: onOpen,
+                  icon: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: ChurchColors.button.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: ChurchColors.button,
+                      size: 24,
+                    ),
                   ),
                 ),
                 IconButton(

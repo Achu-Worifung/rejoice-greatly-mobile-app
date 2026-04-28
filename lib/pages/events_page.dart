@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'event_detail_page.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
+import '../widgets/church_tab_page_header.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -94,7 +96,7 @@ class _EventsPageState extends State<EventsPage> {
     return Scaffold(
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
-        toolbarHeight: 132,
+       toolbarHeight: 138,
         centerTitle: true,
         title: _buildHeader(),
       ),
@@ -185,84 +187,157 @@ class _EventsPageState extends State<EventsPage> {
     );
   }
 
+  // ✨ PREMIUM HEADER
   Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text(
-          'UPCOMING EVENTS',
-          textAlign: TextAlign.center,
-          style: ChurchAppBar.kickerStyle,
-        ),
-        const SizedBox(height: 14),
-        TextField(
-          controller: _searchController,
-          onChanged: (val) {
-            setState(() {
-              _searchQuery = val;
-              _applyFilters();
-            });
-          },
-          decoration: InputDecoration(
-            hintText: 'Search by title or location...',
-            prefixIcon: const Icon(Icons.search, color: ChurchColors.muted, size: 22),
-            filled: true,
-            fillColor: ChurchColors.card,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.5)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.5)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: ChurchColors.button, width: 1.2),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: _categories.map((cat) {
-              final isSel = _selectedFilter == cat;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  showCheckmark: false,
-                  label: Text(
-                    cat,
+    return Padding(
+      padding: ChurchTabPageHeader.kTitlePadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Gradient Title with Accents
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon(Icons.auto_awesome_rounded, size: 16, color: ChurchColors.accent.withValues(alpha: 0.6)),
+              // const SizedBox(width: 10),
+              Flexible(
+                child: ShaderMask(
+                  blendMode: BlendMode.srcIn,
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [ChurchColors.accent, ChurchColors.button, ChurchColors.accent],
+                    stops: const [0.0, 0.5, 1.0],
+                  ).createShader(bounds),
+                  child: const Text(
+                    'UPCOMING EVENTS',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
-                      color: isSel ? ChurchColors.buttonText : ChurchColors.accent,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 19,
+                      letterSpacing: 1.6,
+                      height: 1.1,
+                      color: Colors.white, // Required for ShaderMask gradient
                     ),
                   ),
-                  selected: isSel,
-                  onSelected: (val) {
-                    setState(() {
-                      if (val) {
-                        _selectedFilter = cat;
-                        _applyFilters();
-                      }
-                    });
-                  },
-                  backgroundColor: ChurchColors.card,
-                  selectedColor: ChurchColors.button,
-                  side: BorderSide(
-                    color: isSel ? ChurchColors.button : ChurchColors.divider,
-                  ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
-              );
-            }).toList(),
+              ),
+              // const SizedBox(width: 10),
+              // Icon(Icons.auto_awesome_rounded, size: 16, color: ChurchColors.accent.withValues(alpha: 0.6)),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          // Soft Gradient Divider
+          Container(
+            height: 2,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(1),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  ChurchColors.accent.withValues(alpha: 0.5),
+                  ChurchColors.button,
+                  ChurchColors.accent.withValues(alpha: 0.5),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Elevated Search Field
+          Container(
+            decoration: BoxDecoration(
+              color: ChurchColors.card,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (val) {
+                setState(() {
+                  _searchQuery = val;
+                  _applyFilters();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search events...',
+                hintStyle: TextStyle(
+                  color: ChurchColors.muted.withValues(alpha: 0.6),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                prefixIcon: Icon(Icons.search_rounded, color: ChurchColors.muted, size: 20),
+                filled: true,
+                fillColor: Colors.transparent,
+                contentPadding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.25)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: ChurchColors.button.withValues(alpha: 0.7), width: 1.5),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Premium Filter Chips
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              children: _categories.map((cat) {
+                final isSel = _selectedFilter == cat;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    showCheckmark: false,
+                    elevation: isSel ? 2.5 : 0,
+                    shadowColor: ChurchColors.button.withValues(alpha: 0.2),
+                    label: Text(
+                      cat,
+                      style: TextStyle(
+                        fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
+                        color: isSel ? ChurchColors.buttonText : ChurchColors.accent.withValues(alpha: 0.85),
+                        fontSize: 12,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    selected: isSel,
+                    onSelected: (val) {
+                      setState(() {
+                        if (val) {
+                          _selectedFilter = cat;
+                          _applyFilters();
+                        }
+                      });
+                    },
+                    backgroundColor: ChurchColors.card,
+                    selectedColor: ChurchColors.button,
+                    side: BorderSide(
+                      color: isSel ? Colors.transparent : ChurchColors.divider.withValues(alpha: 0.35),
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -411,85 +486,6 @@ class _EventsPageState extends State<EventsPage> {
   }
 
   void _openEvent(Map<String, dynamic> event) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.42,
-          minChildSize: 0.32,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: const BoxDecoration(
-                color: ChurchColors.card,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: ListView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(22),
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: ChurchColors.divider,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    event['title'] as String? ?? '',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: ChurchColors.bodyText,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _sheetRow(Icons.schedule, event['time'] as String? ?? ''),
-                  if ((event['location'] as String? ?? '').isNotEmpty)
-                    _sheetRow(Icons.place_outlined, event['location'] as String),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: ChurchColors.button,
-                      foregroundColor: ChurchColors.buttonText,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Close'),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _sheetRow(IconData icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: ChurchColors.accent),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(color: ChurchColors.bodyText, fontSize: 15, height: 1.35),
-            ),
-          ),
-        ],
-      ),
-    );
+    openEventDetailPage(context, event);
   }
 }

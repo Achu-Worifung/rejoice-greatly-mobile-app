@@ -72,6 +72,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
@@ -90,6 +91,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
     }
     if (_error != null && _sheetData == null) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
@@ -162,6 +164,7 @@ class AttendanceSheet extends StatelessWidget {
     final absenceStreak = n('absenceStreak');
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
       decoration: const BoxDecoration(
         color: ChurchColors.card,

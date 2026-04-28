@@ -9,6 +9,7 @@ import '../components/sermon_card.dart';
 import '../components/show_streak.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
+import '../pages/sermon_detail_page.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import 'church_app_bar.dart';
@@ -263,12 +264,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         );
                       }
                       final s = snapshot.data!.first as Map<String, dynamic>;
+                      final map = Map<String, dynamic>.from(s);
                       return LatestSermonCard(
-                        data: {
-                          'title': s['title'] ?? 'Sermon',
-                          'date': s['datePreached'] ?? '',
-                          'imageUrl': s['imageUrl'],
-                        },
+                        data: map,
+                        onPlay: () => openSermonDetailPage(context, map),
                       );
                     },
                   ),

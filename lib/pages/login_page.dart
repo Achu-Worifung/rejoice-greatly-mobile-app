@@ -62,11 +62,19 @@ class LoginPage extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const Expanded(child: SizedBox()),
-            _googleButton(context),
-            const SizedBox(height: 10),
-            _appleButton(context),
-            const SizedBox(height: 10),
-            _emailButton(context),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _googleButton(context),
+                  const SizedBox(height: 10),
+                  _appleButton(context),
+                  const SizedBox(height: 10),
+                  _emailButton(context),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
             const Text(
               "Automatic attendance powered by\nsecure facial recognition",
@@ -122,7 +130,7 @@ class LoginPage extends StatelessWidget {
     required VoidCallback onPressed,
   }) {
     return SizedBox(
-      width: 344,
+      width: double.infinity,
       height: 52,
       child: ElevatedButton(
         onPressed: onPressed,
