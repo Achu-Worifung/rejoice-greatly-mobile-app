@@ -9,7 +9,9 @@ class DashboardLabelText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Padding(
+      padding: const EdgeInsets.only(left: 0, bottom: 10),
+      child: Row(
       children: [
         Container(
           width: 3,
@@ -27,9 +29,10 @@ class DashboardLabelText extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: ChurchColors.accent,
             letterSpacing: 1.8,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

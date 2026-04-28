@@ -15,6 +15,7 @@ import '../theme/church_colors.dart';
 import 'church_app_bar.dart';
 import '../widgets/dashboard_label_title.dart';
 
+
 class DashboardPage extends StatefulWidget {
   const DashboardPage({
     super.key,
@@ -105,6 +106,23 @@ class _DashboardPageState extends State<DashboardPage> {
   String _formatReference(String book, int chapter, int start, int? end) {
     if (end == null || start == end) return '$book $chapter:$start';
     return '$book $chapter:$start-$end';
+  }
+
+  String? _buildMapPreviewUrl(String address) {
+    final custom = dotenv.env['CHURCH_MAP_PREVIEW_URL']?.trim();
+    if (custom != null && custom.isNotEmpty) return custom;
+
+    final apiKey = dotenv.env['GOOGLE_MAPS_STATIC_API_KEY']?.trim();
+    if (apiKey == null || apiKey.isEmpty) return null;
+
+    final encodedAddress = Uri.encodeComponent(address);
+    return 'https://maps.googleapis.com/maps/api/staticmap'
+        '?center=$encodedAddress'
+        '&zoom=15'
+        '&size=1200x600'
+        '&maptype=roadmap'
+        '&markers=color:0x2E5EA7|$encodedAddress'
+        '&key=$apiKey';
   }
 
   Future<String> _getGreeting() async {
@@ -222,6 +240,8 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 16),
+                  const DashboardLabelText(label: 'VERSE OF THE WEEK'),
                   FutureBuilder<Map<String, dynamic>>(
                     future: _verseFuture,
                     builder: (context, snapshot) {
@@ -323,8 +343,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   WorshipWithUsCard(
                     data: {
                       'name': dotenv.env['CHURCH_NAME'] ?? 'REJOICE GREATLY PHX',
-                      'address': dotenv.env['CHURCH_ADDRESS'] ?? '2323 E Magnolia St, Phoenix, AZ 85012',
+                      'address':
+                          dotenv.env['CHURCH_ADDRESS'] ?? '2323 E Magnolia St, Phoenix, AZ 85012',
                       'serviceTimes': dotenv.env['CHURCH_SERVICE_TIMES'] ?? '10:00 AM',
+                      'mapPreviewUrl': _buildMapPreviewUrl(
+                        dotenv.env['CHURCH_ADDRESS'] ?? '2323 E Magnolia St, Phoenix, AZ 85012',
+                      ),
                     },
                   ),
                 ],
@@ -379,27 +403,7 @@ class VerseOfTheWeekCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: ChurchColors.button.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'VERSE OF THE WEEK',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: ChurchColors.accent,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+         
           Text(
             data['text'] ?? '',
             style: const TextStyle(

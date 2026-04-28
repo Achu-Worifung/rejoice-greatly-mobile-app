@@ -96,16 +96,9 @@ class _EventsPageState extends State<EventsPage> {
     return Scaffold(
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
-       toolbarHeight: 138,
+        toolbarHeight: 178,
         centerTitle: true,
-        title: Column ( 
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(),
-           
-          ],
-        )
+        title: _buildHeader(),
       ),
       body: _buildBody(),
     );
@@ -202,7 +195,7 @@ class _EventsPageState extends State<EventsPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 40), 
+          const SizedBox(height: 40),
           // Gradient Title with Accents
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

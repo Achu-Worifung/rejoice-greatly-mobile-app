@@ -103,7 +103,11 @@ class WorshipWithUsCard extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () => _openDirections(context),
-                child: const _MapPlaceholder(),
+                child: _MapPreview(
+                  address: data['address'] as String? ?? '',
+                  staticMapUrl: data['mapPreviewUrl'] as String?,
+                  onTap: () => _openDirections(context),
+                ),
               ),
               Container(height: 3, color: ChurchColors.button),
               Padding(
@@ -160,40 +164,144 @@ class WorshipWithUsCard extends StatelessWidget {
 // ─────────────────────────────────────────────
 // Sub-widgets
 // ─────────────────────────────────────────────
+class _MapPreview extends StatelessWidget {
+  final String address;
+  final String? staticMapUrl;
+  final VoidCallback onTap;
 
-class _MapPlaceholder extends StatelessWidget {
-  const _MapPlaceholder();
+  const _MapPreview({
+    required this.address,
+    this.staticMapUrl,
+    required this.onTap,
+  });
+
+  bool get _hasMapImage =>
+      staticMapUrl != null && staticMapUrl!.trim().isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          height: 160,
-          width: double.infinity,
-          color: ChurchColors.card,
-          child: CustomPaint(painter: _MapGridPainter()),
-        ),
-        const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(height: 20),
-              Icon(Icons.location_pin, size: 36, color: ChurchColors.accent),
-              SizedBox(height: 4),
-              Text(
-                'TAP FOR MAP',
-                style: TextStyle(
-                  fontSize: 9,
-                  letterSpacing: 1.5,
-                  fontWeight: FontWeight.w700,
-                  color: ChurchColors.accent,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.white.withOpacity(0.2),
+        highlightColor: Colors.black.withOpacity(0.05),
+        child: Stack(
+          children: [
+            SizedBox(
+              height: 190,
+              width: double.infinity,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: _hasMapImage
+                    ? Image.network(
+                        staticMapUrl!,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return _fallbackMap();
+                        },
+                        errorBuilder: (_, __, ___) => _fallbackMap(),
+                      )
+                    : _fallbackMap(),
+              ),
+            ),
+
+            // 🌫 Gradient overlay
+            Container(
+              height: 190,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.black.withOpacity(0.05),
+                    Colors.black.withOpacity(0.45),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // 📍 Floating CTA
+            Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.location_on, size: 18, color: ChurchColors.button),
+                    SizedBox(width: 6),
+                    Text(
+                      'VIEW ON MAP',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                        color: ChurchColors.button,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 🧊 Bottom glass info strip
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.place, size: 16, color: ChurchColors.button),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _fallbackMap() {
+    return Container(
+      color: ChurchColors.card,
+      child: CustomPaint(
+        painter: _MapGridPainter(),
+        child: const Center(
+          child: Icon(Icons.map_outlined, size: 40, color: ChurchColors.accent),
+        ),
+      ),
     );
   }
 }
