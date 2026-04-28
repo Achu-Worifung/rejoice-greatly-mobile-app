@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/auth_service.dart';
+import '../theme/church_colors.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -28,24 +29,19 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ChurchColors.background,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF000000), Color(0xFF00174B)],
-          ),
-        ),
+        color: ChurchColors.background,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 125),
             const Text(
-              "WELCOME TO \nREJOICE GREATLY",
+              "WELCOME TO REJOICE GREATLY",
               style: TextStyle(
-                color: Colors.white,
+                color: ChurchColors.accent,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -55,7 +51,7 @@ class LoginPage extends StatelessWidget {
             const Text(
               "Secure and seamless check-ins for every service",
               style: TextStyle(
-                color: Colors.white,
+                color: ChurchColors.muted,
                 fontSize: 14,
                 fontWeight: FontWeight.normal,
               ),
@@ -78,7 +74,7 @@ class LoginPage extends StatelessWidget {
             const SizedBox(height: 20),
             const Text(
               "Automatic attendance powered by\nsecure facial recognition",
-              style: TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: ChurchColors.muted, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 15),
@@ -93,8 +89,8 @@ class LoginPage extends StatelessWidget {
       text: "Sign in with Google",
       icon: FontAwesomeIcons.google,
       isFa: true,
-      bg: Colors.white,
-      fg: Colors.black,
+      bg: ChurchColors.card,
+      fg: ChurchColors.bodyText,
       onPressed: () => _handleGoogle(),
     );
   }
@@ -104,8 +100,8 @@ class LoginPage extends StatelessWidget {
       text: "Sign in with Apple",
       icon: FontAwesomeIcons.apple,
       isFa: true,
-      bg: Colors.white,
-      fg: Colors.black,
+      bg: ChurchColors.card,
+      fg: ChurchColors.bodyText,
       onPressed: () => _handleApple(),
     );
   }
@@ -115,8 +111,8 @@ class LoginPage extends StatelessWidget {
       text: "Sign in with Email",
       icon: Icons.email_outlined,
       isFa: false,
-      bg: const Color(0xFF5286FF),
-      fg: Colors.white,
+      bg: ChurchColors.button,
+      fg: ChurchColors.buttonText,
       onPressed: () => _handleEmail(context),
     );
   }
@@ -136,6 +132,8 @@ class LoginPage extends StatelessWidget {
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
+          foregroundColor: fg,
+          side: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.6)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

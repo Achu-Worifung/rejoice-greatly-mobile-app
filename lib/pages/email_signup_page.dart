@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/gestures.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/services/auth_service.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:church_app/theme/church_colors.dart';
@@ -99,7 +96,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
             const Text(
               "Let's Get Started!",
               style: TextStyle(
-                color: Colors.black,
+                color: ChurchColors.bodyText,
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1,
@@ -109,7 +106,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
             const Text(
               "Create your account",
               style: TextStyle(
-                color: Colors.black,
+                color: ChurchColors.muted,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
                 letterSpacing: 1,
@@ -123,7 +120,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   // Name
                   TextFormField(
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.black),
+                    style: const TextStyle(color: ChurchColors.bodyText),
                     decoration: _inputDecoration(
                       label: "Name",
                       icon: Icons.person_3_outlined,
@@ -137,7 +134,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   // Email
                   TextFormField(
                     controller: _emailController,
-                    style: const TextStyle(color: Colors.black),
+                    style: const TextStyle(color: ChurchColors.bodyText),
                     keyboardType: TextInputType.emailAddress,
                     decoration: _inputDecoration(
                       label: "Email",
@@ -156,7 +153,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: const TextStyle(color: Colors.black),
+                    style: const TextStyle(color: ChurchColors.bodyText),
                     decoration:
                         _inputDecoration(
                           label: "Password",
@@ -167,7 +164,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                               _obscurePassword
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: Colors.black,
+                              color: ChurchColors.muted,
                             ),
                             onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword,
@@ -186,7 +183,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   const Text(
                     "At least 8 characters, 1 uppercase, 1 number & 1 symbol",
                     textAlign: TextAlign.left,
-                    style: TextStyle(color: Colors.black, fontSize: 12),
+                    style: TextStyle(color: ChurchColors.muted, fontSize: 12),
                   ),
                   const SizedBox(height: 10),
 
@@ -197,7 +194,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                       CheckboxListTile(
                         title: RichText(
                           text: TextSpan(
-                            style: const TextStyle(color: Colors.black),
+                            style: const TextStyle(color: ChurchColors.bodyText),
                             children: [
                               const TextSpan(
                                 text: "By signing up, you agree to the ",
@@ -206,7 +203,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                               TextSpan(
                                 text: "Terms of Service",
                                 style: const TextStyle(
-                                  color: Color(0xFF5286FF),
+                                  color: ChurchColors.button,
                                   decoration: TextDecoration.underline,
                                   fontSize: 16,
                                 ),
@@ -219,7 +216,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                               TextSpan(
                                 text: "Privacy Policy",
                                 style: const TextStyle(
-                                  color: Color(0xFF5286FF),
+                                  color: ChurchColors.button,
                                   decoration: TextDecoration.underline,
                                   fontSize: 16,
                                 ),
@@ -234,18 +231,18 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                         value: _termsAccepted,
                         onChanged: (val) =>
                             setState(() => _termsAccepted = val!),
-                        activeColor: const Color(0xFF5286FF),
+                        activeColor: ChurchColors.button,
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
                       CheckboxListTile(
                         title: const Text(
                           "I consent to the use of biometric and/or Bluetooth technology to record my church attendance",
-                          style: TextStyle(color: Colors.black, fontSize: 16),
+                          style: TextStyle(color: ChurchColors.bodyText, fontSize: 16),
                         ),
                         value: _privacyAccepted,
                         onChanged: (val) =>
                             setState(() => _privacyAccepted = val!),
-                        activeColor: const Color(0xFF5286FF),
+                        activeColor: ChurchColors.button,
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
                       if (_error != null)
@@ -255,7 +252,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                             _error!,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              color: Colors.red,
+                              color: Color(0xFF8A2C1F),
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -270,7 +267,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                     children: [
                       Expanded(
                         child: Divider(
-                          color: Colors.grey.shade400,
+                          color: ChurchColors.divider,
                           thickness: 1,
                         ),
                       ),
@@ -279,7 +276,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                         child: Text(
                           'OR',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: ChurchColors.muted,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -287,7 +284,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                       ),
                       Expanded(
                         child: Divider(
-                          color: Colors.grey.shade400,
+                          color: ChurchColors.divider,
                           thickness: 1,
                         ),
                       ),
@@ -310,8 +307,8 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                             child: ElevatedButton(
                               onPressed: _handleGoogle,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
+                                backgroundColor: ChurchColors.card,
+                                foregroundColor: ChurchColors.bodyText,
                                 elevation: 2,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
@@ -358,8 +355,8 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                             child: ElevatedButton(
                               onPressed: _handleApple,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
+                                backgroundColor: ChurchColors.card,
+                                foregroundColor: ChurchColors.bodyText,
                                 elevation: 2,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
@@ -406,7 +403,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                       children: [
                         const Text(
                           "Already have an account?",
-                          style: TextStyle(color: Colors.black, fontSize: 16),
+                          style: TextStyle(color: ChurchColors.bodyText, fontSize: 16),
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
@@ -415,7 +412,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                           child: const Text(
                             "Login",
                             style: TextStyle(
-                              color: Color(0xFF5286FF),
+                              color: ChurchColors.button,
                               fontSize: 16,
                               decoration: TextDecoration.underline,
                             ),
@@ -433,7 +430,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                     child: ElevatedButton(
                       onPressed: _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF5286FF),
+                        backgroundColor: ChurchColors.button,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -442,7 +439,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                       child: const Text(
                         "Create Account",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: ChurchColors.buttonText,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
@@ -464,15 +461,15 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.black),
-      prefixIcon: Icon(icon, color: Colors.black),
+      labelStyle: const TextStyle(color: ChurchColors.muted),
+      prefixIcon: Icon(icon, color: ChurchColors.muted),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black),
+        borderSide: const BorderSide(color: ChurchColors.divider),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF5286FF)),
+        borderSide: const BorderSide(color: ChurchColors.button),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),

@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../routes.dart';
 import '../services/auth_service.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import '../theme/church_colors.dart';
@@ -29,14 +25,6 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: handle submission
-      print("Email: ${_emailController.text}");
-      print("Password: ${_passwordController.text}");
-    }
   }
 
   Future<void> _emailLogin() async {
@@ -97,7 +85,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
             const Text(
               "Let's Get Started!",
               style: TextStyle(
-                color: Colors.black,
+                color: ChurchColors.bodyText,
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1,
@@ -107,7 +95,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
             const Text(
               "Sign in to your account",
               style: TextStyle(
-                color: Colors.black,
+                color: ChurchColors.muted,
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
                 letterSpacing: 1,
@@ -118,14 +106,14 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  border: Border.all(color: Colors.red.shade300),
+                  color: const Color(0xFFFFF1EE),
+                  border: Border.all(color: const Color(0xFFE1B0A9)),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   _error!,
                   style: TextStyle(
-                    color: Colors.red.shade700,
+                    color: const Color(0xFF8A2C1F),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -140,7 +128,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   // Email
                   TextFormField(
                     controller: _emailController,
-                    style: const TextStyle(color: Colors.black),
+                    style: const TextStyle(color: ChurchColors.bodyText),
                     keyboardType: TextInputType.emailAddress,
                     decoration: _inputDecoration(
                       label: "Email",
@@ -161,7 +149,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       child: Text(
                         "Forgot Password?",
                         textAlign: TextAlign.right,
-                        style: TextStyle(color: Colors.black, fontSize: 12),
+                        style: const TextStyle(color: ChurchColors.muted, fontSize: 12),
                       ),
                     ),
                   ),
@@ -170,7 +158,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: const TextStyle(color: Colors.black),
+                    style: const TextStyle(color: ChurchColors.bodyText),
                     decoration:
                         _inputDecoration(
                           label: "Password",
@@ -181,7 +169,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                               _obscurePassword
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: Colors.black,
+                              color: ChurchColors.muted,
                             ),
                             onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword,
@@ -210,7 +198,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                     children: [
                       Expanded(
                         child: Divider(
-                          color: Colors.grey.shade400,
+                          color: ChurchColors.divider,
                           thickness: 1,
                         ),
                       ),
@@ -219,7 +207,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                         child: Text(
                           'OR',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: ChurchColors.muted,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -227,7 +215,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       ),
                       Expanded(
                         child: Divider(
-                          color: Colors.grey.shade400,
+                          color: ChurchColors.divider,
                           thickness: 1,
                         ),
                       ),
@@ -247,10 +235,10 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                               onPressed: _googleSignUp,
                               style: ElevatedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: Color.fromARGB(12, 123, 231, 231),
+                                  color: ChurchColors.divider,
                                   width: 1,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: ChurchColors.card,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -267,14 +255,14 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                     FontAwesomeIcons.google,
                                     size:
                                         20, // Slightly reduced to save horizontal space
-                                    color: Colors.black,
+                                    color: ChurchColors.bodyText,
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: AutoSizeText(
                                       "Sign in with Google",
                                       style: const TextStyle(
-                                        color: Colors.black,
+                                        color: ChurchColors.bodyText,
                                         fontSize: 16,
                                       ),
                                       minFontSize: 8,
@@ -300,10 +288,10 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                               onPressed: _appleSignUp,
                               style: ElevatedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: Color.fromARGB(179, 234, 231, 231),
+                                  color: ChurchColors.divider,
                                   width: 1,
                                 ),
-                                backgroundColor: Colors.white,
+                                backgroundColor: ChurchColors.card,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -318,14 +306,14 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                   const FaIcon(
                                     FontAwesomeIcons.apple,
                                     size: 20,
-                                    color: Colors.black,
+                                    color: ChurchColors.bodyText,
                                   ),
                                   const SizedBox(width: 4),
                                   Flexible(
                                     child: AutoSizeText(
                                       "Sign in with Apple",
                                       style: const TextStyle(
-                                        color: Colors.black,
+                                        color: ChurchColors.bodyText,
                                         fontSize: 16,
                                       ),
                                       minFontSize: 8,
@@ -349,7 +337,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       children: [
                         Text(
                           "Don't have an account?",
-                          style: TextStyle(color: Colors.black, fontSize: 16),
+                          style: const TextStyle(color: ChurchColors.bodyText, fontSize: 16),
                         ),
                         SizedBox(width: 4),
                         GestureDetector(
@@ -357,8 +345,8 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                               Navigator.pushNamed(context, '/email-signup'),
                           child: Text(
                             "Sign up",
-                            style: TextStyle(
-                              color: Color(0xFF5286FF),
+                            style: const TextStyle(
+                              color: ChurchColors.button,
                               fontSize: 16,
                             ),
                           ),
@@ -377,7 +365,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                       child: Container(
                         height: 56,
                         decoration: BoxDecoration(
-                          color: Color(0xFF5286FF),
+                          color: ChurchColors.button,
                           borderRadius: BorderRadius.circular(14),
                           // border: border != null
                           //     ? Border.all(color: border)
@@ -389,14 +377,14 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(
-                                    color: Colors.white,
+                                    color: ChurchColors.buttonText,
                                     strokeWidth: 2,
                                   ),
                                 )
                               : Text(
                                   "Sign In",
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: ChurchColors.buttonText,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -420,15 +408,15 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.black),
-      prefixIcon: Icon(icon, color: Colors.black),
+      labelStyle: const TextStyle(color: ChurchColors.muted),
+      prefixIcon: Icon(icon, color: ChurchColors.muted),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.black),
+        borderSide: const BorderSide(color: ChurchColors.divider),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: Color(0xFF5286FF)),
+        borderSide: const BorderSide(color: ChurchColors.button),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
