@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 import '../theme/church_colors.dart';
 
@@ -29,55 +30,87 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ChurchColors.background,
+      backgroundColor: Colors.black,
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        color: ChurchColors.background,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF000000), Color(0xFFD27E09)],
+          ),
+        ),
+        child: Stack(
           children: [
-            const SizedBox(height: 125),
-            const Text(
-              "WELCOME TO REJOICE GREATLY",
-              style: TextStyle(
-                color: ChurchColors.accent,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Secure and seamless check-ins for every service",
-              style: TextStyle(
-                color: ChurchColors.muted,
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const Expanded(child: SizedBox()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _googleButton(context),
-                  const SizedBox(height: 10),
-                  _appleButton(context),
-                  const SizedBox(height: 10),
-                  _emailButton(context),
-                ],
+            Positioned(
+              left: 0,
+              bottom: 0,
+              child: SvgPicture.asset(
+                'assets/icons/background.svg',
+                width: 180,
+                fit: BoxFit.contain,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
-              "Automatic attendance powered by\nsecure facial recognition",
-              style: TextStyle(color: ChurchColors.muted, fontSize: 14),
-              textAlign: TextAlign.center,
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+                child: SvgPicture.asset(
+                  'assets/icons/background.svg',
+                  width: 180,
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
-            const SizedBox(height: 15),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 125),
+                const Text(
+                  "WELCOME TO REJOICE GREATLY",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Secure and seamless check-ins for every service",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const Expanded(child: SizedBox()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _googleButton(context),
+                      const SizedBox(height: 10),
+                      _appleButton(context),
+                      const SizedBox(height: 10),
+                      _emailButton(context),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Automatic attendance powered by\nsecure facial recognition",
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 15),
+              ],
+            ),
           ],
         ),
       ),
