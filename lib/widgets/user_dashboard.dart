@@ -10,6 +10,7 @@ import '../components/show_streak.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
 import '../pages/sermon_detail_page.dart';
+import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import 'church_app_bar.dart';
@@ -106,6 +107,16 @@ class _DashboardPageState extends State<DashboardPage> {
   String _formatReference(String book, int chapter, int start, int? end) {
     if (end == null || start == end) return '$book $chapter:$start';
     return '$book $chapter:$start-$end';
+  }
+
+  Future<void> _toggleDashboardSermonAudio(BuildContext context, Map<String, dynamic> sermon) async {
+    final ok = await ChurchAudioPlayer.instance.toggle(sermon);
+    if (!context.mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Audio is not available for this sermon.')),
+      );
+    }
   }
 
   String? _buildMapPreviewUrl(String address) {
@@ -284,11 +295,23 @@ class _DashboardPageState extends State<DashboardPage> {
                           message: 'No sermons available yet.',
                         );
                       }
-                      final s = snapshot.data!.first as Map<String, dynamic>;
-                      final map = Map<String, dynamic>.from(s);
-                      return LatestSermonCard(
-                        data: map,
-                        onPlay: () => openSermonDetailPage(context, map),
+                      final list = snapshot.data!;
+                      return ListenableBuilder(
+                        listenable: ChurchAudioPlayer.instance,
+                        builder: (context, _) {
+                          final audio = ChurchAudioPlayer.instance;
+                          final s0 = list.first as Map<String, dynamic>;
+                          final map0 = Map<String, dynamic>.from(s0);
+
+                          return LatestSermonCard(
+                            data: map0,
+                            onTapCard: () => openSermonDetailPage(context, map0),
+                            isPlayingAudio: audio.isPlayingFor(map0),
+                            isPausedAudio: audio.isPausedFor(map0),
+                            isLoadingAudio: audio.isLoadingFor(map0),
+                            onPlayTap: () => _toggleDashboardSermonAudio(context, map0),
+                          );
+                        },
                       );
                     },
                   ),

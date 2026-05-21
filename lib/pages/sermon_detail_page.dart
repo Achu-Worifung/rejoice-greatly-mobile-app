@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../services/church_api.dart';
+import '../services/church_audio_player.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
+import '../widgets/sermon_playing_waveform.dart';
 
 /// Full-screen sermon (no bottom nav shell); opened via [Navigator.push].
 class SermonDetailPage extends StatefulWidget {
@@ -152,22 +153,93 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                 ],
                 if (audio != null && audio.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => _playAudio(audio),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: ChurchColors.button,
-                        foregroundColor: ChurchColors.buttonText,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.play_arrow_rounded, size: 28),
-                      label: const Text(
-                        'Listen to sermon',
-                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                      ),
-                    ),
+                  ListenableBuilder(
+                    listenable: ChurchAudioPlayer.instance,
+                    builder: (context, _) {
+                      final player = ChurchAudioPlayer.instance;
+                      final loading = player.isLoadingFor(m);
+                      final playing = player.isPlayingFor(m);
+                      final paused = player.isPausedFor(m);
+
+                      Widget leadingIcon() {
+                        if (loading) {
+                          return const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: ChurchColors.buttonText,
+                            ),
+                          );
+                        }
+                        if (playing) {
+                          return const SizedBox(
+                            width: 40,
+                            height: 28,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: SermonPlayingWaveform(
+                                size: 22,
+                                barCount: 3,
+                                isPlaying: true,
+                                foregroundColor: ChurchColors.buttonText,
+                              ),
+                            ),
+                          );
+                        }
+                        if (paused) {
+                          return const Icon(
+                            Icons.pause_rounded,
+                            size: 28,
+                            color: ChurchColors.buttonText,
+                          );
+                        }
+                        return const Icon(
+                          Icons.play_arrow_rounded,
+                          size: 28,
+                          color: ChurchColors.buttonText,
+                        );
+                      }
+
+                      final label = loading
+                          ? 'Loading audio…'
+                          : playing
+                              ? 'Pause'
+                              : paused
+                                  ? 'Resume'
+                                  : 'Listen to sermon';
+
+                      return SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: loading
+                              ? null
+                              : () async {
+                                  final ok = await player.toggle(m);
+                                  if (!context.mounted) return;
+                                  if (!ok) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Could not play this sermon audio.'),
+                                      ),
+                                    );
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: ChurchColors.button,
+                            foregroundColor: ChurchColors.buttonText,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: leadingIcon(),
+                          label: Text(
+                            label,
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
                 if ((m['description'] as String?)?.trim().isNotEmpty == true) ...[
@@ -230,13 +302,6 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     }
   }
 
-  Future<void> _playAudio(String url) async {
-    final u = Uri.tryParse(url);
-    if (u == null) return;
-    if (await canLaunchUrl(u)) {
-      await launchUrl(u, mode: LaunchMode.externalApplication);
-    }
-  }
 }
 
 /// Opens [SermonDetailPage] on the root stack (covers bottom nav on phone).
