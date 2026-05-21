@@ -59,7 +59,23 @@ class VideoHandler {
     await initCamera(front: !_isFrontCamera);
   }
 
+  /// Resume or re-open the camera after retake (preview can pause after capture).
+  Future<void> restartPreview() async {
+    if (_controller != null && _controller!.value.isInitialized) {
+      try {
+        await _controller!.resumePreview();
+        _isCameraReady = true;
+        return;
+      } catch (e) {
+        print('resumePreview failed: $e');
+      }
+    }
+    await initCamera(front: _isFrontCamera);
+  }
+
   bool get isCameraReady => _isCameraReady;
+
+  bool get isFrontCamera => _isFrontCamera;
 
   // Returns the camera preview widget for mobile
   Widget buildCameraView() {

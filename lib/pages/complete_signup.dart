@@ -26,6 +26,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   String? _error;
   bool _isCameraReady = false;
   bool _canuseImg = true;
+  Key _cameraViewKey = UniqueKey();
 
   @override
   void initState() {
@@ -67,22 +68,41 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
 
-  void _retake() {
+  Future<void> _retake() async {
     setState(() {
       _capturedBytes = null;
       _error = null;
+      _isCameraReady = false;
+      _cameraViewKey = UniqueKey();
     });
+
+    try {
+      await _handler.restartPreview();
+      if (!mounted) return;
+      setState(() => _isCameraReady = _handler.isCameraReady);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not restart camera. Try the flip button.';
+        _isCameraReady = false;
+      });
+    }
   }
 
   Future<void> _flipCamera() async {
-    setState(() => _isCameraReady = false);
+    setState(() {
+      _isCameraReady = false;
+      _cameraViewKey = UniqueKey();
+    });
     try {
       await _handler.flipCamera();
       if (mounted) {
-        setState(() => _isCameraReady = true);
+        setState(() => _isCameraReady = _handler.isCameraReady);
       }
     } catch (e) {
-      setState(() => _error = "Failed to switch camera");
+      if (mounted) {
+        setState(() => _error = 'Failed to switch camera');
+      }
     }
   }
 
@@ -174,7 +194,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
       fit: StackFit.expand,
       children: [
         // Use the handler's buildCameraView method - works for both web and mobile
-        _handler.buildCameraView(),
+        KeyedSubtree(
+          key: _cameraViewKey,
+          child: _handler.buildCameraView(),
+        ),
 
         if (!_isCameraReady)
           const ColoredBox(
