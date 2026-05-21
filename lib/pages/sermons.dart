@@ -10,7 +10,7 @@ import '../services/church_audio_player.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_tab_page_header.dart';
-import '../widgets/sermon_playing_waveform.dart';
+import '../widgets/sermon_play_icon.dart';
 
 class SermonsPage extends StatefulWidget {
   const SermonsPage({super.key});
@@ -34,19 +34,13 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
     _tabController = TabController(length: 2, vsync: this);
     _loadSaved();
     _fetchSermons();
-    ChurchAudioPlayer.instance.addListener(_onAudioPlayerChanged);
   }
 
   @override
   void dispose() {
-    ChurchAudioPlayer.instance.removeListener(_onAudioPlayerChanged);
     _tabController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _onAudioPlayerChanged() {
-    if (mounted) setState(() {});
   }
 
   Future<void> _toggleSermonAudio(Map<String, dynamic> m) async {
@@ -378,15 +372,11 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         separatorBuilder: (context, _) => const SizedBox(height: 12),
         itemBuilder: (context, i) {
           final row = list[i];
-          final audio = ChurchAudioPlayer.instance;
           return _SermonRow(
             data: row,
             isSaved: _savedIds.contains(_idOf(row)),
             onSave: () => _toggleSave(row),
             onOpen: () => _openSermon(row),
-            isPlayingAudio: audio.isPlayingFor(row),
-            isPausedAudio: audio.isPausedFor(row),
-            isLoadingAudio: audio.isLoadingFor(row),
             onPlayTap: () => _toggleSermonAudio(row),
           );
         },
@@ -405,9 +395,6 @@ class _SermonRow extends StatelessWidget {
     required this.isSaved,
     required this.onSave,
     required this.onOpen,
-    required this.isPlayingAudio,
-    required this.isPausedAudio,
-    required this.isLoadingAudio,
     required this.onPlayTap,
   });
 
@@ -415,9 +402,6 @@ class _SermonRow extends StatelessWidget {
   final bool isSaved;
   final VoidCallback onSave;
   final VoidCallback onOpen;
-  final bool isPlayingAudio;
-  final bool isPausedAudio;
-  final bool isLoadingAudio;
   final VoidCallback onPlayTap;
 
   @override
@@ -500,10 +484,10 @@ class _SermonRow extends StatelessWidget {
                           color: ChurchColors.button.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: _rowPlayIcon(
-                          isLoadingAudio: isLoadingAudio,
-                          isPlayingAudio: isPlayingAudio,
-                          isPausedAudio: isPausedAudio,
+                        child: SermonPlayIcon(
+                          sermon: data,
+                          iconSize: 24,
+                          spinnerSize: 24,
                         ),
                       ),
                     ),
@@ -537,45 +521,6 @@ class _SermonRow extends StatelessWidget {
     return Container(
       color: ChurchColors.button.withValues(alpha: 0.1),
       child: const Icon(Icons.mic, color: ChurchColors.accent, size: 28),
-    );
-  }
-
-  Widget _rowPlayIcon({
-    required bool isLoadingAudio,
-    required bool isPlayingAudio,
-    required bool isPausedAudio,
-  }) {
-    if (isLoadingAudio) {
-      return const SizedBox(
-        width: 24,
-        height: 24,
-        child: Padding(
-          padding: EdgeInsets.all(2),
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: ChurchColors.button,
-          ),
-        ),
-      );
-    }
-    if (isPlayingAudio) {
-      return const SermonPlayingWaveform(
-        size: 20,
-        barCount: 3,
-        isPlaying: true,
-      );
-    }
-    if (isPausedAudio) {
-      return const Icon(
-        Icons.pause_rounded,
-        color: ChurchColors.button,
-        size: 24,
-      );
-    }
-    return const Icon(
-      Icons.play_arrow_rounded,
-      color: ChurchColors.button,
-      size: 24,
     );
   }
 

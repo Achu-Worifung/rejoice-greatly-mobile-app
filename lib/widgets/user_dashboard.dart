@@ -296,22 +296,13 @@ class _DashboardPageState extends State<DashboardPage> {
                         );
                       }
                       final list = snapshot.data!;
-                      return ListenableBuilder(
-                        listenable: ChurchAudioPlayer.instance,
-                        builder: (context, _) {
-                          final audio = ChurchAudioPlayer.instance;
-                          final s0 = list.first as Map<String, dynamic>;
-                          final map0 = Map<String, dynamic>.from(s0);
+                      final s0 = list.first as Map<String, dynamic>;
+                      final map0 = Map<String, dynamic>.from(s0);
 
-                          return LatestSermonCard(
-                            data: map0,
-                            onTapCard: () => openSermonDetailPage(context, map0),
-                            isPlayingAudio: audio.isPlayingFor(map0),
-                            isPausedAudio: audio.isPausedFor(map0),
-                            isLoadingAudio: audio.isLoadingFor(map0),
-                            onPlayTap: () => _toggleDashboardSermonAudio(context, map0),
-                          );
-                        },
+                      return LatestSermonCard(
+                        data: map0,
+                        onTapCard: () => openSermonDetailPage(context, map0),
+                        onPlayTap: () => _toggleDashboardSermonAudio(context, map0),
                       );
                     },
                   ),

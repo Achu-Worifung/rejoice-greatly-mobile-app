@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
-import '../widgets/sermon_playing_waveform.dart';
+import '../widgets/sermon_play_icon.dart';
 
 class LatestSermonCard extends StatelessWidget {
   const LatestSermonCard({
@@ -9,17 +9,11 @@ class LatestSermonCard extends StatelessWidget {
     required this.data,
     this.onTapCard,
     this.onPlayTap,
-    this.isPlayingAudio = false,
-    this.isPausedAudio = false,
-    this.isLoadingAudio = false,
   });
 
   final Map<String, dynamic> data;
   final VoidCallback? onTapCard;
   final Future<void> Function()? onPlayTap;
-  final bool isPlayingAudio;
-  final bool isPausedAudio;
-  final bool isLoadingAudio;
 
   @override
   Widget build(BuildContext context) {
@@ -112,7 +106,7 @@ class LatestSermonCard extends StatelessWidget {
                       color: ChurchColors.button.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: _playIconContent(),
+                    child: SermonPlayIcon(sermon: data),
                   ),
                 ),
               ),
@@ -120,41 +114,6 @@ class LatestSermonCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _playIconContent() {
-    if (isLoadingAudio) {
-      return const SizedBox(
-        width: 28,
-        height: 28,
-        child: Padding(
-          padding: EdgeInsets.all(4),
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: ChurchColors.button,
-          ),
-        ),
-      );
-    }
-    if (isPlayingAudio) {
-      return const SermonPlayingWaveform(
-        size: 22,
-        barCount: 3,
-        isPlaying: true,
-      );
-    }
-    if (isPausedAudio) {
-      return const Icon(
-        Icons.pause_rounded,
-        color: ChurchColors.button,
-        size: 28,
-      );
-    }
-    return const Icon(
-      Icons.play_arrow_rounded,
-      color: ChurchColors.button,
-      size: 28,
     );
   }
 
