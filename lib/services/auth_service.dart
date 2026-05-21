@@ -1,14 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'church_api.dart';
+import 'user_session_store.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -124,7 +121,7 @@ class AuthService {
       );
 
       await _auth.signInWithCredential(oauthCredential);
-      _sendUserToBackend("Apple", null);
+      await _sendUserToBackend("Apple", fullName.isNotEmpty ? fullName : null);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -133,61 +130,38 @@ class AuthService {
 
   // --- LOGOUT ---
   Future<void> logout() async {
+    await UserSessionStore.clear();
     await _auth.signOut();
   }
 
   // --- OPTIONAL: send user info to your backend ---
   Future<bool> _sendUserToBackend(String provider, String? name) async {
     try {
-      String? idToken = await _auth.currentUser?.getIdToken();
-      String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
-      // Use the name passed in, or fallback to the Firebase display name
-      String? get_name = name ?? await _auth.currentUser?.displayName;
-
-      final res = await http.post(
-        Uri.parse("http://$ip_addr:8080/auth/firebase"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "provider": provider,
-          "idToken": idToken,
-          "name": get_name, // Use the resolved name
-        }),
-      );
-
-      // CRITICAL FIX: Changed from != 200 to == 200
-      if (res.statusCode == 200) {
-        final prefs = await SharedPreferences.getInstance();
-        final Map<String, dynamic> userData = jsonDecode(res.body);
-
-        // Extract fields from response
-        String firebaseUid = userData['firebaseUid'] ?? "";
-        String email = userData['email'] ?? "";
-        String extractedName = userData['name'] ?? "User";
-        bool isAdmin = userData['admin'] ?? false;
-        bool signupComplete = userData['signupComplete'] ?? false;
-        OneSignal.login(firebaseUid); // Log OneSignal in with Firebase UID
-
-        // Save to SharedPreferences
-        await prefs.setString("firebaseUid", firebaseUid);
-        await prefs.setString("email", email);
-        await prefs.setString("name", extractedName);
-        await prefs.setBool("isAdmin", isAdmin);
-        await prefs.setBool("signupComplete", signupComplete);
-        final img = userData['imgURL'];
-        if (img is String && img.isNotEmpty) {
-          await prefs.setString('imgURL', img);
-        }
-        await prefs.setString('authProvider', provider);
-        await ChurchApi.cacheAccountJson(userData);
-
-        print("Backend success: User $extractedName saved locally.");
-        return signupComplete;
-      } else {
-        print("Backend error: ${res.statusCode} - ${res.body}");
+      final idToken = await _auth.currentUser?.getIdToken(true);
+      if (idToken == null || idToken.isEmpty) {
+        print('Backend error: missing Firebase id token');
         return false;
       }
-    } catch (e) {
-      print("Backend connection error: $e");
+      final getName = name ?? await _auth.currentUser?.displayName;
+
+      final userData = await ChurchApi.refreshAccountWithFirebaseToken(
+        idToken,
+        provider: provider,
+        name: getName,
+      );
+
+      final firebaseUid = userData['firebaseUid'] ?? '';
+      final extractedName = userData['name'] ?? 'User';
+      OneSignal.login('$firebaseUid');
+
+      final persisted = await UserSessionStore.hasPersistedSession();
+      print('Backend success: User $extractedName saved locally (persisted=$persisted).');
+      if (!persisted) {
+        print('WARNING: account data was not written to device storage.');
+      }
+      return ChurchApi.isSignupComplete(userData);
+    } catch (e, st) {
+      print('Backend connection error: $e\n$st');
       return false;
     }
   }

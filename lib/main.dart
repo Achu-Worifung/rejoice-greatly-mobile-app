@@ -1,28 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-// import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'firebase_options.dart';
 import 'routes.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
 import 'pages/RootPage.dart';
 import 'theme/church_colors.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_web/webview_flutter_web.dart';
-// import 'notifications/notification_service.dart';
-
+import 'services/user_session_store.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  WebViewPlatform.instance = WebWebViewPlatform();
-  await dotenv.load(fileName: ".env");
-  // await NotificationService().initialize();
 
-  runApp(const MyApp());
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('dotenv load failed (using defaults): $e');
+      }
+    }
+
+    await UserSessionStore.initialize();
+
+    runApp(const MyApp());
+  } catch (e, st) {
+    if (kDebugMode) {
+      debugPrint('App startup failed: $e\n$st');
+    }
+    runApp(StartupErrorApp(message: e.toString()));
+  }
 }
 
-// 1. Create a global navigator key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends StatelessWidget {
@@ -32,7 +46,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Rejoice Greatly PHX',
-      navigatorKey: navigatorKey, 
+      navigatorKey: navigatorKey,
       initialRoute: '/',
       theme: ThemeData(
         useMaterial3: true,
@@ -65,5 +79,44 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-  
 
+class StartupErrorApp extends StatelessWidget {
+  const StartupErrorApp({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        backgroundColor: ChurchColors.background,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: ChurchColors.muted),
+                const SizedBox(height: 16),
+                const Text(
+                  'Could not start the app',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: ChurchColors.bodyText,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

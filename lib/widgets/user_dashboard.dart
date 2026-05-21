@@ -39,7 +39,7 @@ class _DashboardEventsLoad {
 
 class _DashboardPageState extends State<DashboardPage> {
   late Future<String> _greetingFuture;
-  late Future<String?> _avatarUrlFuture;
+  String? _avatarUrl;
   late Future<Map<String, dynamic>> _verseFuture;
   late Future<List<dynamic>> _sermonFuture;
   late Future<_DashboardEventsLoad> _eventsFuture;
@@ -48,30 +48,43 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _greetingFuture = _getGreeting();
-    _avatarUrlFuture = _loadProfilePhotoUrl();
     _verseFuture = ChurchApi.getCurrentVerse();
     _sermonFuture = _fetchSermonsNewestFirst();
     _eventsFuture = _fetchDashboardEventCards();
+    _syncUserAccountAndAvatar();
   }
 
-  Future<String?> _loadProfilePhotoUrl() async {
-    final p = await SharedPreferences.getInstance();
-    final fromBackend = p.getString('imgURL');
-    if (fromBackend != null && fromBackend.isNotEmpty) {
-      return fromBackend;
+  Future<void> _syncUserAccountAndAvatar() async {
+    final cached = await ChurchApi.getCachedAccountJson();
+    if (cached != null && mounted) {
+      final cachedUrl = await ChurchApi.resolveProfileImageUrl(account: cached);
+      setState(() {
+        _avatarUrl = cachedUrl;
+        _greetingFuture = _getGreeting();
+      });
     }
-    return FirebaseAuth.instance.currentUser?.photoURL;
+
+    final result = await ChurchApi.loadProfileAccount();
+    if (!mounted) return;
+    final url = await ChurchApi.resolveProfileImageUrl(account: result.account);
+    setState(() {
+      _avatarUrl = url;
+      _greetingFuture = _getGreeting();
+    });
   }
 
   Future<void> _refresh() async {
     setState(() {
-      _greetingFuture = _getGreeting();
-      _avatarUrlFuture = _loadProfilePhotoUrl();
       _verseFuture = ChurchApi.getCurrentVerse();
       _sermonFuture = _fetchSermonsNewestFirst();
       _eventsFuture = _fetchDashboardEventCards();
     });
-    await Future.wait([_verseFuture, _sermonFuture, _eventsFuture]);
+    await Future.wait([
+      _verseFuture,
+      _sermonFuture,
+      _eventsFuture,
+      _syncUserAccountAndAvatar(),
+    ]);
   }
 
   Future<List<dynamic>> _fetchSermonsNewestFirst() async {
@@ -137,8 +150,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<String> _getGreeting() async {
-    final pref = await SharedPreferences.getInstance();
-    final name = pref.getString('name') ?? 'Friend';
+    final account = await ChurchApi.getCachedAccountJson();
+    final name = account?['name'] as String? ??
+        (await SharedPreferences.getInstance()).getString('name') ??
+        'Friend';
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning, $name!';
     if (hour < 18) return 'Good afternoon, $name!';
@@ -163,6 +178,23 @@ class _DashboardPageState extends State<DashboardPage> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: const Icon(Icons.person, color: ChurchColors.accent),
+    );
+  }
+
+  Widget _buildAvatar() {
+    final url = _avatarUrl;
+    if (url == null || url.isEmpty) {
+      return _avatarPlaceholder();
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Image.network(
+        url,
+        height: 40,
+        width: 40,
+        fit: BoxFit.cover,
+        errorBuilder: (BuildContext c, Object e, StackTrace? s) => _avatarPlaceholder(),
+      ),
     );
   }
 
@@ -208,25 +240,7 @@ class _DashboardPageState extends State<DashboardPage> {
             Navigator.pushNamed(context, '/profile');
           },
           padding: const EdgeInsets.only(left: 8),
-          icon: FutureBuilder<String?>(
-            future: _avatarUrlFuture,
-            builder: (context, snap) {
-              final url = snap.data;
-              if (url == null || url.isEmpty) {
-                return _avatarPlaceholder();
-              }
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.network(
-                  url,
-                  height: 40,
-                  width: 40,
-                  fit: BoxFit.cover,
-                  errorBuilder: (BuildContext c, Object e, StackTrace? s) => _avatarPlaceholder(),
-                ),
-              );
-            },
-          ),
+          icon: _buildAvatar(),
         ),
         actions: [
           IconButton(

@@ -15,7 +15,7 @@ class MePage extends StatefulWidget {
 }
 
 class _MePageState extends State<MePage> {
-  late Future<Map<String, dynamic>?> _accountFuture;
+  late Future<ProfileLoadResult> _accountFuture;
 
   @override
   void initState() {
@@ -23,27 +23,7 @@ class _MePageState extends State<MePage> {
     _accountFuture = _loadAccount();
   }
 
-  Future<Map<String, dynamic>?> _loadAccount() async {
-    try {
-      final u = FirebaseAuth.instance.currentUser;
-      if (u == null) {
-        return ChurchApi.getCachedAccountJson();
-      }
-      final t = await u.getIdToken();
-      final p = await SharedPreferences.getInstance();
-      final prov = p.getString('authProvider') ?? 'app';
-      if (t == null || t.isEmpty) {
-        return ChurchApi.getCachedAccountJson();
-      }
-      return await ChurchApi.refreshAccountWithFirebaseToken(
-        t,
-        provider: prov,
-        name: u.displayName,
-      );
-    } catch (_) {
-      return ChurchApi.getCachedAccountJson();
-    }
-  }
+  Future<ProfileLoadResult> _loadAccount() => ChurchApi.loadProfileAccount();
 
   void _onBack() {
     final nav = Navigator.of(context);
@@ -71,7 +51,7 @@ class _MePageState extends State<MePage> {
           onPressed: _onBack,
         ),
       ),
-      body: FutureBuilder<Map<String, dynamic>?>(
+      body: FutureBuilder<ProfileLoadResult>(
         future: _accountFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -79,7 +59,12 @@ class _MePageState extends State<MePage> {
               child: CircularProgressIndicator(color: ChurchColors.button),
             );
           }
-          final a = snapshot.data;
+          final result = snapshot.data;
+          final a = result?.account;
+          final synced = result?.syncedFromServer ?? false;
+          final syncError = result?.error;
+          final signedIn =
+              FirebaseAuth.instance.currentUser != null || (a != null && synced);
           if (a == null) {
             return Center(
               child: Padding(
@@ -89,26 +74,46 @@ class _MePageState extends State<MePage> {
                   children: [
                     const Icon(Icons.person_off_outlined, size: 48, color: ChurchColors.muted),
                     const SizedBox(height: 12),
-                    const Text(
-                      'No account data yet',
-                      style: TextStyle(
+                    Text(
+                      signedIn ? 'Could not load your church account' : 'No account connected',
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         color: ChurchColors.bodyText,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Sign in and sync with the church app to see your stats.',
+                    Text(
+                      signedIn
+                          ? 'You are signed in, but we could not reach the church server. Check your connection and try again.'
+                          : 'Sign in to connect your profile and see attendance stats.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: ChurchColors.muted, fontSize: 14),
+                      style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
+                    if (signedIn)
+                      FilledButton(
+                        onPressed: () {
+                          setState(() {
+                            _accountFuture = _loadAccount();
+                          });
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ChurchColors.button,
+                          foregroundColor: ChurchColors.buttonText,
+                        ),
+                        child: const Text('Try again'),
+                      ),
+                    if (signedIn) const SizedBox(height: 10),
                     FilledButton(
                       onPressed: _onBack,
                       style: FilledButton.styleFrom(
-                        backgroundColor: ChurchColors.button,
-                        foregroundColor: ChurchColors.buttonText,
+                        backgroundColor: signedIn
+                            ? ChurchColors.card
+                            : ChurchColors.button,
+                        foregroundColor: signedIn
+                            ? ChurchColors.bodyText
+                            : ChurchColors.buttonText,
                       ),
                       child: const Text('Back to app'),
                     ),
@@ -129,6 +134,8 @@ class _MePageState extends State<MePage> {
                 _accountFuture = _loadAccount();
               });
               await _accountFuture;
+              if (!context.mounted) return;
+              setState(() {});
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -139,6 +146,22 @@ class _MePageState extends State<MePage> {
                   email: email,
                   churchLine: churchSubtitle,
                 ),
+                if (!synced && syncError != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: ChurchColors.button.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: ChurchColors.divider),
+                    ),
+                    child: Text(
+                      'Could not refresh from server. Pull down to retry.\n$syncError',
+                      style: const TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text(
                   'ATTENDANCE',
@@ -255,12 +278,7 @@ class _ProfileHeader extends StatelessWidget {
     );
   }
 
-  static Future<String?> _avatarUrl() async {
-    final p = await SharedPreferences.getInstance();
-    final s = p.getString('imgURL');
-    if (s != null && s.isNotEmpty) return s;
-    return FirebaseAuth.instance.currentUser?.photoURL;
-  }
+  static Future<String?> _avatarUrl() => ChurchApi.resolveProfileImageUrl();
 
   static Widget _placeholder() {
     return Container(

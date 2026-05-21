@@ -3,6 +3,7 @@ import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:webview_flutter_web/webview_flutter_web.dart';
 
 class Cafe extends StatefulWidget {
   const Cafe({super.key});
@@ -15,11 +16,13 @@ class _CafeState extends State<Cafe> {
   late final WebViewController _controller;
 
   @override
-  @override
   void initState() {
     super.initState();
-    
-    // Initialize the controller
+
+    if (kIsWeb) {
+      WebViewPlatform.instance = WebWebViewPlatform();
+    }
+
     _controller = WebViewController();
 
     // 2. The fix for the UnimplementedError on Chrome

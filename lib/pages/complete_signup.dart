@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -6,6 +8,7 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../services/church_api.dart';
 import '../util/video_handler_web.dart'
     if (dart.library.io) '../util/video_handler_mobile.dart';
 
@@ -120,16 +123,23 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool("signupComplete", true);
-
-        final isAdmin = prefs.getBool("admin") ?? false;
-
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-            context,
-            isAdmin ? '/admin' : '/dashboard',
-          );
+        final body = await response.stream.bytesToString();
+        final data = json.decode(body) as Map<String, dynamic>;
+        final imgUrl = data['imgURL'] as String?;
+        if (imgUrl != null && imgUrl.isNotEmpty) {
+          final cached = await ChurchApi.getCachedAccountJson();
+          final merged = <String, dynamic>{
+            if (cached != null) ...cached,
+            'imgURL': imgUrl,
+            'signupComplete': true,
+          };
+          await ChurchApi.persistAccountFromServer(merged);
+        } else {
+          await prefs.setBool('signupComplete', true);
         }
+        if (!context.mounted) return;
+        Navigator.pushReplacementNamed(context, '/dashboard');
+
       } else if (response.statusCode == 400)
       {
         setState(() => _canuseImg = false);

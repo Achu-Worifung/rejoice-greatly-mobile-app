@@ -1,15 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:church_app/pages/login_page.dart';
-import 'package:church_app/main.dart';
+import 'package:church_app/pages/complete_signup.dart';
+import 'package:church_app/pages/dashboard.dart';
+import 'package:church_app/services/church_api.dart';
+import 'package:church_app/theme/church_colors.dart';
 
-class RootPage extends StatelessWidget {
+/// App entry: auth check, session restore, then shows login / signup / dashboard.
+class RootPage extends StatefulWidget {
   const RootPage({super.key});
 
-  Future<bool> _checkIfSignupComplete() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool("signupComplete") ?? false;
+  @override
+  State<RootPage> createState() => _RootPageState();
+}
+
+class _RootPageState extends State<RootPage> {
+  Future<SessionRestoreResult>? _sessionFuture;
+
+  Widget _loading() {
+    return const Scaffold(
+      backgroundColor: ChurchColors.background,
+      body: Center(
+        child: CircularProgressIndicator(color: ChurchColors.button),
+      ),
+    );
   }
 
   @override
@@ -18,43 +32,39 @@ class RootPage extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return _loading();
         }
 
-        if (authSnapshot.hasData) {
-  return FutureBuilder<bool>(
-    future: _checkIfSignupComplete(),
-    builder: (context, completeSnapshot) {
-      if (completeSnapshot.connectionState == ConnectionState.waiting) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
+        if (!authSnapshot.hasData) {
+          _sessionFuture = null;
+          return const LoginPage();
+        }
+
+        _sessionFuture ??= ChurchApi.restoreUserSession();
+
+        return FutureBuilder<SessionRestoreResult>(
+          future: _sessionFuture,
+          builder: (context, sessionSnapshot) {
+            if (sessionSnapshot.connectionState != ConnectionState.done) {
+              return _loading();
+            }
+
+            if (sessionSnapshot.hasError) {
+              debugPrint('RootPage session error: ${sessionSnapshot.error}');
+              return const LoginPage();
+            }
+
+            final session = sessionSnapshot.data;
+            if (session == null || !session.loggedIn) {
+              return const LoginPage();
+            }
+
+            if (session.signupComplete) {
+              return const Dashboard();
+            }
+            return const CompleteSignup();
+          },
         );
-      }
-
-      final bool isComplete = completeSnapshot.data ?? false;
-
-     
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        print('postFrameCallback firing...');
-        print('navigatorKey.currentState in callback: ${navigatorKey.currentState}');
-        
-        if (isComplete) {
-          navigatorKey.currentState?.pushReplacementNamed('/dashboard');
-        } else {
-          navigatorKey.currentState?.pushReplacementNamed('/complete-signup');
-        }
-      });
-
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    },
-  );
-}
-
-        return const LoginPage();
       },
     );
   }

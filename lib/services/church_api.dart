@@ -1,39 +1,223 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'user_session_store.dart';
+
+/// Result of restoring session on cold start.
+class SessionRestoreResult {
+  const SessionRestoreResult({
+    required this.loggedIn,
+    this.signupComplete = false,
+    this.account,
+    this.syncedFromServer = false,
+  });
+
+  final bool loggedIn;
+  final bool signupComplete;
+  final Map<String, dynamic>? account;
+  final bool syncedFromServer;
+}
+
+/// Result of loading the profile — includes whether `POST /auth/firebase` succeeded.
+class ProfileLoadResult {
+  const ProfileLoadResult({
+    this.account,
+    this.syncedFromServer = false,
+    this.error,
+  });
+
+  final Map<String, dynamic>? account;
+  final bool syncedFromServer;
+  final String? error;
+}
+
 /// Spring Boot API (`/events`, `/sermons`, `/weekly-verse`, etc.) — one place for base URL and calls.
 class ChurchApi {
   ChurchApi._();
 
-  static const String _accountJsonKey = 'account_json';
-
   static String get baseUrl => 'http://${dotenv.env['IP_ADDRESS'] ?? 'localhost'}:8080';
 
-  /// Persists the last [AuthAccount]-shaped map from `POST /auth/firebase` for offline display.
-  static Future<void> cacheAccountJson(Map<String, dynamic> account) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setString(_accountJsonKey, json.encode(account));
+  static Future<void> cacheAccountJson(Map<String, dynamic> account) =>
+      UserSessionStore.saveAccount(account);
+
+  static bool isSignupComplete(Map<String, dynamic>? account) =>
+      UserSessionStore.isSignupComplete(account);
+
+  static Future<void> persistAccountFromServer(
+    Map<String, dynamic> account, {
+    String? provider,
+  }) =>
+      UserSessionStore.saveAccount(account, provider: provider);
+
+  /// On app launch: show cached session immediately, sync server in background.
+  static Future<SessionRestoreResult> restoreUserSession() async {
+    final user = await waitForSignedInUser(
+      timeout: const Duration(seconds: 5),
+    );
+    if (user == null) {
+      return const SessionRestoreResult(loggedIn: false);
+    }
+
+    final cached = await getCachedAccountJson();
+    final local = cached ?? await accountFromLocalPrefs(user);
+    final signupComplete = await UserSessionStore.readSignupComplete();
+
+    unawaited(_syncSessionInBackground(user));
+
+    return SessionRestoreResult(
+      loggedIn: true,
+      signupComplete: signupComplete,
+      account: local,
+      syncedFromServer: false,
+    );
   }
 
-  static Future<Map<String, dynamic>?> getCachedAccountJson() async {
-    final p = await SharedPreferences.getInstance();
-    final s = p.getString(_accountJsonKey);
-    if (s == null || s.isEmpty) return null;
+  static Future<void> _syncSessionInBackground(User user) async {
     try {
-      return json.decode(s) as Map<String, dynamic>;
-    } catch (_) {
-      return null;
+      final account = await syncCurrentUserAccount();
+      final prefs = await SharedPreferences.getInstance();
+      final provider =
+          prefs.getString(UserSessionStore.authProviderKey) ?? inferAuthProvider(user);
+      await persistAccountFromServer(account, provider: provider);
+    } catch (e, st) {
+      debugPrint('ChurchApi background session sync: $e\n$st');
     }
   }
 
-  /// Refreshes the member account from `POST /auth/firebase` (same as login) and updates the cache.
+  /// Church profile photo from account JSON (`imgURL` from signup upload / auth sync).
+  static String? profileImageUrlFromAccount(Map<String, dynamic>? account) {
+    if (account == null) return null;
+    final img = account['imgURL'];
+    if (img is String && img.trim().isNotEmpty) return img.trim();
+    return null;
+  }
+
+  /// Best available profile image: synced account, then prefs, then Firebase photo.
+  static Future<String?> resolveProfileImageUrl({Map<String, dynamic>? account}) =>
+      UserSessionStore.readProfileImageUrl(account: account);
+
+  static Future<Map<String, dynamic>?> getCachedAccountJson() =>
+      UserSessionStore.loadAccount();
+
+  /// Waits briefly for Firebase to restore [currentUser] after app start.
+  static Future<User?> waitForSignedInUser({
+    Duration timeout = const Duration(seconds: 8),
+  }) async {
+    final existing = FirebaseAuth.instance.currentUser;
+    if (existing != null) return existing;
+    try {
+      return await FirebaseAuth.instance
+          .authStateChanges()
+          .firstWhere((u) => u != null)
+          .timeout(timeout);
+    } on TimeoutException {
+      return FirebaseAuth.instance.currentUser;
+    }
+  }
+
+  /// Always calls `POST /auth/firebase` when a Firebase user is available.
+  static Future<Map<String, dynamic>> syncCurrentUserAccount() async {
+    final user = await waitForSignedInUser();
+    if (user == null) {
+      throw StateError('Not signed in to Firebase');
+    }
+
+    try {
+      await user.reload();
+    } catch (e) {
+      debugPrint('ChurchApi: user.reload() failed (continuing): $e');
+    }
+
+    final active = FirebaseAuth.instance.currentUser ?? user;
+    final prefs = await SharedPreferences.getInstance();
+    final provider = prefs.getString('authProvider') ?? inferAuthProvider(active);
+
+    String? token;
+    try {
+      token = await active.getIdToken(true);
+    } catch (e) {
+      debugPrint('ChurchApi: getIdToken(true) failed, retrying: $e');
+      token = await active.getIdToken();
+    }
+    if (token == null || token.isEmpty) {
+      throw StateError('Could not obtain Firebase id token');
+    }
+
+    final url = '$baseUrl/auth/firebase';
+    debugPrint('ChurchApi: POST $url (provider=$provider)');
+    return refreshAccountWithFirebaseToken(
+      token,
+      provider: provider,
+      name: active.displayName,
+    );
+  }
+
+  /// Profile: always tries server sync first, then cache / local prefs.
+  static Future<ProfileLoadResult> loadProfileAccount() async {
+    final user = await waitForSignedInUser();
+
+    Future<Map<String, dynamic>?> localFallback() async {
+      final cached = await getCachedAccountJson();
+      if (cached != null) return cached;
+      return accountFromLocalPrefs(user);
+    }
+
+    if (user == null) {
+      final local = await localFallback();
+      return ProfileLoadResult(
+        account: local,
+        syncedFromServer: false,
+        error: local == null ? 'Not signed in' : 'Not signed in — showing saved data only',
+      );
+    }
+
+    try {
+      final account = await syncCurrentUserAccount();
+      final prefs = await SharedPreferences.getInstance();
+      final provider =
+          prefs.getString('authProvider') ?? inferAuthProvider(user);
+      await persistAccountFromServer(account, provider: provider);
+      return ProfileLoadResult(
+        account: account,
+        syncedFromServer: true,
+      );
+    } catch (e, st) {
+      debugPrint('ChurchApi.loadProfileAccount sync failed: $e\n$st');
+      final local = await localFallback();
+      return ProfileLoadResult(
+        account: local,
+        syncedFromServer: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  static Future<Map<String, dynamic>?> accountFromLocalPrefs(User? user) async {
+    final cached = await UserSessionStore.loadAccount();
+    if (cached != null) return cached;
+
+    if (user == null) return null;
+    return UserSessionStore.buildAccountFromFields();
+  }
+
+  static String inferAuthProvider(User user) {
+    for (final info in user.providerData) {
+      if (info.providerId == 'google.com') return 'Google';
+      if (info.providerId == 'apple.com') return 'Apple';
+    }
+    return 'email';
+  }
+
   static Future<Map<String, dynamic>> refreshAccountWithFirebaseToken(
     String idToken, {
-    String provider = 'app',
+    String provider = 'email',
     String? name,
   }) async {
     final body = <String, dynamic>{
@@ -42,16 +226,21 @@ class ChurchApi {
     };
     if (name != null) body['name'] = name;
 
-    final r = await http.post(
-      Uri.parse('$baseUrl/auth/firebase'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(body),
-    );
+    final uri = Uri.parse('$baseUrl/auth/firebase');
+    final r = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(body),
+        )
+        .timeout(const Duration(seconds: 30));
+
+    debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
     if (r.statusCode != 200) {
-      throw Exception('auth/firebase failed: ${r.statusCode}');
+      throw Exception('auth/firebase failed: ${r.statusCode} ${r.body}');
     }
     final map = json.decode(r.body) as Map<String, dynamic>;
-    await cacheAccountJson(map);
+    await persistAccountFromServer(map, provider: provider);
     return map;
   }
 

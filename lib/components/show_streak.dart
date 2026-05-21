@@ -30,28 +30,15 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
       _error = null;
     });
     try {
-      final u = FirebaseAuth.instance.currentUser;
-      if (u == null) {
-        throw StateError('Not signed in');
-      }
-      final token = await u.getIdToken();
-      if (token == null || token.isEmpty) {
-        throw StateError('No id token');
-      }
-      final prefs = await SharedPreferences.getInstance();
-      final provider = prefs.getString('authProvider') ?? 'app';
-      final account = await ChurchApi.refreshAccountWithFirebaseToken(
-        token,
-        provider: provider,
-        name: u.displayName,
-      );
+      final account = await ChurchApi.syncCurrentUserAccount();
       if (!mounted) return;
       setState(() {
         _sheetData = ChurchApi.accountToAttendanceSheetData(account);
         _loading = false;
       });
     } catch (e) {
-      final cached = await ChurchApi.getCachedAccountJson();
+      final cached = await ChurchApi.getCachedAccountJson() ??
+          await ChurchApi.accountFromLocalPrefs(FirebaseAuth.instance.currentUser);
       if (!mounted) return;
       if (cached != null) {
         setState(() {
