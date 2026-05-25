@@ -8,6 +8,15 @@ import 'church_api.dart';
 import 'user_session_store.dart';
 
 class AuthService {
+  // Mobile only — web uses Firebase signInWithPopup (see signInWithGoogle).
+  static GoogleSignIn? _mobileGoogleSignIn;
+
+  static GoogleSignIn get _googleSignIn => _mobileGoogleSignIn ??= GoogleSignIn(
+        scopes: const ['email', 'profile'],
+      );
+
+  static bool _googleSignInInProgress = false;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // --- CURRENT USER ---
@@ -71,25 +80,35 @@ class AuthService {
 
   // --- GOOGLE ---
   Future<String?> signInWithGoogle() async {
+    if (_googleSignInInProgress) {
+      return 'Sign-in already in progress';
+    }
+    _googleSignInInProgress = true;
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn(
-        clientId:
-            '556556905292-n17ddaeaa0uuef5h7f5tnjl8rthe8d3l.apps.googleusercontent.com',
-      ).signIn();
-      if (googleUser == null) return 'Cancelled';
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      if (kIsWeb) {
+        // google_sign_in.signIn() on web is deprecated, lacks idToken, and
+        // requires the People API. Firebase popup is the supported path.
+        await _auth.signInWithPopup(GoogleAuthProvider());
+      } else {
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return 'Cancelled';
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
 
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        await _auth.signInWithCredential(credential);
+      }
 
-      await _auth.signInWithCredential(credential);
       await _sendUserToBackend("Google", null);
       return null;
     } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user') return 'Cancelled';
       return e.message;
+    } finally {
+      _googleSignInInProgress = false;
     }
   }
 
@@ -97,12 +116,11 @@ class AuthService {
   Future<String?> signInWithApple() async {
     try {
       if (kIsWeb) {
-        // Apple sign-in via Firebase on web
         final provider = OAuthProvider("apple.com")
           ..addScope('email')
           ..addScope('name');
-        await FirebaseAuth.instance.signInWithPopup(provider);
-
+        await _auth.signInWithPopup(provider);
+        await _sendUserToBackend("Apple", _auth.currentUser?.displayName);
         return null;
       }
       final credential = await SignInWithApple.getAppleIDCredential(
@@ -131,6 +149,9 @@ class AuthService {
   // --- LOGOUT ---
   Future<void> logout() async {
     await UserSessionStore.clear();
+    if (!kIsWeb) {
+      await _googleSignIn.signOut();
+    }
     await _auth.signOut();
   }
 

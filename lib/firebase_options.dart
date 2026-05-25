@@ -41,48 +41,56 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCwLdDswTaAUbloNj8IsBaHA0iWEXb8crE',
-    appId: '1:360444353139:web:30ec130145ce8a6139e806',
-    messagingSenderId: '360444353139',
-    projectId: 'rejoice-greatly',
-    authDomain: 'rejoice-greatly.firebaseapp.com',
-    storageBucket: 'rejoice-greatly.firebasestorage.app',
-    measurementId: 'G-80BQPXQZFN',
+    apiKey: 'AIzaSyBOLVdQ6zYGJQYgk5gfP2yvvLxZpMbFKyU',
+    appId: '1:1053433403648:web:5cc2a686c91634bb96fbe5',
+    messagingSenderId: '1053433403648',
+    projectId: 'moodchangingcafe',
+    authDomain: 'moodchangingcafe.firebaseapp.com',
+    databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',
+    storageBucket: 'moodchangingcafe.firebasestorage.app',
+    measurementId: 'G-5Q140V5N2L',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAXI5Gb5l4omIlhNHOKXgPu1sfOsXQQ6Sg',
-    appId: '1:360444353139:android:cbed5c03ba3ded1639e806',
-    messagingSenderId: '360444353139',
-    projectId: 'rejoice-greatly',
-    storageBucket: 'rejoice-greatly.firebasestorage.app',
+    apiKey: 'AIzaSyAyrT00jKue3A31bW5g90Lz_Ffq1grIYYU',
+    appId: '1:1053433403648:android:000cbe011b70be3796fbe5',
+    messagingSenderId: '1053433403648',
+    projectId: 'moodchangingcafe',
+    databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',
+    storageBucket: 'moodchangingcafe.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDYSv9eK1KXLisygEp63dvinZY7_3gGp1Y',
-    appId: '1:360444353139:ios:921b81f7d96564ab39e806',
-    messagingSenderId: '360444353139',
-    projectId: 'rejoice-greatly',
-    storageBucket: 'rejoice-greatly.firebasestorage.app',
+    apiKey: 'AIzaSyDXRja7FQfgaar5IRsdbparRTs9xTJjECQ',
+    appId: '1:1053433403648:ios:4281beec4c2e913c96fbe5',
+    messagingSenderId: '1053433403648',
+    projectId: 'moodchangingcafe',
+    databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',
+    storageBucket: 'moodchangingcafe.firebasestorage.app',
+    iosClientId: '1053433403648-id0o692vjp8v3kp3a4p9mdda1gsohjhk.apps.googleusercontent.com',
     iosBundleId: 'com.example.churchApp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDYSv9eK1KXLisygEp63dvinZY7_3gGp1Y',
-    appId: '1:360444353139:ios:921b81f7d96564ab39e806',
-    messagingSenderId: '360444353139',
-    projectId: 'rejoice-greatly',
-    storageBucket: 'rejoice-greatly.firebasestorage.app',
+    apiKey: 'AIzaSyDXRja7FQfgaar5IRsdbparRTs9xTJjECQ',
+    appId: '1:1053433403648:ios:4281beec4c2e913c96fbe5',
+    messagingSenderId: '1053433403648',
+    projectId: 'moodchangingcafe',
+    databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',
+    storageBucket: 'moodchangingcafe.firebasestorage.app',
+    iosClientId: '1053433403648-id0o692vjp8v3kp3a4p9mdda1gsohjhk.apps.googleusercontent.com',
     iosBundleId: 'com.example.churchApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCwLdDswTaAUbloNj8IsBaHA0iWEXb8crE',
-    appId: '1:360444353139:web:355e77045076c1e439e806',
-    messagingSenderId: '360444353139',
-    projectId: 'rejoice-greatly',
-    authDomain: 'rejoice-greatly.firebaseapp.com',
-    storageBucket: 'rejoice-greatly.firebasestorage.app',
-    measurementId: 'G-DVZK78WSBW',
+    apiKey: 'AIzaSyAkunrPSq5j7UduXssVuCbK8WnYtNmsW3w',
+    appId: '1:1053433403648:web:bfc5a70238696d4196fbe5',
+    messagingSenderId: '1053433403648',
+    projectId: 'moodchangingcafe',
+    authDomain: 'moodchangingcafe.firebaseapp.com',
+    databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',
+    storageBucket: 'moodchangingcafe.firebasestorage.app',
+    measurementId: 'G-D54JJZJ5PM',
   );
+
 }
