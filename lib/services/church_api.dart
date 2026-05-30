@@ -56,7 +56,11 @@ class ChurchApi {
   }) =>
       UserSessionStore.saveAccount(account, provider: provider);
 
-  /// On app launch: show cached session immediately, sync server in background.
+  /// On app launch: restore Firebase session and sync Postgres when needed.
+  ///
+  /// Users who still need signup (or have no cached server account) must be
+  /// upserted via `POST /auth/firebase` before profile upload — otherwise
+  /// `/auth/picture-upload` returns "account not found".
   static Future<SessionRestoreResult> restoreUserSession() async {
     final user = await waitForSignedInUser(
       timeout: const Duration(seconds: 5),
@@ -68,8 +72,28 @@ class ChurchApi {
     final cached = await getCachedAccountJson();
     final local = cached ?? await accountFromLocalPrefs(user);
     final signupComplete = await UserSessionStore.readSignupComplete();
+    final needsServerAccount =
+        !signupComplete || cached == null || cached['firebaseUid'] == null;
 
-    unawaited(_syncSessionInBackground(user));
+    if (needsServerAccount) {
+      try {
+        final account = await syncCurrentUserAccount();
+        final prefs = await SharedPreferences.getInstance();
+        final provider = prefs.getString(UserSessionStore.authProviderKey) ??
+            inferAuthProvider(user);
+        await persistAccountFromServer(account, provider: provider);
+        return SessionRestoreResult(
+          loggedIn: true,
+          signupComplete: isSignupComplete(account),
+          account: account,
+          syncedFromServer: true,
+        );
+      } catch (e, st) {
+        debugPrint('ChurchApi restoreUserSession sync failed: $e\n$st');
+      }
+    } else {
+      unawaited(_syncSessionInBackground(user));
+    }
 
     return SessionRestoreResult(
       loggedIn: true,
@@ -78,6 +102,11 @@ class ChurchApi {
       syncedFromServer: false,
     );
   }
+
+  /// Upserts the current Firebase user into Postgres. Call before endpoints
+  /// that look up [AuthAccount] by `firebaseUid` (e.g. picture upload).
+  static Future<Map<String, dynamic>> ensurePostgresAccount() =>
+      syncCurrentUserAccount();
 
   static Future<void> _syncSessionInBackground(User user) async {
     try {
@@ -137,7 +166,8 @@ class ChurchApi {
 
     final active = FirebaseAuth.instance.currentUser ?? user;
     final prefs = await SharedPreferences.getInstance();
-    final provider = prefs.getString('authProvider') ?? inferAuthProvider(active);
+    final provider = prefs.getString(UserSessionStore.authProviderKey) ??
+        inferAuthProvider(active);
 
     String? token;
     try {

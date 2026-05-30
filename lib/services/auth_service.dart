@@ -10,6 +10,20 @@ import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'church_api.dart';
 import 'user_session_store.dart';
+import '../main.dart' show navigatorKey;
+
+/// Result of syncing the Firebase user to Postgres via `POST /auth/firebase`.
+class AuthSyncResult {
+  const AuthSyncResult({
+    required this.signupComplete,
+    this.error,
+  });
+
+  final bool signupComplete;
+  final String? error;
+
+  bool get ok => error == null;
+}
 
 class AuthService {
   // Mobile only — web uses Firebase signInWithPopup (see signInWithGoogle).
@@ -45,51 +59,33 @@ class AuthService {
     String email,
     String password,
     String name,
-    context,
+    BuildContext context,
   ) async {
     try {
       await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      //login no need to send to backend
-      String? idToken = await _auth.currentUser?.getIdToken();
-      await FirebaseAuth.instance.currentUser?.updateDisplayName(name);
+      await _auth.currentUser?.updateDisplayName(name);
+      try {
+        await _auth.currentUser?.reload();
+      } catch (_) {}
 
-      if (idToken != null) {
-        bool signupComplete = await _sendUserToBackend("email", name);
-        if (signupComplete)
-        {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        }else 
-        {
-          Navigator.pushReplacementNamed(context, '/user-prep');
-        }
-      }
+      final sync = await _syncWithBackend('email', name);
+      if (!sync.ok) return sync.error;
+      _navigateAfterAuth(sync.signupComplete);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
     }
   }
 
-  Future<String?> signInWithEmail(String email, String password, context) async {
+  Future<String?> signInWithEmail(String email, String password, BuildContext context) async {
     try {
       await _auth.signInWithEmailAndPassword(email: email, password: password);
-      String? idToken = await _auth.currentUser?.getIdToken();
-      if (idToken != null) {
-        bool signupComplete = await _sendUserToBackend("email", null);
-        if (signupComplete)
-        {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        }else 
-        {
-          Navigator.pushReplacementNamed(context, '/user-prep');
-        }
-      }
-      else {
-        return "Failed to sign in. Please try again.";
-      }
-
+      final sync = await _syncWithBackend('email', null);
+      if (!sync.ok) return sync.error;
+      _navigateAfterAuth(sync.signupComplete);
       return null;
     } on FirebaseAuthException catch (e) {
       return e.message;
@@ -104,8 +100,6 @@ class AuthService {
     _googleSignInInProgress = true;
     try {
       if (kIsWeb) {
-        // google_sign_in.signIn() on web is deprecated, lacks idToken, and
-        // requires the People API. Firebase popup is the supported path.
         await _auth.signInWithPopup(GoogleAuthProvider());
       } else {
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -120,7 +114,9 @@ class AuthService {
         await _auth.signInWithCredential(credential);
       }
 
-      await _sendUserToBackend("Google", null);
+      final sync = await _syncWithBackend('Google', null);
+      if (!sync.ok) return sync.error;
+      _navigateAfterAuth(sync.signupComplete);
       return null;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'popup-closed-by-user') return 'Cancelled';
@@ -142,7 +138,12 @@ class AuthService {
           ..addScope('email')
           ..addScope('name');
         await _auth.signInWithPopup(provider);
-        await _sendUserToBackend('Apple', _auth.currentUser?.displayName);
+        final sync = await _syncWithBackend(
+          'Apple',
+          _auth.currentUser?.displayName,
+        );
+        if (!sync.ok) return sync.error;
+        _navigateAfterAuth(sync.signupComplete);
         return null;
       }
 
@@ -184,12 +185,17 @@ class AuthService {
               .trim();
       if (fullName.isNotEmpty) {
         await userCredential.user?.updateDisplayName(fullName);
+        try {
+          await userCredential.user?.reload();
+        } catch (_) {}
       }
 
-      await _sendUserToBackend(
+      final sync = await _syncWithBackend(
         'Apple',
         fullName.isNotEmpty ? fullName : userCredential.user?.displayName,
       );
+      if (!sync.ok) return sync.error;
+      _navigateAfterAuth(sync.signupComplete);
       return null;
     } on SignInWithAppleAuthorizationException catch (e) {
       if (e.code == AuthorizationErrorCode.canceled) {
@@ -206,6 +212,9 @@ class AuthService {
 
   // --- LOGOUT ---
   Future<void> logout() async {
+    try {
+      OneSignal.logout();
+    } catch (_) {}
     await UserSessionStore.clear();
     if (!kIsWeb) {
       await _googleSignIn.signOut();
@@ -213,35 +222,75 @@ class AuthService {
     await _auth.signOut();
   }
 
-  // --- OPTIONAL: send user info to your backend ---
-  Future<bool> _sendUserToBackend(String provider, String? name) async {
-    try {
-      final idToken = await _auth.currentUser?.getIdToken(true);
-      if (idToken == null || idToken.isEmpty) {
-        print('Backend error: missing Firebase id token');
-        return false;
-      }
-      final getName = name ?? await _auth.currentUser?.displayName;
+  /// Verifies Firebase session, upserts the user in Postgres via `/auth/firebase`.
+  Future<AuthSyncResult> _syncWithBackend(String provider, String? name) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return const AuthSyncResult(
+        signupComplete: false,
+        error: 'Not signed in to Firebase',
+      );
+    }
 
+    try {
+      await user.reload();
+    } catch (e) {
+      debugPrint('AuthService: user.reload() failed (continuing): $e');
+    }
+
+    final active = _auth.currentUser ?? user;
+    final displayName = name ?? active.displayName;
+
+    String? idToken;
+    try {
+      idToken = await active.getIdToken(true);
+    } catch (e) {
+      debugPrint('AuthService: getIdToken(true) failed, retrying: $e');
+      idToken = await active.getIdToken();
+    }
+
+    if (idToken == null || idToken.isEmpty) {
+      return const AuthSyncResult(
+        signupComplete: false,
+        error: 'Could not obtain Firebase ID token',
+      );
+    }
+
+    try {
       final userData = await ChurchApi.refreshAccountWithFirebaseToken(
         idToken,
         provider: provider,
-        name: getName,
+        name: displayName,
       );
 
       final firebaseUid = userData['firebaseUid'] ?? '';
       final extractedName = userData['name'] ?? 'User';
-      OneSignal.login('$firebaseUid');
+      if ('$firebaseUid'.isNotEmpty) {
+        OneSignal.login('$firebaseUid');
+      }
 
       final persisted = await UserSessionStore.hasPersistedSession();
-      print('Backend success: User $extractedName saved locally (persisted=$persisted).');
+      debugPrint(
+        'AuthService: synced $extractedName with backend (persisted=$persisted)',
+      );
       if (!persisted) {
-        print('WARNING: account data was not written to device storage.');
+        debugPrint('WARNING: account data was not written to device storage.');
       }
-      return ChurchApi.isSignupComplete(userData);
+
+      return AuthSyncResult(
+        signupComplete: ChurchApi.isSignupComplete(userData),
+      );
     } catch (e, st) {
-      print('Backend connection error: $e\n$st');
-      return false;
+      debugPrint('AuthService: backend sync failed: $e\n$st');
+      return AuthSyncResult(
+        signupComplete: false,
+        error: 'Could not connect to the server. Please try again.',
+      );
     }
+  }
+
+  void _navigateAfterAuth(bool signupComplete) {
+    final route = signupComplete ? '/dashboard' : '/user-prep';
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(route, (r) => false);
   }
 }

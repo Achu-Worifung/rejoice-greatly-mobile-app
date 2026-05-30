@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import '../main.dart' show navigatorKey;
+import '../services/auth_service.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
@@ -32,6 +33,36 @@ class _MePageState extends State<MePage> {
     } else {
       nav.pushReplacementNamed('/dashboard');
     }
+  }
+
+  Future<void> _logout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log out?'),
+        content: const Text(
+          'You will need to sign in again to use the app.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Log out',
+              style: TextStyle(color: ChurchColors.button),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    await AuthService().logout();
+    if (!mounted) return;
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
   }
 
   int _i(dynamic v) {
@@ -187,6 +218,23 @@ class _MePageState extends State<MePage> {
                     fontSize: 12,
                     color: ChurchColors.muted.withValues(alpha: 0.9),
                     height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout_rounded, size: 20),
+                    label: const Text('Log out'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ChurchColors.bodyText,
+                      side: const BorderSide(color: ChurchColors.divider),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
               ],

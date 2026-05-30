@@ -16,6 +16,7 @@ class RootPage extends StatefulWidget {
 
 class _RootPageState extends State<RootPage> {
   Future<SessionRestoreResult>? _sessionFuture;
+  String? _restoredUid;
 
   Widget _loading() {
     return const Scaffold(
@@ -37,7 +38,14 @@ class _RootPageState extends State<RootPage> {
 
         if (!authSnapshot.hasData) {
           _sessionFuture = null;
+          _restoredUid = null;
           return const LoginPage();
+        }
+
+        final uid = authSnapshot.data!.uid;
+        if (_restoredUid != uid) {
+          _sessionFuture = null;
+          _restoredUid = uid;
         }
 
         _sessionFuture ??= ChurchApi.restoreUserSession();

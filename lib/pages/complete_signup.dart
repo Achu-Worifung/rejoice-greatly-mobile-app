@@ -23,6 +23,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   late VideoHandler _handler;
   Uint8List? _capturedBytes;
   bool _isLoading = false;
+  bool _isRegisteringAccount = true;
   String? _error;
   bool _isCameraReady = false;
   bool _canuseImg = true;
@@ -33,6 +34,28 @@ class _CompleteSignupState extends State<CompleteSignup> {
     super.initState();
     _handler = VideoHandler();
     _initializeCamera();
+    _ensurePostgresAccount();
+  }
+
+  /// Parent-app users may exist in Firebase only; upsert before photo upload.
+  Future<void> _ensurePostgresAccount() async {
+    setState(() {
+      _isRegisteringAccount = true;
+      _error = null;
+    });
+    try {
+      await ChurchApi.ensurePostgresAccount();
+      if (!mounted) return;
+      setState(() => _isRegisteringAccount = false);
+    } catch (e, st) {
+      debugPrint('CompleteSignup: ensurePostgresAccount failed: $e\n$st');
+      if (!mounted) return;
+      setState(() {
+        _isRegisteringAccount = false;
+        _error =
+            'Could not register your account on the server. Check your connection and tap Retry.';
+      });
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -121,6 +144,14 @@ class _CompleteSignupState extends State<CompleteSignup> {
         return;
       }
 
+      try {
+        await ChurchApi.ensurePostgresAccount();
+      } catch (e, st) {
+        debugPrint('CompleteSignup: pre-upload sync failed: $e\n$st');
+        setState(() => _error =
+            'Your account is not on the server yet. Check your connection and try again.');
+        return;
+      }
 
       final request = http.MultipartRequest(
         'POST',
@@ -162,8 +193,15 @@ class _CompleteSignupState extends State<CompleteSignup> {
       {
         setState(() => _canuseImg = false);
         setState(() => _error = "Facial Image not clear enough.");
-      }else {
-        setState(() => _error = "Upload failed: ${response.statusCode}");
+      }else if (response.statusCode == 401){
+        setState(() => _canuseImg = false);
+        setState(() => _error = "Multiple faces detected.");
+      }else if (response.statusCode == 403){
+        setState(() => _canuseImg = false);
+        setState(() => _error = "No face detected.");
+      } else {
+        final body = await response.stream.bytesToString();
+        setState(() => _error = _uploadErrorMessage(response.statusCode, body));
       }
     } catch (e) {
       setState(() => _error = "Network error. Please try again.");
@@ -179,11 +217,73 @@ class _CompleteSignupState extends State<CompleteSignup> {
     super.dispose();
   }
 
+  String _uploadErrorMessage(int statusCode, String body) {
+    if (statusCode == 404) {
+      return 'Account could not be found. Please check your connection and try again.';
+    }
+    try {
+      final decoded = json.decode(body);
+      if (decoded is Map) {
+        for (final key in ['message', 'error', 'detail']) {
+          final v = decoded[key];
+          if (v is String && v.trim().isNotEmpty) return v.trim();
+        }
+      }
+    } catch (_) {}
+    if (body.trim().isNotEmpty && body.length < 200) return body.trim();
+    return 'Upload failed ($statusCode). Please try again.';
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isRegisteringAccount) {
+      return const Scaffold(
+        backgroundColor: ChurchColors.bodyText,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: ChurchColors.button),
+              SizedBox(height: 16),
+              Text(
+                'Setting up your account…',
+                style: TextStyle(color: ChurchColors.buttonText, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: ChurchColors.bodyText,
-      body: _capturedBytes != null ? _buildPreview() : _buildCamera(),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          _capturedBytes != null ? _buildPreview() : _buildCamera(),
+          if (_error != null &&
+              _error!.contains('register your account') &&
+              _capturedBytes == null)
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
+                child: Column(
+                  children: [
+                    _errorBanner(),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _ensurePostgresAccount,
+                      child: const Text(
+                        'Retry',
+                        style: TextStyle(color: ChurchColors.button),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

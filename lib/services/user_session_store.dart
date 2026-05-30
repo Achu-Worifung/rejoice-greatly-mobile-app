@@ -75,7 +75,7 @@ class UserSessionStore {
       if (str(raw['name']) != null) 'name': str(raw['name']),
       if (str(raw['email']) != null) 'email': str(raw['email']),
       if (str(raw['imgURL']) != null) 'imgURL': str(raw['imgURL']),
-      'admin': asBool(raw['admin']),
+      'admin': asBool(raw['admin'] ?? raw['isAdmin']),
       'signupComplete': asBool(raw['signupComplete']),
       'currentStreak': asInt(raw['currentStreak']),
       'longestStreak': asInt(raw['longestStreak']),
