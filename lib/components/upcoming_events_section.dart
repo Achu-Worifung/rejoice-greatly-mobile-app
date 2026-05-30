@@ -8,11 +8,9 @@ class UpcomingEventsSection extends StatelessWidget {
   const UpcomingEventsSection({
     super.key,
     required this.events,
-    this.onViewAll,
   });
 
   final List<Map<String, dynamic>> events;
-  final VoidCallback? onViewAll;
 
 
 
@@ -23,32 +21,9 @@ class UpcomingEventsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const DashboardLabelText(label: 'UPCOMING EVENTS'),
-              TextButton(
-                onPressed: onViewAll,
-                style: TextButton.styleFrom(
-                  foregroundColor: ChurchColors.accent,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                child: const Text(
-                  'VIEW ALL',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    // decoration: TextDecoration.underline,
-                    decorationColor: ChurchColors.accent,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: DashboardLabelText(label: 'UPCOMING EVENTS'),
         ),
         SizedBox(
           // Poster (3:4 @ 168w) + gap + date line; fixed height prevents overflow.

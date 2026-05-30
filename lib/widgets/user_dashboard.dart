@@ -321,7 +321,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  _buildViewMoreButton(),
+                  _buildDashboardCtaButton(
+                    label: 'VIEW MORE',
+                    onPressed: widget.onViewAllSermons,
+                  ),
                   const SizedBox(height: 32),
                   FutureBuilder<_DashboardEventsLoad>(
                     future: _eventsFuture,
@@ -361,9 +364,18 @@ class _DashboardPageState extends State<DashboardPage> {
                       if (data.items.isEmpty) {
                         return _DashboardEventsEmpty(onViewAll: widget.onViewAllEvents);
                       }
-                      return UpcomingEventsSection(
-                        events: data.items,
-                        onViewAll: widget.onViewAllEvents,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          UpcomingEventsSection(events: data.items),
+                          if (widget.onViewAllEvents != null) ...[
+                            const SizedBox(height: 12),
+                            _buildDashboardCtaButton(
+                              label: 'VIEW ALL EVENTS',
+                              onPressed: widget.onViewAllEvents,
+                            ),
+                          ],
+                        ],
                       );
                     },
                   ),
@@ -388,7 +400,10 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildViewMoreButton() {
+  Widget _buildDashboardCtaButton({
+    required String label,
+    VoidCallback? onPressed,
+  }) {
     return SizedBox(
       height: 44,
       width: double.infinity,
@@ -397,14 +412,17 @@ class _DashboardPageState extends State<DashboardPage> {
           backgroundColor: ChurchColors.button,
           foregroundColor: ChurchColors.buttonText,
           elevation: 0,
+          padding: EdgeInsets.zero,
+          minimumSize: const Size(double.infinity, 44),
+          fixedSize: const Size(double.infinity, 44),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        onPressed: widget.onViewAllSermons,
-        child: const Text(
-          'VIEW MORE',
-          style: TextStyle(
+        onPressed: onPressed,
+        child: Text(
+          label,
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.2,
@@ -627,14 +645,31 @@ class _DashboardEventsEmpty extends StatelessWidget {
               ),
               if (onViewAll != null) ...[
                 const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: onViewAll,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ChurchColors.button,
-                    foregroundColor: ChurchColors.buttonText,
-                    minimumSize: const Size.fromHeight(40),
+                SizedBox(
+                  height: 44,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: onViewAll,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ChurchColors.button,
+                      foregroundColor: ChurchColors.buttonText,
+                      elevation: 0,
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(double.infinity, 44),
+                      fixedSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'VIEW ALL EVENTS',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ),
-                  child: const Text('VIEW ALL EVENTS'),
                 ),
               ],
             ],
