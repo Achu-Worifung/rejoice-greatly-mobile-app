@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/intl.dart';
 
 import '../main.dart' show navigatorKey;
 import '../services/auth_service.dart';
@@ -16,15 +17,19 @@ class MePage extends StatefulWidget {
 }
 
 class _MePageState extends State<MePage> {
-  late Future<ProfileLoadResult> _accountFuture;
+  late Future<MePageLoadResult> _pageFuture;
 
   @override
   void initState() {
     super.initState();
-    _accountFuture = _loadAccount();
+    _pageFuture = ChurchApi.loadMePage();
   }
 
-  Future<ProfileLoadResult> _loadAccount() => ChurchApi.loadProfileAccount();
+  void _reload() {
+    setState(() {
+      _pageFuture = ChurchApi.loadMePage();
+    });
+  }
 
   void _onBack() {
     final nav = Navigator.of(context);
@@ -71,6 +76,26 @@ class _MePageState extends State<MePage> {
     return int.tryParse('$v') ?? 0;
   }
 
+  List<_AttendanceActivity> _parseActivities(List<Map<String, dynamic>> raw) {
+    final out = <_AttendanceActivity>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      final dateStr = m['attendedAt']?.toString() ?? '';
+      if (dateStr.isEmpty) continue;
+      DateTime? dt = DateTime.tryParse(dateStr);
+      if (dt == null && dateStr.length >= 10) {
+        try {
+          dt = DateFormat('yyyy-MM-dd').parse(dateStr.substring(0, 10));
+        } catch (_) {}
+      }
+      if (dt == null) continue;
+      out.add(_AttendanceActivity(date: dt));
+    }
+    out.sort((a, b) => b.date.compareTo(a.date));
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,8 +107,8 @@ class _MePageState extends State<MePage> {
           onPressed: _onBack,
         ),
       ),
-      body: FutureBuilder<ProfileLoadResult>(
-        future: _accountFuture,
+      body: FutureBuilder<MePageLoadResult>(
+        future: _pageFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -91,12 +116,11 @@ class _MePageState extends State<MePage> {
             );
           }
           final result = snapshot.data;
-          final a = result?.account;
-          final synced = result?.syncedFromServer ?? false;
+          final profile = result?.profile;
           final syncError = result?.error;
           final signedIn =
-              FirebaseAuth.instance.currentUser != null || (a != null && synced);
-          if (a == null) {
+              FirebaseAuth.instance.currentUser != null || profile != null;
+          if (profile == null) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -124,11 +148,7 @@ class _MePageState extends State<MePage> {
                     const SizedBox(height: 20),
                     if (signedIn)
                       FilledButton(
-                        onPressed: () {
-                          setState(() {
-                            _accountFuture = _loadAccount();
-                          });
-                        },
+                        onPressed: _reload,
                         style: FilledButton.styleFrom(
                           backgroundColor: ChurchColors.button,
                           foregroundColor: ChurchColors.buttonText,
@@ -154,19 +174,18 @@ class _MePageState extends State<MePage> {
             );
           }
 
-          final name = a['name'] as String? ?? 'Member';
-          final email = a['email'] as String? ?? '';
+          final name = profile['name'] as String? ?? 'Member';
+          final email = profile['email'] as String? ?? '';
           final churchSubtitle = dotenv.env['CHURCH_SUBTITLE'] ?? 'Rejoice Greatly - PHX';
+          final hasProfile = result?.hasProfile ?? false;
+          final stats = result?.stats;
+          final profileSynced = result?.profileSynced ?? false;
 
           return RefreshIndicator(
             color: ChurchColors.button,
             onRefresh: () async {
-              setState(() {
-                _accountFuture = _loadAccount();
-              });
-              await _accountFuture;
-              if (!context.mounted) return;
-              setState(() {});
+              _reload();
+              await _pageFuture;
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -176,8 +195,9 @@ class _MePageState extends State<MePage> {
                   name: name,
                   email: email,
                   churchLine: churchSubtitle,
+                  account: profile,
                 ),
-                if (!synced && syncError != null) ...[
+                if (!profileSynced && syncError != null) ...[
                   const SizedBox(height: 12),
                   Container(
                     width: double.infinity,
@@ -188,38 +208,119 @@ class _MePageState extends State<MePage> {
                       border: Border.all(color: ChurchColors.divider),
                     ),
                     child: Text(
-                      'Could not refresh from server. Pull down to retry.\n$syncError',
+                      'Could not refresh profile. Pull down to retry.\n$syncError',
                       style: const TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
                     ),
                   ),
                 ],
-                const SizedBox(height: 24),
-                Text(
-                  'ATTENDANCE',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: ChurchColors.accent,
-                    letterSpacing: 1.1,
+                if (!hasProfile) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: ChurchColors.button.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: ChurchColors.divider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Complete your profile',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: ChurchColors.bodyText,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Add a profile photo to unlock attendance stats and your check-in history.',
+                          style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () => Navigator.pushNamed(context, '/complete-signup'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: ChurchColors.button,
+                            foregroundColor: ChurchColors.buttonText,
+                          ),
+                          child: const Text('Finish signup'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _StatGrid(
-                  currentStreak: _i(a['currentStreak']),
-                  longestStreak: _i(a['longestStreak']),
-                  totalAttendance: _i(a['totalAttendance']),
-                  totalAbsences: _i(a['totalAbsences']),
-                  absenceStreak: _i(a['absenceStreak']),
-                ),
-                const SizedBox(height: 28),
-                Text(
-                  'Streaks reflect Sundays recorded in your church’s system.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: ChurchColors.muted.withValues(alpha: 0.9),
-                    height: 1.4,
+                ] else ...[
+                  if (syncError != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: ChurchColors.button.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: ChurchColors.divider),
+                      ),
+                      child: Text(
+                        'Some data could not refresh. Pull down to try again.\n$syncError',
+                        style: const TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  Text(
+                    'ATTENDANCE',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: ChurchColors.accent,
+                      letterSpacing: 1.1,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 12),
+                  if (stats != null)
+                    _StatGrid(
+                      currentStreak: _i(stats['currentStreak']),
+                      longestStreak: _i(stats['longestStreak']),
+                      totalAttendance: _i(stats['totalAttendance']),
+                      totalAbsences: _i(stats['totalAbsences']),
+                      absenceStreak: _i(stats['absenceStreak']),
+                    )
+                  else
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'Stats unavailable. Pull down to refresh.',
+                        style: TextStyle(color: ChurchColors.muted, fontSize: 13),
+                      ),
+                    ),
+                  const SizedBox(height: 28),
+                  Text(
+                    (result?.statsSynced ?? false)
+                        ? 'Stats are loaded from your church attendance records.'
+                        : 'Showing saved stats — pull down to refresh from the server.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: ChurchColors.muted.withValues(alpha: 0.9),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'ACTIVITY',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: ChurchColors.accent,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _AttendanceActivityList(
+                    activities: _parseActivities(result?.activities ?? []),
+                  ),
+                ],
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
@@ -251,16 +352,18 @@ class _ProfileHeader extends StatelessWidget {
     required this.name,
     required this.email,
     required this.churchLine,
+    this.account,
   });
 
   final String name;
   final String email;
   final String churchLine;
+  final Map<String, dynamic>? account;
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String?>(
-      future: _avatarUrl(),
+      future: ChurchApi.resolveProfileImageUrl(account: account),
       builder: (context, snap) {
         final url = snap.data;
         return Container(
@@ -326,12 +429,94 @@ class _ProfileHeader extends StatelessWidget {
     );
   }
 
-  static Future<String?> _avatarUrl() => ChurchApi.resolveProfileImageUrl();
-
   static Widget _placeholder() {
     return Container(
       color: ChurchColors.button.withValues(alpha: 0.1),
       child: const Icon(Icons.person, size: 40, color: ChurchColors.accent),
+    );
+  }
+}
+
+class _AttendanceActivity {
+  const _AttendanceActivity({required this.date});
+
+  final DateTime date;
+}
+
+class _AttendanceActivityList extends StatelessWidget {
+  const _AttendanceActivityList({required this.activities});
+
+  final List<_AttendanceActivity> activities;
+
+  @override
+  Widget build(BuildContext context) {
+    if (activities.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: ChurchColors.cardDecoration(shadow: const []),
+        child: const Text(
+          'No check-ins yet. When you are marked present at a service, it will appear here.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
+        ),
+      );
+    }
+
+    final dateFmt = DateFormat('EEEE, MMM d, yyyy');
+
+    return Column(
+      children: [
+        for (var i = 0; i < activities.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: ChurchColors.cardDecoration(shadow: const []),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: ChurchColors.button.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_outline,
+                    color: ChurchColors.button,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Marked present',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: ChurchColors.bodyText,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        dateFmt.format(activities[i].date),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: ChurchColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

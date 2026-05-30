@@ -64,9 +64,9 @@ class _DashboardPageState extends State<DashboardPage> {
       });
     }
 
-    final result = await ChurchApi.loadProfileAccount();
+    final result = await ChurchApi.loadMemberProfile();
     if (!mounted) return;
-    final url = await ChurchApi.resolveProfileImageUrl(account: result.account);
+    final url = await ChurchApi.resolveProfileImageUrl(account: result.profile);
     setState(() {
       _avatarUrl = url;
       _greetingFuture = _getGreeting();

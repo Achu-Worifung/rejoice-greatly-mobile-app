@@ -1,11 +1,9 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 
-/// Fetches `POST /auth/firebase` with the current id token, then shows [AttendanceSheet].
+/// Loads `POST /member/stats` and shows [AttendanceSheet].
 class AttendanceStatsLoader extends StatefulWidget {
   const AttendanceStatsLoader({super.key});
 
@@ -17,6 +15,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _sheetData;
+  bool _profileIncomplete = false;
 
   @override
   void initState() {
@@ -28,30 +27,43 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
     setState(() {
       _loading = true;
       _error = null;
+      _profileIncomplete = false;
     });
+
     try {
-      final account = await ChurchApi.syncCurrentUserAccount();
+      final profileResult = await ChurchApi.loadMemberProfile();
+      if (!ChurchApi.hasMemberProfile(profileResult.profile)) {
+        if (!mounted) return;
+        setState(() {
+          _profileIncomplete = true;
+          _loading = false;
+        });
+        return;
+      }
+
+      final statsResult = await ChurchApi.loadMemberStats();
       if (!mounted) return;
+
+      final stats = statsResult.stats;
+      if (stats == null) {
+        setState(() {
+          _error = statsResult.error ?? 'Could not load attendance stats';
+          _loading = false;
+        });
+        return;
+      }
+
       setState(() {
-        _sheetData = ChurchApi.accountToAttendanceSheetData(account);
+        _sheetData = ChurchApi.statsToAttendanceSheetData(stats);
+        _error = statsResult.syncedFromServer ? null : statsResult.error;
         _loading = false;
       });
     } catch (e) {
-      final cached = await ChurchApi.getCachedAccountJson() ??
-          await ChurchApi.accountFromLocalPrefs(FirebaseAuth.instance.currentUser);
       if (!mounted) return;
-      if (cached != null) {
-        setState(() {
-          _sheetData = ChurchApi.accountToAttendanceSheetData(cached);
-          _error = 'Using saved data. Could not refresh: $e';
-          _loading = false;
-        });
-      } else {
-        setState(() {
-          _error = e.toString();
-          _loading = false;
-        });
-      }
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -76,6 +88,46 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         ),
       );
     }
+
+    if (_profileIncomplete) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        decoration: const BoxDecoration(
+          color: ChurchColors.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Complete your profile',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: ChurchColors.bodyText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Finish signup with a profile photo before attendance stats are available.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: ChurchColors.muted, fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: ChurchColors.button,
+                foregroundColor: ChurchColors.buttonText,
+              ),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_error != null && _sheetData == null) {
       return Container(
         width: double.infinity,
@@ -114,6 +166,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         ),
       );
     }
+
     return AttendanceSheet(
       data: _sheetData!,
       bannerMessage: _error,

@@ -75,6 +75,7 @@ class UserSessionStore {
       if (str(raw['name']) != null) 'name': str(raw['name']),
       if (str(raw['email']) != null) 'email': str(raw['email']),
       if (str(raw['imgURL']) != null) 'imgURL': str(raw['imgURL']),
+      'hasProfile': asBool(raw['hasProfile']),
       'admin': asBool(raw['admin'] ?? raw['isAdmin']),
       'signupComplete': asBool(raw['signupComplete']),
       'currentStreak': asInt(raw['currentStreak']),
@@ -82,6 +83,8 @@ class UserSessionStore {
       'totalAttendance': asInt(raw['totalAttendance']),
       'totalAbsences': asInt(raw['totalAbsences']),
       'absenceStreak': asInt(raw['absenceStreak']),
+      if (raw['recentAttendance'] is List)
+        'recentAttendance': List<dynamic>.from(raw['recentAttendance'] as List),
     };
   }
 
