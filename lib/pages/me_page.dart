@@ -42,62 +42,95 @@ class _MePageState extends State<MePage> {
 
   static const Color _danger = Color(0xFFC62828);
   static const Color _dangerDark = Color(0xFF8E0000);
-  static const Color _dangerSurface = Color(0xFFFFEBEE);
 
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: ChurchColors.background,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        icon: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: _dangerSurface,
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.warning_amber_rounded, color: _danger, size: 32),
-        ),
-        title: const Text(
-          'Leave this account?',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: ChurchColors.bodyText,
-          ),
-        ),
-        content: const Text(
-          'You will be signed out of Rejoice Greatly and the cafe tab. '
-          'You must sign in again to check in or view your stats.',
-          style: TextStyle(color: ChurchColors.muted, height: 1.45),
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Stay signed in',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: ChurchColors.muted,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          decoration: ChurchColors.cardDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: ChurchColors.button.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.power_settings_new_rounded,
+                  color: ChurchColors.accent,
+                  size: 28,
+                ),
               ),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: _danger,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 20),
+              const Text(
+                'Leave this account?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: ChurchColors.accent,
+                ),
               ),
-            ),
-            child: const Text(
-              'Yes, log out',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
+              const SizedBox(height: 12),
+              const Text(
+                'You will be signed out of Rejoice Greatly and the cafe tab. '
+                'You must sign in again to check in or view your stats.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: ChurchColors.muted,
+                  height: 1.45,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: ChurchColors.button,
+                    foregroundColor: ChurchColors.buttonText,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Yes, log out',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ChurchColors.accent,
+                    side: const BorderSide(color: ChurchColors.divider),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Stay signed in',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
     if (confirm != true || !mounted) return;
