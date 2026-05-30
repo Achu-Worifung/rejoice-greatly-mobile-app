@@ -102,15 +102,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<_DashboardEventsLoad> _fetchDashboardEventCards() async {
     try {
       final raw = await ChurchApi.getDashboardEventInstances();
-      final list = ChurchApi.mapEventInstances(raw)
-          .map(
-            (e) => {
-              'title': e['title'],
-              'date': e['date'],
-              'imageUrl': e['imageUrl'],
-            },
-          )
-          .toList();
+      final list = ChurchApi.mapEventInstances(raw);
       return _DashboardEventsLoad(items: list, error: null);
     } catch (e) {
       return _DashboardEventsLoad(items: [], error: e.toString());
