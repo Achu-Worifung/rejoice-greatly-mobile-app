@@ -16,22 +16,6 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0;
 
-  late final List<Widget> _pages;
-
-  @override
-  void initState() {
-    super.initState();
-    _pages = [
-      DashboardPage(
-        onViewAllSermons: () => setState(() => _selectedIndex = 1),
-        onViewAllEvents: () => setState(() => _selectedIndex = 2),
-      ),
-      const SermonsPage(),
-      const EventsPage(),
-      const Cafe(),
-    ];
-  }
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -58,10 +42,20 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      DashboardPage(
+        onViewAllSermons: () => setState(() => _selectedIndex = 1),
+        onViewAllEvents: () => setState(() => _selectedIndex = 2),
+      ),
+      const SermonsPage(),
+      const EventsPage(),
+      Cafe(isActive: _selectedIndex == 3),
+    ];
+
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      body: _pages.length > _selectedIndex
-          ? _pages[_selectedIndex]
+      body: pages.length > _selectedIndex
+          ? pages[_selectedIndex]
           : const Center(child: Text('Page not found')),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

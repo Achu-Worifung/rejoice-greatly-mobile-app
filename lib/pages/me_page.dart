@@ -40,24 +40,61 @@ class _MePageState extends State<MePage> {
     }
   }
 
+  static const Color _danger = Color(0xFFC62828);
+  static const Color _dangerDark = Color(0xFF8E0000);
+  static const Color _dangerSurface = Color(0xFFFFEBEE);
+
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Log out?'),
-        content: const Text(
-          'You will need to sign in again to use the app.',
+        backgroundColor: ChurchColors.background,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        icon: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: _dangerSurface,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.warning_amber_rounded, color: _danger, size: 32),
         ),
+        title: const Text(
+          'Leave this account?',
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            color: ChurchColors.bodyText,
+          ),
+        ),
+        content: const Text(
+          'You will be signed out of Rejoice Greatly and the cafe tab. '
+          'You must sign in again to check in or view your stats.',
+          style: TextStyle(color: ChurchColors.muted, height: 1.45),
+        ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
             child: const Text(
-              'Log out',
-              style: TextStyle(color: ChurchColors.button),
+              'Stay signed in',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: ChurchColors.muted,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: _danger,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Yes, log out',
+              style: TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -321,23 +358,79 @@ class _MePageState extends State<MePage> {
                     activities: _parseActivities(result?.activities ?? []),
                   ),
                 ],
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton.icon(
-                    onPressed: _logout,
-                    icon: const Icon(Icons.logout_rounded, size: 20),
-                    label: const Text('Log out'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ChurchColors.bodyText,
-                      side: const BorderSide(color: ChurchColors.divider),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 36),
+                const Divider(color: ChurchColors.divider, height: 1),
+                const SizedBox(height: 20),
+                Text(
+                  'SESSION',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: _danger.withValues(alpha: 0.85),
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _logout,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [_danger, _dangerDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _danger.withValues(alpha: 0.35),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.power_settings_new_rounded,
+                              color: Colors.white.withValues(alpha: 0.95),
+                              size: 22,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Log out of account',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.98),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'Ends your session on this device immediately.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _danger.withValues(alpha: 0.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           );
