@@ -141,6 +141,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
+        automaticallyImplyLeading: false,
         toolbarHeight: 138,
         centerTitle: true,
         title: _buildHeader(),
@@ -175,7 +176,6 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
     );
   }
 
-  // ✨ PREMIUM HEADER — matches EventsPage
   Widget _buildHeader() {
     return Padding(
       padding: ChurchTabPageHeader.kTitlePadding,

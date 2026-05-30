@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../services/church_api.dart';
 
 
 class OverviewWidget extends StatefulWidget {
@@ -51,9 +51,7 @@ class _OverviewWidgetState extends State<OverviewWidget> {
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    String ip_addr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
-    print("ip_addr: $ip_addr");
-    final Uri uri = Uri.parse("http://$ip_addr:8080/admin/overview");
+    final Uri uri = Uri.parse("${ChurchApi.baseUrl}/admin/overview");
 
     final String dateStr =
         "${_selectedSunday.year}-${_selectedSunday.month.toString().padLeft(2, '0')}-${_selectedSunday.day.toString().padLeft(2, '0')}";

@@ -43,28 +43,28 @@ class LoginPage extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            Positioned(
-              left: 0,
-              bottom: 0,
-              child: SvgPicture.asset(
-                'assets/icons/background.svg',
-                width: 180,
-                fit: BoxFit.contain,
-              ),
-            ),
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
-                child: SvgPicture.asset(
-                  'assets/icons/background.svg',
-                  width: 180,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
+            // Positioned(
+            //   left: 0,
+            //   bottom: 0,
+            //   child: SvgPicture.asset(
+            //     'assets/icons/background.svg',
+            //     width: 180,
+            //     fit: BoxFit.contain,
+            //   ),
+            // ),
+            // Positioned(
+            //   right: 0,
+            //   bottom: 0,
+            //   child: Transform(
+            //     alignment: Alignment.center,
+            //     transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
+            //     child: SvgPicture.asset(
+            //       'assets/icons/background.svg',
+            //       width: 180,
+            //       fit: BoxFit.contain,
+            //     ),
+            //   ),
+            // ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [

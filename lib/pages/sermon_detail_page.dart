@@ -59,10 +59,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
         backgroundColor: ChurchColors.background,
         appBar: ChurchAppBar.pageTitle(
           'Sermon',
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+          automaticallyImplyLeading: false,
         ),
         body: const Center(
           child: CircularProgressIndicator(color: ChurchColors.button),
@@ -76,10 +73,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.pageTitle(
         'Sermon',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(0, 0, 0, 32),

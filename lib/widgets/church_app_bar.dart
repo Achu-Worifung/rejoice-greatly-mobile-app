@@ -28,6 +28,7 @@ class ChurchAppBar {
     Widget? leading,
     List<Widget>? actions,
     PreferredSizeWidget? bottom,
+    bool automaticallyImplyLeading = true,
   }) {
     return AppBar(
       backgroundColor: ChurchColors.background,
@@ -40,6 +41,7 @@ class ChurchAppBar {
       titleSpacing: titleSpacing,
       title: title,
       leading: leading,
+      automaticallyImplyLeading: automaticallyImplyLeading,
       actions: actions,
       bottom: bottom,
       iconTheme: const IconThemeData(color: ChurchColors.accent, size: 24),
@@ -53,6 +55,7 @@ class ChurchAppBar {
     List<Widget>? actions,
     PreferredSizeWidget? bottom,
     double? toolbarHeight,
+    bool automaticallyImplyLeading = true,
   }) {
     return of(
       title: Text(text, style: titleStyle),
@@ -61,6 +64,7 @@ class ChurchAppBar {
       actions: actions,
       bottom: bottom,
       toolbarHeight: toolbarHeight,
+      automaticallyImplyLeading: automaticallyImplyLeading,
     );
   }
 }

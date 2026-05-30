@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -16,8 +20,22 @@ class AuthService {
       );
 
   static bool _googleSignInInProgress = false;
+  static bool _appleSignInInProgress = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  static String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  static String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString();
+  }
 
   // --- CURRENT USER ---
   User? get currentUser => _auth.currentUser;
@@ -114,35 +132,75 @@ class AuthService {
 
   // --- APPLE ---
   Future<String?> signInWithApple() async {
+    if (_appleSignInInProgress) {
+      return 'Sign-in already in progress';
+    }
+    _appleSignInInProgress = true;
     try {
       if (kIsWeb) {
-        final provider = OAuthProvider("apple.com")
+        final provider = OAuthProvider('apple.com')
           ..addScope('email')
           ..addScope('name');
         await _auth.signInWithPopup(provider);
-        await _sendUserToBackend("Apple", _auth.currentUser?.displayName);
+        await _sendUserToBackend('Apple', _auth.currentUser?.displayName);
         return null;
       }
-      final credential = await SignInWithApple.getAppleIDCredential(
+
+      if (defaultTargetPlatform != TargetPlatform.iOS &&
+          defaultTargetPlatform != TargetPlatform.macOS) {
+        return 'Sign in with Apple is only available on Apple devices';
+      }
+
+      final isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        return 'Sign in with Apple is not available on this device';
+      }
+
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
-      );
-      String fullName =
-          "${credential.givenName ?? ''} ${credential.familyName ?? ''}".trim();
-      await FirebaseAuth.instance.currentUser?.updateDisplayName(fullName);
-
-      final oauthCredential = OAuthProvider("apple.com").credential(
-        idToken: credential.identityToken,
-        accessToken: credential.authorizationCode,
+        nonce: nonce,
       );
 
-      await _auth.signInWithCredential(oauthCredential);
-      await _sendUserToBackend("Apple", fullName.isNotEmpty ? fullName : null);
+      final idToken = appleCredential.identityToken;
+      if (idToken == null || idToken.isEmpty) {
+        return 'Apple sign-in failed: missing identity token';
+      }
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: idToken,
+        rawNonce: rawNonce,
+      );
+
+      final userCredential = await _auth.signInWithCredential(oauthCredential);
+
+      final fullName =
+          '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
+              .trim();
+      if (fullName.isNotEmpty) {
+        await userCredential.user?.updateDisplayName(fullName);
+      }
+
+      await _sendUserToBackend(
+        'Apple',
+        fullName.isNotEmpty ? fullName : userCredential.user?.displayName,
+      );
       return null;
-    } on FirebaseAuthException catch (e) {
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return 'Cancelled';
+      }
       return e.message;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user') return 'Cancelled';
+      return e.message;
+    } finally {
+      _appleSignInInProgress = false;
     }
   }
 

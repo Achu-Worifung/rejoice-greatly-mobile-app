@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
+import '../theme/church_colors.dart';
+
 class UserPrepPage extends StatefulWidget {
   const UserPrepPage({super.key});
 
@@ -42,7 +44,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: ChurchColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -56,16 +58,16 @@ class _UserPrepPageState extends State<UserPrepPage> {
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF00174B),
+                  color: ChurchColors.bodyText,
                 ),
               ),
               const SizedBox(height: 12),
 
-              Text(
+              const Text(
                 "To take attendance with your face, we need to register your facial data. Don\'t worry, it\'s quick and secure!",
                 style: TextStyle(
                   fontSize: 15,
-                  color: Colors.grey.shade600,
+                  color: ChurchColors.muted,
                   height: 1.5,
                 ),
               ),
@@ -102,8 +104,8 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     height: 8,
                     decoration: BoxDecoration(
                       color: isActive
-                          ? const Color(0xFF00174B)
-                          : Colors.grey.shade300,
+                          ? ChurchColors.button
+                          : ChurchColors.divider,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   );
@@ -115,7 +117,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
               Center(
                 child: Text(
                   "${_currentIndex + 1} of ${_slides.length}",
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                  style: const TextStyle(fontSize: 13, color: ChurchColors.muted),
                 ),
               ),
               const SizedBox(height: 12),
@@ -138,8 +140,8 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     Navigator.pushNamed(context, '/complete-signup');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00174B),
-                    foregroundColor: Colors.white,
+                    backgroundColor: ChurchColors.button,
+                    foregroundColor: ChurchColors.buttonText,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -172,11 +174,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
   Widget _buildSlide(Map<String, dynamic> slide) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0F4FF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFD0DAF5)),
-      ),
+      decoration: ChurchColors.cardDecoration(),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -184,13 +182,13 @@ class _UserPrepPageState extends State<UserPrepPage> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: const Color(0xFF00174B).withOpacity(0.08),
+              color: ChurchColors.button.withValues(alpha: 0.08),
               shape: BoxShape.circle,
             ),
             child: Icon(
               slide['icon'] as IconData,
               size: 40,
-              color: const Color(0xFF00174B),
+              color: ChurchColors.accent,
             ),
           ),
           const SizedBox(height: 10),
@@ -203,7 +201,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF00174B),
+              color: ChurchColors.bodyText,
             ),
           ),
           const SizedBox(height: 10),
@@ -212,7 +210,11 @@ class _UserPrepPageState extends State<UserPrepPage> {
             child: AutoSizeText(
               slide['description'] as String,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 30),
+              style: const TextStyle(
+                fontSize: 14,
+                color: ChurchColors.muted,
+                height: 1.4,
+              ),
               minFontSize: 11,
               maxFontSize: 14,
               maxLines: 3,

@@ -38,10 +38,7 @@ class EventDetailPage extends StatelessWidget {
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.pageTitle(
         'Event',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: ListView(
         children: [

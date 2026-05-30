@@ -96,6 +96,7 @@ class _EventsPageState extends State<EventsPage> {
     return Scaffold(
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
+        automaticallyImplyLeading: false,
         toolbarHeight: 178,
         centerTitle: true,
         title: _buildHeader(),
@@ -195,7 +196,6 @@ class _EventsPageState extends State<EventsPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 40),
           // Gradient Title with Accents
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

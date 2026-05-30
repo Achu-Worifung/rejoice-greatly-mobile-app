@@ -42,7 +42,7 @@ class ProfileLoadResult {
 class ChurchApi {
   ChurchApi._();
 
-  static String get baseUrl => 'http://${dotenv.env['IP_ADDRESS'] ?? 'localhost'}:8080';
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'http://localhost:8080';
 
   static Future<void> cacheAccountJson(Map<String, dynamic> account) =>
       UserSessionStore.saveAccount(account);

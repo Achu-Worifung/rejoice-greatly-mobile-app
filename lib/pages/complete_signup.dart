@@ -1,16 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../services/church_api.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
-import '../services/church_api.dart';
 import '../util/video_handler_web.dart'
     if (dart.library.io) '../util/video_handler_mobile.dart';
+import '../theme/church_colors.dart';
 
 class CompleteSignup extends StatefulWidget {
   const CompleteSignup({super.key});
@@ -122,11 +122,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
       }
 
 
-      String ip_addr = dotenv.env['IP_ADDRESS'] ?? '';
-
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse("http://$ip_addr:8080/auth/picture-upload"),
+        Uri.parse('${ChurchApi.baseUrl}/auth/picture-upload'),
       );
 
       request.fields['firebaseUid'] = user.uid;
@@ -184,7 +182,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: ChurchColors.bodyText,
       body: _capturedBytes != null ? _buildPreview() : _buildCamera(),
     );
   }
@@ -201,9 +199,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
         if (!_isCameraReady)
           const ColoredBox(
-            color: Colors.black,
+            color: ChurchColors.bodyText,
             child: Center(
-              child: CircularProgressIndicator(color: Colors.white),
+              child: CircularProgressIndicator(color: ChurchColors.button),
             ),
           ),
 
@@ -222,7 +220,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                     const Text(
                       "TAKE A SELFIE",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: ChurchColors.buttonText,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                         letterSpacing: 1,
@@ -239,17 +237,17 @@ class _CompleteSignupState extends State<CompleteSignup> {
                 const Text(
                   "Center your face",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: ChurchColors.buttonText,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   "Position your face inside the frame and\nlook directly at the camera",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white54,
+                    color: ChurchColors.buttonText.withValues(alpha: 0.75),
                     fontSize: 13,
                   ),
                 ),
@@ -283,7 +281,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                     const Text(
                       "USE THIS PHOTO?",
                       style: TextStyle(
-                        color: Colors.white,
+                        color: ChurchColors.buttonText,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
                       ),
@@ -302,8 +300,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
                       child: _bottomButton(
                         label: "Retake",
                         onTap: _retake,
-                        color: Colors.white.withOpacity(0.15),
-                        border: Colors.white30,
+                        color: ChurchColors.buttonText.withValues(alpha: 0.15),
+                        border: ChurchColors.buttonText.withValues(alpha: 0.3),
+                        textColor: ChurchColors.buttonText,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -312,7 +311,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                       child: _bottomButton(
                         label: _isLoading ? "Uploading..." : "Use This Photo",
                         onTap: _isLoading ? null : _submitSignup,
-                        color: const Color(0xFF5286FF),
+                        color: ChurchColors.button,
                         isLoading: _isLoading,
                       ),
                     ),
@@ -339,7 +338,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
           gradient: LinearGradient(
             begin: fromTop ? Alignment.topCenter : Alignment.bottomCenter,
             end: fromTop ? Alignment.bottomCenter : Alignment.topCenter,
-            colors: [Colors.black.withOpacity(0.65), Colors.transparent],
+            colors: [
+              ChurchColors.bodyText.withValues(alpha: 0.65),
+              Colors.transparent,
+            ],
           ),
         ),
       ),
@@ -355,7 +357,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 4),
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
         ),
         child: Center(
           child: Container(
@@ -380,10 +382,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
         height: 44,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.35),
-          border: Border.all(color: Colors.white24),
+          color: ChurchColors.bodyText.withValues(alpha: 0.45),
+          border: Border.all(color: ChurchColors.buttonText.withValues(alpha: 0.35)),
         ),
-        child: Icon(icon, color: Colors.white, size: 22),
+        child: Icon(icon, color: ChurchColors.buttonText, size: 22),
       ),
     );
   }
@@ -393,6 +395,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
     required VoidCallback? onTap,
     required Color color,
     Color? border,
+    Color textColor = ChurchColors.buttonText,
     bool isLoading = false,
   }) {
     return GestureDetector(
@@ -406,18 +409,18 @@ class _CompleteSignupState extends State<CompleteSignup> {
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
+                    color: textColor,
                     strokeWidth: 2,
                   ),
                 )
               : Text(
                   label,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),

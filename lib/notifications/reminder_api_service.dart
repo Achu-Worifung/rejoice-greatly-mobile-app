@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../dataobject/reminder_items.dart';
+import '../services/church_api.dart';
 
 class ReminderApiService {
-  String ipAddr = dotenv.env['IP_ADDRESS'] ?? 'localhost';
-  late final String _baseUrl = "http://$ipAddr:8080/schedule";
+  late final String _baseUrl = '${ChurchApi.baseUrl}/schedule';
 
   final String? churchId;
   final String? authToken;
