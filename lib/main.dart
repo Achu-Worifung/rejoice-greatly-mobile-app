@@ -5,8 +5,9 @@ import 'routes.dart';
 import 'pages/RootPage.dart';
 import 'theme/church_colors.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +28,11 @@ void main() async {
     }
 
     await UserSessionStore.initialize();
+
+    // Registers this device with OneSignal so backend push/email reminders
+    // are actually delivered. Not awaited: the OS permission prompt must not
+    // block app startup.
+    NotificationService().initialize();
 
     runApp(const MyApp());
   } catch (e, st) {

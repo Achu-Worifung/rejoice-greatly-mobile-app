@@ -7,7 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
+import '../notifications/notification_service.dart';
 import 'church_api.dart';
 import 'user_session_store.dart';
 import '../main.dart' show navigatorKey;
@@ -267,9 +267,7 @@ class AuthService {
 
   // --- LOGOUT ---
   Future<void> logout() async {
-    try {
-      OneSignal.logout();
-    } catch (_) {}
+    await NotificationService().logout();
     await UserSessionStore.clear();
     if (!kIsWeb) {
       await _googleSignIn.signOut();
@@ -321,7 +319,8 @@ class AuthService {
       final firebaseUid = userData['firebaseUid'] ?? '';
       final extractedName = userData['name'] ?? 'User';
       if ('$firebaseUid'.isNotEmpty) {
-        OneSignal.login('$firebaseUid');
+        // Fire-and-forget: push registration must not block or fail sign-in.
+        NotificationService().login('$firebaseUid', email: active.email);
       }
 
       final persisted = await UserSessionStore.hasPersistedSession();
