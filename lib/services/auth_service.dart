@@ -40,10 +40,32 @@ class AuthService {
 
   static String _generateNonce([int length = 32]) {
     const charset =
-        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
     final random = Random.secure();
     return List.generate(length, (_) => charset[random.nextInt(charset.length)])
         .join();
+  }
+
+  /// Firebase exception messages can be null or developer-speak; map the
+  /// common sign-in failures to something a user (or tester) can act on.
+  static String _authErrorMessage(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'popup-closed-by-user':
+      case 'canceled':
+      case 'web-context-canceled':
+      case 'user-cancelled':
+        return 'Cancelled';
+      case 'operation-not-allowed':
+        return 'This sign-in method is not enabled for the app yet. '
+            'Enable the provider in the Firebase console.';
+      case 'account-exists-with-different-credential':
+        return 'An account already exists with this email using a different '
+            'sign-in method. Try that method instead.';
+      case 'network-request-failed':
+        return 'Network error. Check your connection and try again.';
+      default:
+        return e.message ?? 'Sign-in failed (${e.code}). Please try again.';
+    }
   }
 
   static String _sha256ofString(String input) {
@@ -76,7 +98,7 @@ class AuthService {
       _navigateAfterAuth(sync.signupComplete);
       return null;
     } on FirebaseAuthException catch (e) {
-      return e.message;
+      return _authErrorMessage(e);
     }
   }
 
@@ -88,7 +110,17 @@ class AuthService {
       _navigateAfterAuth(sync.signupComplete);
       return null;
     } on FirebaseAuthException catch (e) {
-      return e.message;
+      return _authErrorMessage(e);
+    }
+  }
+
+  /// Sends a password-reset email. Returns an error message, or null on success.
+  Future<String?> sendPasswordReset(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      return null;
+    } on FirebaseAuthException catch (e) {
+      return _authErrorMessage(e);
     }
   }
 
@@ -119,8 +151,7 @@ class AuthService {
       _navigateAfterAuth(sync.signupComplete);
       return null;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'popup-closed-by-user') return 'Cancelled';
-      return e.message;
+      return _authErrorMessage(e);
     } finally {
       _googleSignInInProgress = false;
     }
@@ -133,67 +164,28 @@ class AuthService {
     }
     _appleSignInInProgress = true;
     try {
+      String? name;
+
       if (kIsWeb) {
         final provider = OAuthProvider('apple.com')
           ..addScope('email')
           ..addScope('name');
         await _auth.signInWithPopup(provider);
-        final sync = await _syncWithBackend(
-          'Apple',
-          _auth.currentUser?.displayName,
-        );
-        if (!sync.ok) return sync.error;
-        _navigateAfterAuth(sync.signupComplete);
-        return null;
+        name = _auth.currentUser?.displayName;
+      } else if (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        name = await _signInWithAppleNative();
+      } else {
+        // Android (and anything else): Firebase runs Apple's OAuth flow in a
+        // browser tab — previously this branch just refused to sign in.
+        final provider = OAuthProvider('apple.com')
+          ..addScope('email')
+          ..addScope('name');
+        await _auth.signInWithProvider(provider);
+        name = _auth.currentUser?.displayName;
       }
 
-      if (defaultTargetPlatform != TargetPlatform.iOS &&
-          defaultTargetPlatform != TargetPlatform.macOS) {
-        return 'Sign in with Apple is only available on Apple devices';
-      }
-
-      final isAvailable = await SignInWithApple.isAvailable();
-      if (!isAvailable) {
-        return 'Sign in with Apple is not available on this device';
-      }
-
-      final rawNonce = _generateNonce();
-      final nonce = _sha256ofString(rawNonce);
-
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-        nonce: nonce,
-      );
-
-      final idToken = appleCredential.identityToken;
-      if (idToken == null || idToken.isEmpty) {
-        return 'Apple sign-in failed: missing identity token';
-      }
-
-      final oauthCredential = OAuthProvider('apple.com').credential(
-        idToken: idToken,
-        rawNonce: rawNonce,
-      );
-
-      final userCredential = await _auth.signInWithCredential(oauthCredential);
-
-      final fullName =
-          '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
-              .trim();
-      if (fullName.isNotEmpty) {
-        await userCredential.user?.updateDisplayName(fullName);
-        try {
-          await userCredential.user?.reload();
-        } catch (_) {}
-      }
-
-      final sync = await _syncWithBackend(
-        'Apple',
-        fullName.isNotEmpty ? fullName : userCredential.user?.displayName,
-      );
+      final sync = await _syncWithBackend('Apple', name);
       if (!sync.ok) return sync.error;
       _navigateAfterAuth(sync.signupComplete);
       return null;
@@ -203,11 +195,74 @@ class AuthService {
       }
       return e.message;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'popup-closed-by-user') return 'Cancelled';
-      return e.message;
+      return _authErrorMessage(e);
     } finally {
       _appleSignInInProgress = false;
     }
+  }
+
+  /// Native Apple sheet on iOS/macOS. Returns the user's display name (Apple
+  /// only provides it on the first authorization, so it is persisted then).
+  Future<String?> _signInWithAppleNative() async {
+    final isAvailable = await SignInWithApple.isAvailable();
+    if (!isAvailable) {
+      // Old iOS (<13): fall back to the Firebase-managed web flow.
+      final provider = OAuthProvider('apple.com')
+        ..addScope('email')
+        ..addScope('name');
+      await _auth.signInWithProvider(provider);
+      return _auth.currentUser?.displayName;
+    }
+
+    final rawNonce = _generateNonce();
+    final nonce = _sha256ofString(rawNonce);
+
+    final appleCredential = await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      nonce: nonce,
+    );
+
+    final idToken = appleCredential.identityToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing-identity-token',
+        message: 'Apple sign-in failed: missing identity token',
+      );
+    }
+
+    final oauthCredential = OAuthProvider('apple.com').credential(
+      idToken: idToken,
+      rawNonce: rawNonce,
+    );
+
+    final userCredential = await _auth.signInWithCredential(oauthCredential);
+
+    final fullName =
+        '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'
+            .trim();
+    if (fullName.isNotEmpty) {
+      await userCredential.user?.updateDisplayName(fullName);
+      try {
+        await userCredential.user?.reload();
+      } catch (_) {}
+    }
+
+    return fullName.isNotEmpty ? fullName : userCredential.user?.displayName;
+  }
+
+  /// Sign-in succeeded on Firebase but the church backend rejected/failed the
+  /// sync: drop the Firebase session so the user is not stuck half signed in
+  /// (the UI shows an error and stays on the login screen).
+  Future<AuthSyncResult> _failSync(AuthSyncResult sync) async {
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      debugPrint('AuthService: sign-out after failed sync failed: $e');
+    }
+    return sync;
   }
 
   // --- LOGOUT ---
@@ -250,10 +305,10 @@ class AuthService {
     }
 
     if (idToken == null || idToken.isEmpty) {
-      return const AuthSyncResult(
+      return _failSync(const AuthSyncResult(
         signupComplete: false,
         error: 'Could not obtain Firebase ID token',
-      );
+      ));
     }
 
     try {
@@ -282,10 +337,10 @@ class AuthService {
       );
     } catch (e, st) {
       debugPrint('AuthService: backend sync failed: $e\n$st');
-      return AuthSyncResult(
+      return _failSync(const AuthSyncResult(
         signupComplete: false,
         error: 'Could not connect to the server. Please try again.',
-      );
+      ));
     }
   }
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:church_app/pages/login_page.dart';
-import 'package:church_app/pages/complete_signup.dart';
+import 'package:church_app/pages/user_prep.dart';
 import 'package:church_app/pages/dashboard.dart';
 import 'package:church_app/services/church_api.dart';
 import 'package:church_app/theme/church_colors.dart';
@@ -70,7 +70,9 @@ class _RootPageState extends State<RootPage> {
             if (session.signupComplete) {
               return const Dashboard();
             }
-            return const CompleteSignup();
+            // Same onboarding entry as a fresh sign-in (camera screen is
+            // pushed from here, so its back button works in both flows).
+            return const UserPrepPage();
           },
         );
       },

@@ -38,6 +38,14 @@ class ReminderItem {
   });
 
   factory ReminderItem.fromJson(Map<String, dynamic> json) {
+    final rawDays = json['recurringDays'];
+    final recurringDays = rawDays is List
+        ? rawDays.whereType<num>().map((e) => e.toInt()).toList()
+        : <int>[];
+
+    DateTime? parseDate(dynamic v) =>
+        v == null ? null : DateTime.tryParse('$v')?.toLocal();
+
     return ReminderItem(
       id: json['id']?.toString(),
       subject: json['subject'] ?? '',
@@ -46,27 +54,18 @@ class ReminderItem {
         json['sendPush'] ?? true,
         json['sendEmail'] ?? true,
       ),
-      scheduledAt: json['scheduledAt'] != null
-          ? DateTime.parse(json['scheduledAt']).toLocal()
-          : null,
-      recurring: (json['recurringDays'] != null &&
-              (json['recurringDays'] as List).isNotEmpty)
+      scheduledAt: parseDate(json['scheduledAt']),
+      recurring: recurringDays.isNotEmpty
           ? RecurringFrequency.custom
           : RecurringFrequency.none,
-      recurringDays: json['recurringDays'] != null
-          ? List<int>.from(json['recurringDays'])
-          : [],
-      sendTo: _parseSendTo(json['sendTo']),
+      recurringDays: recurringDays,
+      sendTo: _parseSendTo(json['sendTo']?.toString()),
       isActive: json['isActive'] ?? true,
       oneSignalNotificationId: json['oneSignalId']?.toString(),
       churchId: json['churchId']?.toString(),
       createdBy: json['createdBy']?.toString(),
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt']).toLocal()
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt']).toLocal()
-          : null,
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
 

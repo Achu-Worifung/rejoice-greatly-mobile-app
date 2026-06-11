@@ -63,6 +63,11 @@ class UserSessionStore {
   }
 
   /// Normalizes API maps so [json.encode] never fails and keys are consistent.
+  ///
+  /// Flags and counters are only emitted when the incoming map actually
+  /// contains them, so persisting a partial server response (e.g. auth-only or
+  /// stats-only payloads) never resets `signupComplete`/`hasProfile`/`admin`
+  /// or attendance numbers that an earlier sync already stored.
   static Map<String, dynamic> sanitizeAccount(Map<String, dynamic> raw) {
     String? str(dynamic v) {
       if (v == null) return null;
@@ -75,14 +80,21 @@ class UserSessionStore {
       if (str(raw['name']) != null) 'name': str(raw['name']),
       if (str(raw['email']) != null) 'email': str(raw['email']),
       if (str(raw['imgURL']) != null) 'imgURL': str(raw['imgURL']),
-      'hasProfile': asBool(raw['hasProfile']),
-      'admin': asBool(raw['admin'] ?? raw['isAdmin']),
-      'signupComplete': asBool(raw['signupComplete']),
-      'currentStreak': asInt(raw['currentStreak']),
-      'longestStreak': asInt(raw['longestStreak']),
-      'totalAttendance': asInt(raw['totalAttendance']),
-      'totalAbsences': asInt(raw['totalAbsences']),
-      'absenceStreak': asInt(raw['absenceStreak']),
+      if (raw.containsKey('hasProfile')) 'hasProfile': asBool(raw['hasProfile']),
+      if (raw.containsKey('admin') || raw.containsKey('isAdmin'))
+        'admin': asBool(raw['admin'] ?? raw['isAdmin']),
+      if (raw.containsKey('signupComplete'))
+        'signupComplete': asBool(raw['signupComplete']),
+      if (raw.containsKey('currentStreak'))
+        'currentStreak': asInt(raw['currentStreak']),
+      if (raw.containsKey('longestStreak'))
+        'longestStreak': asInt(raw['longestStreak']),
+      if (raw.containsKey('totalAttendance'))
+        'totalAttendance': asInt(raw['totalAttendance']),
+      if (raw.containsKey('totalAbsences'))
+        'totalAbsences': asInt(raw['totalAbsences']),
+      if (raw.containsKey('absenceStreak'))
+        'absenceStreak': asInt(raw['absenceStreak']),
       if (raw['recentAttendance'] is List)
         'recentAttendance': List<dynamic>.from(raw['recentAttendance'] as List),
     };
@@ -132,13 +144,23 @@ class UserSessionStore {
     if (provider != null && provider.isNotEmpty) {
       await p.setString(authProviderKey, provider);
     }
-    await p.setBool(isAdminKey, asBool(merged['admin']));
-    await p.setBool(signupCompleteKey, isSignupComplete(merged));
-    await p.setInt('currentStreak', asInt(merged['currentStreak']));
-    await p.setInt('longestStreak', asInt(merged['longestStreak']));
-    await p.setInt('totalAttendance', asInt(merged['totalAttendance']));
-    await p.setInt('totalAbsences', asInt(merged['totalAbsences']));
-    await p.setInt('absenceStreak', asInt(merged['absenceStreak']));
+    if (merged.containsKey('admin')) {
+      await p.setBool(isAdminKey, asBool(merged['admin']));
+    }
+    if (merged.containsKey(signupCompleteKey)) {
+      await p.setBool(signupCompleteKey, isSignupComplete(merged));
+    }
+    for (final key in const [
+      'currentStreak',
+      'longestStreak',
+      'totalAttendance',
+      'totalAbsences',
+      'absenceStreak',
+    ]) {
+      if (merged.containsKey(key)) {
+        await p.setInt(key, asInt(merged[key]));
+      }
+    }
 
     await p.reload();
 
@@ -241,6 +263,8 @@ class UserSessionStore {
     await p.remove('totalAttendance');
     await p.remove('totalAbsences');
     await p.remove('absenceStreak');
+    // Per-user UI state that must not leak to the next account on this device.
+    await p.remove('saved_sermon_ids');
     await p.reload();
     debugPrint('UserSessionStore: cleared');
   }

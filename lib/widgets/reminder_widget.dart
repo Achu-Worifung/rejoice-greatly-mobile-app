@@ -154,6 +154,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
 
     try {
       final success = await _apiService.deleteReminder(reminder.id!);
+      if (!mounted) return;
 
       if (!success) {
         setState(() => _reminders.insert(reminderIndex, removed));
@@ -163,9 +164,11 @@ class _RemindersWidgetState extends State<RemindersWidget> {
 
       _showSnackBar('Reminder deleted', Colors.orange);
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() => _reminders.insert(reminderIndex, removed));
       _showSnackBar('Error: ${e.message}', Colors.red);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _reminders.insert(reminderIndex, removed));
       _showSnackBar('Unexpected error: $e', Colors.red);
     }
@@ -178,6 +181,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
     try {
       if (reminder.id != null) {
         final updated = await _apiService.toggleActive(reminder.id!, value);
+        if (!mounted) return;
         setState(() {
           final idx = _reminders.indexWhere((r) => r.id == reminder.id);
           if (idx != -1) {
@@ -186,9 +190,11 @@ class _RemindersWidgetState extends State<RemindersWidget> {
         });
       }
     } on ApiException catch (e) {
+      if (!mounted) return;
       setState(() => reminder.isActive = oldValue);
       _showSnackBar('Error: ${e.message}', Colors.red);
     } catch (e) {
+      if (!mounted) return;
       setState(() => reminder.isActive = oldValue);
       _showSnackBar('Unexpected error: $e', Colors.red);
     }

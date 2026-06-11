@@ -1,29 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 import '../theme/church_colors.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
-  Future<void> _handleGoogle() async {
-    final msg = await AuthService().signInWithGoogle();
-    if (msg != null) {
-        print(msg);
-        return;
-      }
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  /// Which provider's sign-in is currently running ('google' / 'apple'),
+  /// or null when idle. While set, all buttons are disabled and the active
+  /// one shows a spinner.
+  String? _busy;
+
+  void _showError(String msg) {
+    if (msg == 'Cancelled') return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Future<void> _handleApple() async {
-    final msg = await AuthService().signInWithApple();
-    if (msg != null) {
-        print(msg);
-        return;
+  Future<void> _signIn(String provider, Future<String?> Function() run) async {
+    if (_busy != null) return;
+    setState(() => _busy = provider);
+    try {
+      final msg = await run();
+      if (msg != null && mounted) {
+        _showError(msg);
       }
+    } finally {
+      if (mounted) setState(() => _busy = null);
+    }
   }
+
+  Future<void> _handleGoogle() =>
+      _signIn('google', () => AuthService().signInWithGoogle());
+
+  Future<void> _handleApple() =>
+      _signIn('apple', () => AuthService().signInWithApple());
 
   void _handleEmail(BuildContext context) {
+    if (_busy != null) return;
     Navigator.pushNamed(context, '/email-login');
   }
 
@@ -124,7 +144,8 @@ class LoginPage extends StatelessWidget {
       isFa: true,
       bg: ChurchColors.card,
       fg: ChurchColors.bodyText,
-      onPressed: () => _handleGoogle(),
+      loading: _busy == 'google',
+      onPressed: _handleGoogle,
     );
   }
 
@@ -135,7 +156,8 @@ class LoginPage extends StatelessWidget {
       isFa: true,
       bg: ChurchColors.card,
       fg: ChurchColors.bodyText,
-      onPressed: () => _handleApple(),
+      loading: _busy == 'apple',
+      onPressed: _handleApple,
     );
   }
 
@@ -146,6 +168,7 @@ class LoginPage extends StatelessWidget {
       isFa: false,
       bg: ChurchColors.button,
       fg: ChurchColors.buttonText,
+      loading: false,
       onPressed: () => _handleEmail(context),
     );
   }
@@ -156,16 +179,19 @@ class LoginPage extends StatelessWidget {
     required bool isFa,
     required Color bg,
     required Color fg,
+    required bool loading,
     required VoidCallback onPressed,
   }) {
     return SizedBox(
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: _busy != null ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
           foregroundColor: fg,
+          disabledBackgroundColor: bg,
+          disabledForegroundColor: fg.withValues(alpha: 0.6),
           side: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.6)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -173,23 +199,29 @@ class LoginPage extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           elevation: 2,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            isFa
-                ? FaIcon(icon, size: 24, color: fg)
-                : Icon(icon, size: 24, color: fg),
-            const SizedBox(width: 8),
-            Text(
-              text,
-              style: TextStyle(
-                color: fg,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+        child: loading
+            ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2, color: fg),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  isFa
+                      ? FaIcon(icon, size: 24, color: fg)
+                      : Icon(icon, size: 24, color: fg),
+                  const SizedBox(width: 8),
+                  Text(
+                    text,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

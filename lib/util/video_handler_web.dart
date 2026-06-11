@@ -44,7 +44,13 @@ class VideoHandler {
         _mediaStream = null;
       }
 
-      final stream = await html.window.navigator.mediaDevices!.getUserMedia({
+      final mediaDevices = html.window.navigator.mediaDevices;
+      if (mediaDevices == null) {
+        // Surfaces as the "camera access denied" message instead of crashing
+        // in browsers/webviews without getUserMedia support.
+        throw StateError('Camera is not supported in this browser');
+      }
+      final stream = await mediaDevices.getUserMedia({
         'video': {
           'facingMode': front ? 'user' : 'environment',
           'width': {'ideal': 1280},

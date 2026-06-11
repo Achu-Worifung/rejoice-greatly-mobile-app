@@ -80,11 +80,12 @@ class _EventsPageState extends State<EventsPage> {
       return matchesSearch && matchesFilter;
     }).toList();
 
-    filtered.sort((a, b) => (a['date'] as String).compareTo(b['date'] as String));
+    filtered.sort((a, b) =>
+        (a['date'] as String? ?? '').compareTo(b['date'] as String? ?? ''));
 
     final temp = <String, List<Map<String, dynamic>>>{};
     for (final event in filtered) {
-      final date = event['date'] as String;
+      final date = event['date'] as String? ?? '';
       temp.putIfAbsent(date, () => []);
       temp[date]!.add(event);
     }

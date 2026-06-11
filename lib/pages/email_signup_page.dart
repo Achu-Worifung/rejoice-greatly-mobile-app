@@ -24,6 +24,9 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
   bool _termsAccepted = false;
   bool _privacyAccepted = false;
 
+  /// Which action is running: 'email', 'google', 'apple', or null when idle.
+  String? _busy;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -32,7 +35,23 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
     super.dispose();
   }
 
-  void _submit() async {
+  Future<void> _runSignIn(String action, Future<String?> Function() run) async {
+    if (_busy != null) return;
+    setState(() {
+      _error = null;
+      _busy = action;
+    });
+    try {
+      final msg = await run();
+      if (msg != null && msg != 'Cancelled' && mounted) {
+        setState(() => _error = msg);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = null);
+    }
+  }
+
+  Future<void> _submit() async {
     if (!_termsAccepted || !_privacyAccepted) {
       setState(() {
         _error = "You must accept all policies and terms to continue.";
@@ -40,38 +59,30 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
       return;
     }
 
-    if (_formKey.currentState!.validate()) {
-      setState(() => _error = null);
+    if (!_formKey.currentState!.validate()) return;
 
-      // FIX: Changed from signInWithEmail to signUpWithEmail
-      // Also added _nameController.text
-      final msg = await AuthService().signUpWithEmail(
+    await _runSignIn(
+      'email',
+      () => AuthService().signUpWithEmail(
         _emailController.text.trim(),
         _passwordController.text.trim(),
         _nameController.text.trim(),
         context,
-      );
-
-      if (msg != null) {
-        setState(() => _error = msg);
-        return;
-      }
-    }
+      ),
+    );
   }
 
-  Future<void> _handleGoogle() async {
-    final msg = await AuthService().signInWithGoogle();
-    if (msg != null) {
-      print(msg);
-      return;
-    }
-  }
+  Future<void> _handleGoogle() =>
+      _runSignIn('google', () => AuthService().signInWithGoogle());
 
-  Future<void> _handleApple() async {
-    final msg = await AuthService().signInWithApple();
-    if (msg != null) {
-      print(msg);
-      return;
+  Future<void> _handleApple() =>
+      _runSignIn('apple', () => AuthService().signInWithApple());
+
+  void _goBack() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacementNamed(context, '/');
     }
   }
 
@@ -83,7 +94,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
         title: const SizedBox.shrink(),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
-          onPressed: () => Navigator.pushNamed(context, '/login'),
+          onPressed: _goBack,
         ),
       ),
       body: Container(
@@ -172,10 +183,22 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                           ),
                         ),
                     validator: (v) {
-                      if (v == null || v.isEmpty)
+                      // Keep in sync with the helper text below the field.
+                      if (v == null || v.isEmpty) {
                         return "Please enter your password";
-                      if (v.length < 6)
-                        return "Password must be at least 6 characters";
+                      }
+                      if (v.length < 8) {
+                        return "Password must be at least 8 characters";
+                      }
+                      if (!v.contains(RegExp(r'[A-Z]'))) {
+                        return "Password must contain an uppercase letter";
+                      }
+                      if (!v.contains(RegExp(r'[0-9]'))) {
+                        return "Password must contain a number";
+                      }
+                      if (!v.contains(RegExp(r'[^A-Za-z0-9]'))) {
+                        return "Password must contain a symbol";
+                      }
                       return null;
                     },
                   ),
@@ -305,42 +328,51 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                             height:
                                 50, // Slightly shorter height helps on small screens
                             child: ElevatedButton(
-                              onPressed: _handleGoogle,
+                              onPressed: _busy != null ? null : _handleGoogle,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: ChurchColors.card,
                                 foregroundColor: ChurchColors.bodyText,
+                                disabledBackgroundColor: ChurchColors.card,
                                 elevation: 2,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
-                                ), // Minimal internal padding
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const FaIcon(
-                                    FontAwesomeIcons.google,
-                                    size: 18,
-                                  ), // Smaller icon
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    // Use Flexible to allow the text to shrink aggressively
-                                    child: AutoSizeText(
-                                      "Sign in with Google", // Shortened text also helps
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
+                              child: _busy == 'google'
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: ChurchColors.bodyText,
                                       ),
-                                      minFontSize:
-                                          8, // Dropped min size to 8 to prevent overflow
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const FaIcon(
+                                          FontAwesomeIcons.google,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: AutoSizeText(
+                                            "Sign in with Google",
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            minFontSize: 8,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
-                              ),
                             ),
                           ),
                         ),
@@ -353,10 +385,11 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                           child: SizedBox(
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: _handleApple,
+                              onPressed: _busy != null ? null : _handleApple,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: ChurchColors.card,
                                 foregroundColor: ChurchColors.bodyText,
+                                disabledBackgroundColor: ChurchColors.card,
                                 elevation: 2,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
@@ -365,28 +398,38 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const FaIcon(
-                                    FontAwesomeIcons.apple,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: AutoSizeText(
-                                      "Sign in with Apple",
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
+                              child: _busy == 'apple'
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: ChurchColors.bodyText,
                                       ),
-                                      minFontSize: 8,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const FaIcon(
+                                          FontAwesomeIcons.apple,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: AutoSizeText(
+                                            "Sign in with Apple",
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            minFontSize: 8,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
-                              ),
                             ),
                           ),
                         ),
@@ -407,8 +450,8 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () =>
-                              Navigator.pushNamed(context, '/email-login'),
+                          onTap: () => Navigator.pushReplacementNamed(
+                              context, '/email-login'),
                           child: const Text(
                             "Login",
                             style: TextStyle(
@@ -428,22 +471,32 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _busy != null ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ChurchColors.button,
+                        disabledBackgroundColor: ChurchColors.button,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 2,
                       ),
-                      child: const Text(
-                        "Create Account",
-                        style: TextStyle(
-                          color: ChurchColors.buttonText,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      child: _busy == 'email'
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: ChurchColors.buttonText,
+                              ),
+                            )
+                          : const Text(
+                              "Create Account",
+                              style: TextStyle(
+                                color: ChurchColors.buttonText,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ),
                   ),
                 ],

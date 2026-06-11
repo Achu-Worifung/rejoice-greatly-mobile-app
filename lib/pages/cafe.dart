@@ -11,10 +11,14 @@ import '../util/webview_web_platform.dart';
 import '../widgets/church_app_bar.dart';
 
 class Cafe extends StatefulWidget {
-  const Cafe({super.key, this.isActive = true});
+  const Cafe({super.key, this.isActive = true, this.onExit});
 
   /// When false, the tab is off-screen (IndexedStack); skip SSO until visible.
   final bool isActive;
+
+  /// Called when the user backs out of the cafe and the WebView has no
+  /// history left (e.g. the dashboard switches back to the home tab).
+  final VoidCallback? onExit;
 
   @override
   State<Cafe> createState() => _CafeState();
@@ -107,7 +111,14 @@ class _CafeState extends State<Cafe> {
     final controller = _controller;
     if (controller != null && await controller.canGoBack()) {
       await controller.goBack();
-    } else if (context.mounted) {
+      return;
+    }
+    if (!context.mounted) return;
+    if (widget.onExit != null) {
+      widget.onExit!();
+    } else if (Navigator.of(context).canPop()) {
+      // Never pop the root route: the cafe lives inside the dashboard tab
+      // bar, so popping with no route below would blank the app.
       Navigator.of(context).pop();
     }
   }

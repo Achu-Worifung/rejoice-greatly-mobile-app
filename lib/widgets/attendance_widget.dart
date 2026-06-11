@@ -21,6 +21,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
   List<AdminType>? _totalAbsent;
   List<AdminType>? _totalMembers;
   bool _isLoading = false;
+  String? _loadError;
 
   @override
   void initState() {
@@ -88,30 +89,43 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
     };
 
     try {
-      final http.Response response = await http.post(
-        uri,
-        body: jsonEncode(payload),
-        headers: {"Content-Type": "application/json"},
-      );
+      final http.Response response = await http
+          .post(
+            uri,
+            body: jsonEncode(payload),
+            headers: {"Content-Type": "application/json"},
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         setState(() {
-          _totalPresent = List<AdminType>.from(
-            data['totalPresent'].map((x) => AdminType.fromJson(x)),
-          );
-          _totalAbsent = List<AdminType>.from(
-            data['totalAbsent'].map((x) => AdminType.fromJson(x)),
-          );
-          _totalMembers = List<AdminType>.from(
-            data['totalMemberDTOs'].map((x) => AdminType.fromJson(x)),
-          );
+          _totalPresent = _parseMembers(data['totalPresent']);
+          _totalAbsent = _parseMembers(data['totalAbsent']);
+          _totalMembers = _parseMembers(data['totalMemberDTOs']);
+          _loadError = null;
         });
+      } else {
+        debugPrint("Attendance server error: ${response.statusCode}");
+        setState(() => _loadError =
+            'Could not load attendance (error ${response.statusCode}).');
       }
     } catch (e) {
       debugPrint("Error loading attendance: $e");
+      if (!mounted) return;
+      setState(() =>
+          _loadError = 'Could not load attendance. Check your connection.');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  static List<AdminType> _parseMembers(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((x) => AdminType.fromJson(Map<String, dynamic>.from(x)))
+        .toList();
   }
 
   List<AdminType> get _activeList {
@@ -259,6 +273,23 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
+                  : _loadError != null && members.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _loadError!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.red[800]),
+                          ),
+                          TextButton(
+                            onPressed: _loadData,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    )
                   : members.isEmpty
                   ? const Center(
                       child: Text(

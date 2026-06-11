@@ -272,15 +272,18 @@ class _DashboardPageState extends State<DashboardPage> {
                         );
                       }
                       final v = snapshot.data!;
+                      final chapter = v['chapter'];
+                      final startVerse = v['startVerse'];
+                      final endVerse = v['endVerse'];
                       return VerseOfTheWeekCard(
                         data: {
-                          'text': v['content'],
-                          'version': v['version'],
+                          'text': v['content']?.toString() ?? '',
+                          'version': v['version']?.toString() ?? '',
                           'reference': _formatReference(
-                            v['book'] as String,
-                            (v['chapter'] as num).toInt(),
-                            (v['startVerse'] as num).toInt(),
-                            v['endVerse'] == null ? null : (v['endVerse'] as num).toInt(),
+                            v['book']?.toString() ?? '',
+                            chapter is num ? chapter.toInt() : 0,
+                            startVerse is num ? startVerse.toInt() : 0,
+                            endVerse is num ? endVerse.toInt() : null,
                           ),
                         },
                       );

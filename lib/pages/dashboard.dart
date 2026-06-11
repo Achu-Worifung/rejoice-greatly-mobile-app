@@ -49,7 +49,10 @@ class _DashboardState extends State<Dashboard> {
       ),
       const SermonsPage(),
       const EventsPage(),
-      Cafe(isActive: _selectedIndex == 3),
+      Cafe(
+        isActive: _selectedIndex == 3,
+        onExit: () => setState(() => _selectedIndex = 0),
+      ),
     ];
 
     return Scaffold(

@@ -6,6 +6,8 @@ import '../services/church_api.dart';
 class ReminderApiService {
   late final String _baseUrl = '${ChurchApi.baseUrl}/schedule';
 
+  static const Duration _timeout = Duration(seconds: 30);
+
   final String? churchId;
   final String? authToken;
 
@@ -18,11 +20,9 @@ class ReminderApiService {
 
   Future<List<ReminderItem>> fetchReminders() async {
     try {
-      final uri = Uri.parse('$_baseUrl/getschedule');
-      final response = await http.get(uri, headers: _headers);
-
-      print("fetchReminders response: ${response.statusCode}");
-      print("fetchReminders body: ${response.body}");
+      // Backend list endpoint is GET /schedule (no /getschedule suffix).
+      final uri = Uri.parse(_baseUrl);
+      final response = await http.get(uri, headers: _headers).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
@@ -38,10 +38,9 @@ class ReminderApiService {
 
   Future<ReminderItem> fetchReminder(String id) async {
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/getschedule/$id'),  // ✅ Fixed
-        headers: _headers,
-      );
+      final response = await http
+          .get(Uri.parse('$_baseUrl/getschedule/$id'), headers: _headers)
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         return ReminderItem.fromJson(json.decode(response.body));
@@ -56,14 +55,13 @@ class ReminderApiService {
 
   Future<ReminderItem> createReminder(ReminderItem reminder) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/createschedule'),  // ✅ Fixed
-        headers: _headers,
-        body: json.encode(reminder.toJson()),
-      );
-
-      print("createReminder response: ${response.statusCode}");
-      print("createReminder body: ${response.body}");
+      final response = await http
+          .post(
+            Uri.parse(_baseUrl),
+            headers: _headers,
+            body: json.encode(reminder.toJson()),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ReminderItem.fromJson(json.decode(response.body));
@@ -78,14 +76,13 @@ class ReminderApiService {
 
   Future<ReminderItem> updateReminder(ReminderItem reminder) async {
     try {
-      final response = await http.put(
-        Uri.parse('$_baseUrl/updateschedule/${reminder.id}'),  // ✅ Fixed
-        headers: _headers,
-        body: json.encode(reminder.toJson()),
-      );
-
-      print("updateReminder response: ${response.statusCode}");
-      print("updateReminder body: ${response.body}");
+      final response = await http
+          .put(
+            Uri.parse('$_baseUrl/updateschedule/${reminder.id}'),
+            headers: _headers,
+            body: json.encode(reminder.toJson()),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         return ReminderItem.fromJson(json.decode(response.body));
@@ -100,10 +97,9 @@ class ReminderApiService {
 
   Future<bool> deleteReminder(String id) async {
     try {
-      final response = await http.delete(
-        Uri.parse('$_baseUrl/deleteschedule/$id'),  // ✅ Fixed
-        headers: _headers,
-      );
+      final response = await http
+          .delete(Uri.parse('$_baseUrl/$id'), headers: _headers)
+          .timeout(_timeout);
 
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
@@ -113,11 +109,13 @@ class ReminderApiService {
 
   Future<ReminderItem> toggleActive(String id, bool isActive) async {
     try {
-      final response = await http.patch(
-        Uri.parse('$_baseUrl/toggleschedule/$id'),  // ✅ Fixed
-        headers: _headers,
-        body: json.encode({'isActive': isActive}),
-      );
+      final response = await http
+          .patch(
+            Uri.parse('$_baseUrl/toggleschedule/$id'),
+            headers: _headers,
+            body: json.encode({'isActive': isActive}),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         return ReminderItem.fromJson(json.decode(response.body));
@@ -132,10 +130,9 @@ class ReminderApiService {
 
   Future<bool> sendNow(String id) async {
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/sendnow/$id'),  // ✅ Fixed
-        headers: _headers,
-      );
+      final response = await http
+          .post(Uri.parse('$_baseUrl/sendnow/$id'), headers: _headers)
+          .timeout(_timeout);
 
       return response.statusCode == 200;
     } catch (e) {

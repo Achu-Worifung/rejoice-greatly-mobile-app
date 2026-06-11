@@ -99,9 +99,12 @@ class ChurchApi {
 
   static bool hasMemberProfile(Map<String, dynamic>? profile) {
     if (profile == null) return false;
-    if (profile.containsKey('hasProfile')) {
-      return UserSessionStore.asBool(profile['hasProfile']);
+    if (profile.containsKey('hasProfile') &&
+        UserSessionStore.asBool(profile['hasProfile'])) {
+      return true;
     }
+    // A stale/clobbered `hasProfile: false` must not hide a finished profile,
+    // so fall back to deriving it from the fields that define one.
     final img = profile['imgURL'];
     return isSignupComplete(profile) &&
         img is String &&
@@ -404,6 +407,8 @@ class ChurchApi {
     return _postJson('/member/$path', body);
   }
 
+  static const Duration _httpTimeout = Duration(seconds: 30);
+
   static Future<Map<String, dynamic>> _postJson(
     String path,
     Map<String, dynamic> body,
@@ -415,13 +420,17 @@ class ChurchApi {
           headers: {'Content-Type': 'application/json'},
           body: json.encode(body),
         )
-        .timeout(const Duration(seconds: 30));
+        .timeout(_httpTimeout);
 
     debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
     if (r.statusCode != 200) {
       throw Exception('${uri.path} failed: ${r.statusCode} ${r.body}');
     }
-    return Map<String, dynamic>.from(json.decode(r.body) as Map);
+    try {
+      return Map<String, dynamic>.from(json.decode(r.body) as Map);
+    } on FormatException {
+      throw Exception('${uri.path} returned an invalid response');
+    }
   }
 
   static Future<({User user, String token})> _requireIdToken() async {
@@ -486,7 +495,9 @@ class ChurchApi {
       statsToAttendanceSheetData(a);
 
   static Future<Map<String, dynamic>> getCurrentVerse() async {
-    final r = await http.get(Uri.parse('$baseUrl/weekly-verse/current'));
+    final r = await http
+        .get(Uri.parse('$baseUrl/weekly-verse/current'))
+        .timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('weekly-verse/current failed: ${r.statusCode}');
     }
@@ -494,7 +505,8 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getTop4Events() async {
-    final r = await http.get(Uri.parse('$baseUrl/events/top4'));
+    final r =
+        await http.get(Uri.parse('$baseUrl/events/top4')).timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('events/top4 failed: ${r.statusCode}');
     }
@@ -521,7 +533,9 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getUpcomingEvents() async {
-    final r = await http.get(Uri.parse('$baseUrl/events/upcoming'));
+    final r = await http
+        .get(Uri.parse('$baseUrl/events/upcoming'))
+        .timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('events/upcoming failed: ${r.statusCode}');
     }
@@ -529,7 +543,8 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getSermons() async {
-    final r = await http.get(Uri.parse('$baseUrl/sermons'));
+    final r =
+        await http.get(Uri.parse('$baseUrl/sermons')).timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('sermons failed: ${r.statusCode}');
     }
@@ -537,7 +552,8 @@ class ChurchApi {
   }
 
   static Future<Map<String, dynamic>> getSermonById(Object id) async {
-    final r = await http.get(Uri.parse('$baseUrl/sermons/$id'));
+    final r =
+        await http.get(Uri.parse('$baseUrl/sermons/$id')).timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('sermons/$id failed: ${r.statusCode}');
     }

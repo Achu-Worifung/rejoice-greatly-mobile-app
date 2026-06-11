@@ -20,6 +20,7 @@ class _OverviewWidgetState extends State<OverviewWidget> {
   List<AdminType>? _totalMembers;
   Map<DateTime, int>? _attendanceRateByMonth;
   int? _attendanceRate;
+  String? _loadError;
 
   late DateTime _selectedSunday;
 
@@ -62,37 +63,59 @@ class _OverviewWidgetState extends State<OverviewWidget> {
     };
 
     try {
-      final http.Response response = await http.post(
-        uri,
-        body: jsonEncode(payload),
-        headers: {"Content-Type": "application/json"},
-      );
+      final http.Response response = await http
+          .post(
+            uri,
+            body: jsonEncode(payload),
+            headers: {"Content-Type": "application/json"},
+          )
+          .timeout(const Duration(seconds: 30));
+      if (!mounted) return;
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
 
         setState(() {
-          _totalPresent = List<AdminType>.from(
-            responseData['totalPresent'].map((x) => AdminType.fromJson(x)),
+          _totalPresent = _parseMembers(responseData['totalPresent']);
+          _totalAbsent = _parseMembers(responseData['totalAbsent']);
+          _totalMembers = _parseMembers(responseData['totalMemberDTOs']);
+          _attendanceRateByMonth = _parseRateByMonth(
+            responseData['attendanceRateByMonth'],
           );
-          _totalAbsent = List<AdminType>.from(
-            responseData['totalAbsent'].map((x) => AdminType.fromJson(x)),
-          );
-          _totalMembers = List<AdminType>.from(
-            responseData['totalMemberDTOs'].map((x) => AdminType.fromJson(x)),
-          );
-          _attendanceRateByMonth = Map<DateTime, int>.fromEntries(
-            (responseData['attendanceRateByMonth'] as Map<String, dynamic>)
-                .entries
-                .map((e) => MapEntry(DateTime.parse(e.key), e.value as int)),
-          );
-          _attendanceRate = responseData['attendanceRate'];
+          _attendanceRate = (responseData['attendanceRate'] as num?)?.toInt();
+          _loadError = null;
         });
       } else {
-        print("Server error: ${response.statusCode}");
+        debugPrint("Overview server error: ${response.statusCode}");
+        setState(() => _loadError =
+            'Could not load attendance overview (error ${response.statusCode}).');
       }
     } catch (e) {
-      print("Error loading data: $e");
+      debugPrint("Error loading overview data: $e");
+      if (!mounted) return;
+      setState(() =>
+          _loadError = 'Could not load attendance overview. Check your connection.');
     }
+  }
+
+  static List<AdminType> _parseMembers(dynamic raw) {
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((x) => AdminType.fromJson(Map<String, dynamic>.from(x)))
+        .toList();
+  }
+
+  static Map<DateTime, int> _parseRateByMonth(dynamic raw) {
+    final out = <DateTime, int>{};
+    if (raw is! Map) return out;
+    for (final e in raw.entries) {
+      final date = DateTime.tryParse('${e.key}');
+      final value = e.value;
+      if (date != null && value is num) {
+        out[date] = value.toInt();
+      }
+    }
+    return out;
   }
 
   Future<void> _showDatePicker() async {
@@ -113,7 +136,7 @@ class _OverviewWidgetState extends State<OverviewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isLoading = _totalPresent == null;
+    final bool isLoading = _totalPresent == null && _loadError == null;
     final int presentCount = _totalPresent?.length ?? 0;
     final int absentCount = _totalAbsent?.length ?? 0;
     final int totalCount = _totalMembers?.length ?? 0;
@@ -207,6 +230,35 @@ appBar: AppBar(
         ),
 
         const SizedBox(height: 16),
+
+        if (_loadError != null) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  _loadError!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.red[800], fontSize: 13),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() => _loadError = null);
+                    _loadData();
+                  },
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
 
         // Stats card
         Card(

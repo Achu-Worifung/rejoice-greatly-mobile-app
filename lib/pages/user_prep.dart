@@ -3,6 +3,8 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 import '../theme/church_colors.dart';
+import '../services/auth_service.dart';
+import '../main.dart' show navigatorKey;
 
 class UserPrepPage extends StatefulWidget {
   const UserPrepPage({super.key});
@@ -13,6 +15,17 @@ class UserPrepPage extends StatefulWidget {
 
 class _UserPrepPageState extends State<UserPrepPage> {
   int _currentIndex = 0;
+
+  /// Sign-in wipes the navigation stack before showing this page, so the only
+  /// way "back" is to sign out and return to the login screen.
+  Future<void> _goBack() async {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+    await AuthService().logout();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
+  }
 
   final List<Map<String, dynamic>> _slides = [
     {
@@ -51,7 +64,18 @@ class _UserPrepPageState extends State<UserPrepPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 32),
+              const SizedBox(height: 8),
+
+              IconButton(
+                onPressed: _goBack,
+                padding: EdgeInsets.zero,
+                alignment: Alignment.centerLeft,
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: ChurchColors.bodyText,
+                ),
+              ),
+              const SizedBox(height: 8),
 
               const Text(
                 "Set Up Facial Recognition",

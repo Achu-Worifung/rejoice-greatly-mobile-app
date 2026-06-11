@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/church_api.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../util/video_handler_web.dart'
     if (dart.library.io) '../util/video_handler_mobile.dart';
 import '../theme/church_colors.dart';
+import '../services/auth_service.dart';
+import '../main.dart' show navigatorKey;
 
 class CompleteSignup extends StatefulWidget {
   const CompleteSignup({super.key});
@@ -87,8 +87,21 @@ class _CompleteSignupState extends State<CompleteSignup> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = "Failed to capture photo");
     }
+  }
+
+  /// This screen can be the root route (RootPage shows it directly when a
+  /// signed-in user has not finished signup), in which case there is nothing
+  /// to pop — sign out and let RootPage show the login screen instead.
+  Future<void> _goBack() async {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+    await AuthService().logout();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
   }
 
   Future<void> _retake() async {
@@ -148,6 +161,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         await ChurchApi.ensurePostgresAccount();
       } catch (e, st) {
         debugPrint('CompleteSignup: pre-upload sync failed: $e\n$st');
+        if (!mounted) return;
         setState(() => _error =
             'Your account is not on the server yet. Check your connection and try again.');
         return;
@@ -167,45 +181,56 @@ class _CompleteSignupState extends State<CompleteSignup> {
         ),
       );
 
-      final response = await request.send();
-      // print(response.statusCode);
+      final response =
+          await request.send().timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final prefs = await SharedPreferences.getInstance();
         final body = await response.stream.bytesToString();
-        final data = json.decode(body) as Map<String, dynamic>;
-        final imgUrl = data['imgURL'] as String?;
-        if (imgUrl != null && imgUrl.isNotEmpty) {
-          final cached = await ChurchApi.getCachedAccountJson();
-          final merged = <String, dynamic>{
-            if (cached != null) ...cached,
-            'imgURL': imgUrl,
-            'signupComplete': true,
-          };
-          await ChurchApi.persistAccountFromServer(merged);
-        } else {
-          await prefs.setBool('signupComplete', true);
+        String? imgUrl;
+        try {
+          final data = json.decode(body) as Map<String, dynamic>;
+          imgUrl = data['imgURL'] as String?;
+        } catch (e) {
+          // Upload succeeded; a malformed body must not fail the signup.
+          debugPrint('CompleteSignup: could not parse upload response: $e');
         }
-        if (!context.mounted) return;
+        final cached = await ChurchApi.getCachedAccountJson();
+        final merged = <String, dynamic>{
+          if (cached != null) ...cached,
+          if (imgUrl != null && imgUrl.isNotEmpty) 'imgURL': imgUrl,
+          'signupComplete': true,
+        };
+        await ChurchApi.persistAccountFromServer(merged);
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/dashboard');
 
-      } else if (response.statusCode == 400)
-      {
-        setState(() => _canuseImg = false);
-        setState(() => _error = "Facial Image not clear enough.");
-      }else if (response.statusCode == 401){
-        setState(() => _canuseImg = false);
-        setState(() => _error = "Multiple faces detected.");
-      }else if (response.statusCode == 403){
-        setState(() => _canuseImg = false);
-        setState(() => _error = "No face detected.");
+      } else if (response.statusCode == 400) {
+        if (!mounted) return;
+        setState(() {
+          _canuseImg = false;
+          _error = "Facial Image not clear enough.";
+        });
+      } else if (response.statusCode == 401) {
+        if (!mounted) return;
+        setState(() {
+          _canuseImg = false;
+          _error = "Multiple faces detected.";
+        });
+      } else if (response.statusCode == 403) {
+        if (!mounted) return;
+        setState(() {
+          _canuseImg = false;
+          _error = "No face detected.";
+        });
       } else {
         final body = await response.stream.bytesToString();
+        if (!mounted) return;
         setState(() => _error = _uploadErrorMessage(response.statusCode, body));
       }
     } catch (e) {
+      debugPrint("Upload error: $e");
+      if (!mounted) return;
       setState(() => _error = "Network error. Please try again.");
-      print("Upload error: $e");
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -224,7 +249,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
     try {
       final decoded = json.decode(body);
       if (decoded is Map) {
-        for (final key in ['message', 'error', 'detail']) {
+        for (final key in ['msg', 'message', 'error', 'detail']) {
           final v = decoded[key];
           if (v is String && v.trim().isNotEmpty) return v.trim();
         }
@@ -316,7 +341,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleButton(Icons.arrow_back, () => Navigator.pop(context), false),
+                    _circleButton(Icons.arrow_back, _goBack, false),
                     const Text(
                       "TAKE A SELFIE",
                       style: TextStyle(

@@ -15,11 +15,11 @@ class AdminType {
 
   factory AdminType.fromJson(Map<String, dynamic> json) {
     return AdminType(
-      id: json['accountId'],
-      name: json['name'],
-      date: json['date'] as String?,
-      imgURL: json['imgURL'] as String?,
-      isPresent: json['isPresent'] ?? false,
+      id: json['accountId']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      date: json['date']?.toString(),
+      imgURL: json['imgURL']?.toString(),
+      isPresent: json['isPresent'] == true,
     );
   }
 }
