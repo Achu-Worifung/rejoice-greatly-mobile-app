@@ -25,9 +25,9 @@ class _MePageState extends State<MePage> {
     _pageFuture = ChurchApi.loadMePage();
   }
 
-  void _reload() {
+  void _reload({bool forceRefresh = false}) {
     setState(() {
-      _pageFuture = ChurchApi.loadMePage();
+      _pageFuture = ChurchApi.loadMePage(forceRefresh: forceRefresh);
     });
   }
 
@@ -140,6 +140,19 @@ class _MePageState extends State<MePage> {
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
   }
 
+  String _syncStatusText(MePageLoadResult? result) {
+    if (result == null) return '';
+    if (result.statsSynced) return 'Stats are loaded from your church attendance records.';
+    final cachedAt = result.cachedAt;
+    if (cachedAt != null) {
+      final days = DateTime.now().difference(cachedAt).inDays;
+      if (days == 0) return 'Showing data saved today. Pull down to refresh.';
+      if (days == 1) return 'Showing data from yesterday. Pull down to refresh.';
+      return 'Showing data from $days days ago. Pull down to refresh.';
+    }
+    return 'Showing saved stats — pull down to refresh from the server.';
+  }
+
   int _i(dynamic v) {
     if (v is int) return v;
     if (v is num) return v.toInt();
@@ -218,7 +231,7 @@ class _MePageState extends State<MePage> {
                     const SizedBox(height: 20),
                     if (signedIn)
                       FilledButton(
-                        onPressed: _reload,
+                        onPressed: () => _reload(forceRefresh: true),
                         style: FilledButton.styleFrom(
                           backgroundColor: ChurchColors.button,
                           foregroundColor: ChurchColors.buttonText,
@@ -254,7 +267,7 @@ class _MePageState extends State<MePage> {
           return RefreshIndicator(
             color: ChurchColors.button,
             onRefresh: () async {
-              _reload();
+              _reload(forceRefresh: true);
               await _pageFuture;
             },
             child: ListView(
@@ -367,9 +380,7 @@ class _MePageState extends State<MePage> {
                     ),
                   const SizedBox(height: 28),
                   Text(
-                    (result?.statsSynced ?? false)
-                        ? 'Stats are loaded from your church attendance records.'
-                        : 'Showing saved stats — pull down to refresh from the server.',
+                    _syncStatusText(result),
                     style: TextStyle(
                       fontSize: 12,
                       color: ChurchColors.muted.withValues(alpha: 0.9),

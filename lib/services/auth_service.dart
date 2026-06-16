@@ -152,6 +152,9 @@ class AuthService {
       return null;
     } on FirebaseAuthException catch (e) {
       return _authErrorMessage(e);
+    } catch (e) {
+      debugPrint('AuthService: signInWithGoogle unexpected error: $e');
+      return 'Sign-in failed. Please try again.';
     } finally {
       _googleSignInInProgress = false;
     }

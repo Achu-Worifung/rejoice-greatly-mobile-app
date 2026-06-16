@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../services/auth_service.dart';
 import '../theme/church_colors.dart';
+import '../main.dart' show navigatorKey;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,8 +19,13 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showError(String msg) {
     if (msg == 'Cancelled') return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
+    // Fall back to the root navigator's context when this widget has been
+    // unmounted (e.g. Firebase auth state fired before the backend sync
+    // finished, causing RootPage to replace LoginPage mid-flight).
+    final ctx = mounted ? context : navigatorKey.currentContext;
+    if (ctx == null) return;
+    ScaffoldMessenger.maybeOf(ctx)
+      ?..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
@@ -28,9 +34,9 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _busy = provider);
     try {
       final msg = await run();
-      if (msg != null && mounted) {
-        _showError(msg);
-      }
+      if (msg != null) _showError(msg);
+    } catch (e) {
+      _showError('Sign-in failed. Please try again.');
     } finally {
       if (mounted) setState(() => _busy = null);
     }

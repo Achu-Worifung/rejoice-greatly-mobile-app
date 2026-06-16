@@ -77,6 +77,7 @@ class MePageLoadResult {
     this.statsSynced = false,
     this.attendanceSynced = false,
     this.error,
+    this.cachedAt,
   });
 
   final Map<String, dynamic>? profile;
@@ -87,6 +88,9 @@ class MePageLoadResult {
   final bool statsSynced;
   final bool attendanceSynced;
   final String? error;
+  /// Non-null when the result was served from the local cache rather than the
+  /// server. Indicates when the data was last fetched from the server.
+  final DateTime? cachedAt;
 }
 
 class ChurchApi {
@@ -271,10 +275,46 @@ class ChurchApi {
     }
   }
 
-  static Future<MePageLoadResult> loadMePage() async {
+  static const Duration _mePageCacheDuration = Duration(days: 7);
+
+  static List<Map<String, dynamic>> _activitiesFromAccount(
+    Map<String, dynamic> account,
+  ) {
+    final raw = account['recentAttendance'];
+    if (raw is! List) return [];
+    return raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  /// Loads the Me page data.
+  ///
+  /// Returns cached data immediately when the last server sync is less than
+  /// [_mePageCacheDuration] old, skipping all network calls.
+  /// Pass [forceRefresh] to bypass the cache (e.g. pull-to-refresh).
+  static Future<MePageLoadResult> loadMePage({bool forceRefresh = false}) async {
     final user = await waitForSignedInUser();
     if (user == null) {
       return const MePageLoadResult(error: 'Not signed in');
+    }
+
+    if (!forceRefresh) {
+      final cachedAt = await UserSessionStore.readMePageCachedAt();
+      if (cachedAt != null &&
+          DateTime.now().difference(cachedAt) < _mePageCacheDuration) {
+        final cached = await getCachedAccountJson();
+        if (cached != null) {
+          final hasProfile = hasMemberProfile(cached);
+          return MePageLoadResult(
+            profile: cached,
+            hasProfile: hasProfile,
+            stats: hasProfile ? _statsFromAccountMap(cached) : null,
+            activities: _activitiesFromAccount(cached),
+            cachedAt: cachedAt,
+          );
+        }
+      }
     }
 
     try {
@@ -294,6 +334,7 @@ class ChurchApi {
       final hasProfile = hasMemberProfile(profile);
 
       if (!hasProfile) {
+        await UserSessionStore.saveMePageCachedAt(DateTime.now());
         return MePageLoadResult(
           profile: profile,
           hasProfile: false,
@@ -325,6 +366,7 @@ class ChurchApi {
         partialError ??= e.toString();
       }
 
+      await UserSessionStore.saveMePageCachedAt(DateTime.now());
       return MePageLoadResult(
         profile: profile,
         hasProfile: true,

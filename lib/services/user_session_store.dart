@@ -16,6 +16,7 @@ class UserSessionStore {
   static const String authProviderKey = 'authProvider';
   static const String signupCompleteKey = 'signupComplete';
   static const String isAdminKey = 'isAdmin';
+  static const String mePageCachedAtKey = 'me_page_cached_at';
 
   static SharedPreferences? _prefs;
 
@@ -231,6 +232,20 @@ class UserSessionStore {
     return isSignupComplete(account);
   }
 
+  static Future<void> saveMePageCachedAt(DateTime time) async {
+    final p = await _p();
+    await p.setString(mePageCachedAtKey, time.millisecondsSinceEpoch.toString());
+  }
+
+  static Future<DateTime?> readMePageCachedAt() async {
+    final p = await _p();
+    final s = p.getString(mePageCachedAtKey);
+    if (s == null) return null;
+    final ms = int.tryParse(s);
+    if (ms == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
   static Future<String?> readProfileImageUrl({Map<String, dynamic>? account}) async {
     final img = account?['imgURL'];
     if (img is String && img.trim().isNotEmpty) return img.trim();
@@ -263,6 +278,7 @@ class UserSessionStore {
     await p.remove('totalAttendance');
     await p.remove('totalAbsences');
     await p.remove('absenceStreak');
+    await p.remove(mePageCachedAtKey);
     // Per-user UI state that must not leak to the next account on this device.
     await p.remove('saved_sermon_ids');
     await p.reload();
