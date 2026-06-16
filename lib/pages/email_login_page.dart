@@ -73,26 +73,8 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
     }
   }
 
-  Future<void> _forgotPassword() async {
-    if (_busy != null) return;
-    final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      setState(() =>
-          _error = 'Enter your email above, then tap "Forgot Password?".');
-      return;
-    }
-    final msg = await AuthService().sendPasswordReset(email);
-    if (!mounted) return;
-    if (msg != null) {
-      setState(() => _error = msg);
-      return;
-    }
-    setState(() => _error = null);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(content: Text('Password reset email sent to $email')),
-      );
+  void _forgotPassword() {
+    Navigator.pushNamed(context, '/forgot-password');
   }
 
   @override

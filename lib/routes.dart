@@ -9,11 +9,13 @@ import 'pages/complete_signup.dart';
 import 'pages/user_prep.dart';
 import 'pages/admin_dashboard.dart' as admin_page;
 import 'pages/me_page.dart';
+import 'pages/forgot_password_page.dart';
 
 class AppRoutes {
   static const String login = '/login';
   static const String emailLogin = '/email-login';
   static const String emailSignup = '/email-signup';
+  static const String forgotPassword = '/forgot-password';
   static const String privacy = '/privacy';
   static const String terms = '/terms';
   static const String admin = '/admin';
@@ -35,6 +37,7 @@ class AppRoutes {
       completeSignup: (context) => const CompleteSignup(),
       dashboard: (context) => const Dashboard(),
       userPrep: (context) => const UserPrepPage(),
+      forgotPassword: (context) => const ForgotPasswordPage(),
     };
   }
 }
