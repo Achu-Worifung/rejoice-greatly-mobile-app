@@ -96,7 +96,7 @@ class MePageLoadResult {
 class ChurchApi {
   ChurchApi._();
 
-  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'http://localhost:8080';
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'http://192.168.0.166:8080';
 
   static bool isSignupComplete(Map<String, dynamic>? account) =>
       UserSessionStore.isSignupComplete(account);

@@ -164,7 +164,7 @@ class _MePageState extends State<MePage> {
     for (final item in raw) {
       if (item is! Map) continue;
       final m = Map<String, dynamic>.from(item);
-      final dateStr = m['attendedAt']?.toString() ?? '';
+      final dateStr = m['date']?.toString() ?? '';
       if (dateStr.isEmpty) continue;
       DateTime? dt = DateTime.tryParse(dateStr);
       if (dt == null && dateStr.length >= 10) {
@@ -173,7 +173,8 @@ class _MePageState extends State<MePage> {
         } catch (_) {}
       }
       if (dt == null) continue;
-      out.add(_AttendanceActivity(date: dt));
+      final isPresent = m['present'] as bool? ?? true;
+      out.add(_AttendanceActivity(date: dt, isPresent: isPresent));
     }
     out.sort((a, b) => b.date.compareTo(a.date));
     return out;
@@ -575,9 +576,10 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _AttendanceActivity {
-  const _AttendanceActivity({required this.date});
+  const _AttendanceActivity({required this.date, required this.isPresent});
 
   final DateTime date;
+  final bool isPresent;
 }
 
 class _AttendanceActivityList extends StatelessWidget {
@@ -593,7 +595,7 @@ class _AttendanceActivityList extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: ChurchColors.cardDecoration(shadow: const []),
         child: const Text(
-          'No check-ins yet. When you are marked present at a service, it will appear here.',
+          'No services recorded yet. Your attendance history will appear here once services begin.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
         ),
@@ -602,58 +604,78 @@ class _AttendanceActivityList extends StatelessWidget {
 
     final dateFmt = DateFormat('EEEE, MMM d, yyyy');
 
-    return Column(
-      children: [
-        for (var i = 0; i < activities.length; i++) ...[
-          if (i > 0) const SizedBox(height: 8),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 340),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            for (var i = 0; i < activities.length; i++) ...[
+              if (i > 0) const SizedBox(height: 8),
+              _ActivityRow(activity: activities[i], dateFmt: dateFmt),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.activity, required this.dateFmt});
+
+  final _AttendanceActivity activity;
+  final DateFormat dateFmt;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPresent = activity.isPresent;
+    final iconColor = isPresent ? ChurchColors.button : const Color(0xFFC62828);
+    final bgColor = isPresent
+        ? ChurchColors.button.withValues(alpha: 0.12)
+        : const Color(0xFFC62828).withValues(alpha: 0.08);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: ChurchColors.cardDecoration(shadow: const []),
+      child: Row(
+        children: [
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: ChurchColors.cardDecoration(shadow: const []),
-            child: Row(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              isPresent ? Icons.check_circle_outline : Icons.cancel_outlined,
+              color: iconColor,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: ChurchColors.button.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_outline,
-                    color: ChurchColors.button,
-                    size: 22,
+                Text(
+                  isPresent ? 'Marked present' : 'Absent',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isPresent ? ChurchColors.bodyText : const Color(0xFFC62828),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Marked present',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: ChurchColors.bodyText,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        dateFmt.format(activities[i].date),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: ChurchColors.muted,
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 2),
+                Text(
+                  dateFmt.format(activity.date),
+                  style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
                 ),
               ],
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 }
