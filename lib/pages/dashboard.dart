@@ -57,9 +57,10 @@ class _DashboardState extends State<Dashboard> {
 
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      body: pages.length > _selectedIndex
-          ? pages[_selectedIndex]
-          : const Center(child: Text('Page not found')),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: pages,
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: ChurchColors.background,

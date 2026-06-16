@@ -74,6 +74,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _refresh() async {
+    ChurchApi.invalidateHomeCache();
     setState(() {
       _verseFuture = ChurchApi.getCurrentVerse();
       _sermonFuture = _fetchSermonsNewestFirst();

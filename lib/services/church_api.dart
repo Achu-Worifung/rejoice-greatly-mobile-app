@@ -237,6 +237,20 @@ class ChurchApi {
       );
     }
 
+    // Reuse the me-page cache when it is still within the weekly TTL.
+    final cachedAt = await UserSessionStore.readMePageCachedAt();
+    if (cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _mePageCacheDuration) {
+      final cached = await getCachedAccountJson();
+      if (cached != null) {
+        return ProfileLoadResult(
+          profile: cached,
+          hasProfile: hasMemberProfile(cached),
+          syncedFromServer: false,
+        );
+      }
+    }
+
     try {
       await syncAuthAccount();
       final profile = await fetchMemberProfile();
@@ -258,6 +272,19 @@ class ChurchApi {
   }
 
   static Future<MemberStatsResult> loadMemberStats() async {
+    // Reuse the me-page cache when it is still within the weekly TTL.
+    final cachedAt = await UserSessionStore.readMePageCachedAt();
+    if (cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _mePageCacheDuration) {
+      final cached = await getCachedAccountJson();
+      if (cached != null && cached.containsKey('currentStreak')) {
+        return MemberStatsResult(
+          stats: _statsFromAccountMap(cached),
+          syncedFromServer: false,
+        );
+      }
+    }
+
     try {
       final stats = await fetchMemberStats();
       return MemberStatsResult(stats: stats, syncedFromServer: true);
@@ -536,14 +563,44 @@ class ChurchApi {
   static Map<String, dynamic> accountToAttendanceSheetData(Map<String, dynamic> a) =>
       statsToAttendanceSheetData(a);
 
+  static void invalidateHomeCache() {
+    _verseCache = null;
+    _verseCachedAt = null;
+    _sermonsCache = null;
+    _sermonsCachedAt = null;
+    _dashboardEventsCache = null;
+    _dashboardEventsCachedAt = null;
+  }
+
+  // --- In-memory caches for home data (1-hour TTL) ---
+  static const Duration _homeCacheDuration = Duration(hours: 1);
+
+  static Map<String, dynamic>? _verseCache;
+  static DateTime? _verseCachedAt;
+
+  static List<dynamic>? _sermonsCache;
+  static DateTime? _sermonsCachedAt;
+
+  static List<dynamic>? _dashboardEventsCache;
+  static DateTime? _dashboardEventsCachedAt;
+
   static Future<Map<String, dynamic>> getCurrentVerse() async {
+    final cachedAt = _verseCachedAt;
+    if (_verseCache != null &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _homeCacheDuration) {
+      return _verseCache!;
+    }
     final r = await http
         .get(Uri.parse('$baseUrl/weekly-verse/current'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('weekly-verse/current failed: ${r.statusCode}');
     }
-    return json.decode(r.body) as Map<String, dynamic>;
+    final data = json.decode(r.body) as Map<String, dynamic>;
+    _verseCache = data;
+    _verseCachedAt = DateTime.now();
+    return data;
   }
 
   static Future<List<dynamic>> getTop4Events() async {
@@ -556,10 +613,29 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getDashboardEventInstances() async {
+    final cachedAt = _dashboardEventsCachedAt;
+    if (_dashboardEventsCache != null &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _homeCacheDuration) {
+      return _dashboardEventsCache!;
+    }
+    List<dynamic> result;
     try {
       final top = await getTop4Events();
-      if (top.isNotEmpty) return top;
-    } catch (_) {}
+      if (top.isNotEmpty) {
+        result = top;
+      } else {
+        result = await _fetchUpcoming4();
+      }
+    } catch (_) {
+      result = await _fetchUpcoming4();
+    }
+    _dashboardEventsCache = result;
+    _dashboardEventsCachedAt = DateTime.now();
+    return result;
+  }
+
+  static Future<List<dynamic>> _fetchUpcoming4() async {
     final upcoming = await getUpcomingEvents();
     if (upcoming.isEmpty) return [];
     final list = List<dynamic>.from(upcoming);
@@ -570,8 +646,7 @@ class ChurchApi {
       }
       return dateOf(a).compareTo(dateOf(b));
     });
-    if (list.length <= 4) return list;
-    return list.sublist(0, 4);
+    return list.length <= 4 ? list : list.sublist(0, 4);
   }
 
   static Future<List<dynamic>> getUpcomingEvents() async {
@@ -585,12 +660,21 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getSermons() async {
+    final cachedAt = _sermonsCachedAt;
+    if (_sermonsCache != null &&
+        cachedAt != null &&
+        DateTime.now().difference(cachedAt) < _homeCacheDuration) {
+      return _sermonsCache!;
+    }
     final r =
         await http.get(Uri.parse('$baseUrl/sermons')).timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('sermons failed: ${r.statusCode}');
     }
-    return json.decode(r.body) as List<dynamic>;
+    final data = json.decode(r.body) as List<dynamic>;
+    _sermonsCache = data;
+    _sermonsCachedAt = DateTime.now();
+    return data;
   }
 
   static Future<Map<String, dynamic>> getSermonById(Object id) async {
