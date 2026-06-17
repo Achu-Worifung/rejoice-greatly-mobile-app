@@ -691,7 +691,7 @@ class ChurchApi {
     for (final e in list) {
       if (e is! Map) continue;
       final m = Map<String, dynamic>.from(e);
-      if (m['cancelled'] == true) continue;
+      if (m['cancelled'] == true || m['is_cancelled'] == true) continue;
       final t = m['template'] is Map
           ? Map<String, dynamic>.from(m['template'] as Map)
           : <String, dynamic>{};
@@ -701,10 +701,13 @@ class ChurchApi {
         'title': (t['title'] as String?)?.trim().isNotEmpty == true
             ? t['title'] as String
             : (m['title'] as String?) ?? 'Church event',
-        'time': _formatTime(m['specificTime'] as String?, t['defaultTime'] as String?),
+        'time': _formatTime(
+          (m['specificTime'] ?? m['specific_time']) as String?,
+          (t['defaultTime'] ?? t['default_time']) as String?,
+        ),
         'date': dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr,
         'location': t['location'] ?? '',
-        'imageUrl': t['posterUrl'],
+        'imageUrl': (t['posterUrl'] ?? t['poster_url']) as String?,
         'description': (t['description'] as String?)?.trim() ?? '',
         'category': (t['category'] as String?)?.trim().isNotEmpty == true
             ? t['category'] as String

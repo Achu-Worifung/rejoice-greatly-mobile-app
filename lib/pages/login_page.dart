@@ -94,7 +94,13 @@ class _LoginPageState extends State<LoginPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 125),
+                const SizedBox(height: 80),
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: 140,
+                  height: 140,
+                ),
+                const SizedBox(height: 24),
                 const Text(
                   "WELCOME TO REJOICE GREATLY",
                   style: TextStyle(

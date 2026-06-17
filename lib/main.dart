@@ -51,7 +51,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Rejoice Greatly PHX',
+      title: 'Rejoice Greatly',
       navigatorKey: navigatorKey,
       initialRoute: '/',
       theme: ThemeData(

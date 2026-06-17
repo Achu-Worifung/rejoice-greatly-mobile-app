@@ -13,7 +13,7 @@
     </intent>
 </queries>
     <application
-        android:label="church_app"
+        android:label="Rejoice Greatly"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
