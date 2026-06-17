@@ -656,7 +656,10 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw Exception('events/upcoming failed: ${r.statusCode}');
     }
-    return json.decode(r.body) as List<dynamic>;
+    final list = json.decode(r.body) as List<dynamic>;
+    if (list.isNotEmpty) return list;
+    // Fall back to top4 when the upcoming endpoint returns nothing.
+    return getTop4Events();
   }
 
   static Future<List<dynamic>> getSermons() async {
