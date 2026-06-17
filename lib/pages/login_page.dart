@@ -95,20 +95,28 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 80),
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 140,
-                  height: 140,
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  "WELCOME TO REJOICE GREATLY",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                // Image.asset(
+                //   'assets/images/logo.png',
+                //   width: 140,
+                //   height: 140,
+                // ),
+                // const SizedBox(height: 24),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      "WELCOME TO REJOICE GREATLY",
+                      maxLines: 1,
+                      softWrap: false,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 const Text(

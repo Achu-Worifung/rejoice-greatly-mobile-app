@@ -93,7 +93,10 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
       appBar: ChurchAppBar.of(
         title: const SizedBox.shrink(),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: ChurchColors.accent,
+          ),
           onPressed: _goBack,
         ),
       ),
@@ -215,41 +218,37 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CheckboxListTile(
-                        title: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(color: ChurchColors.bodyText),
+                        title: Text.rich(
+                          TextSpan(
                             children: [
                               const TextSpan(
-                                text: "By signing up, you agree to the ",
-                                style: TextStyle(fontSize: 16),
+                                text: 'By signing up, you agree to the ',
                               ),
                               TextSpan(
-                                text: "Terms of Service",
+                                text: 'Terms of Service',
                                 style: const TextStyle(
                                   color: ChurchColors.button,
                                   decoration: TextDecoration.underline,
-                                  fontSize: 16,
                                 ),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    Navigator.pushNamed(context, '/terms');
-                                  },
+                                  ..onTap = () =>
+                                      Navigator.pushNamed(context, '/terms'),
                               ),
-                              const TextSpan(text: " and "),
+                              const TextSpan(text: ' and '),
                               TextSpan(
-                                text: "Privacy Policy",
+                                text: 'Privacy Policy',
                                 style: const TextStyle(
                                   color: ChurchColors.button,
                                   decoration: TextDecoration.underline,
-                                  fontSize: 16,
                                 ),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    Navigator.pushNamed(context, '/privacy');
-                                  },
+                                  ..onTap = () =>
+                                      Navigator.pushNamed(context, '/privacy'),
                               ),
                             ],
                           ),
+                          softWrap: true,
+                          maxLines: 2,
                         ),
                         value: _termsAccepted,
                         onChanged: (val) =>
@@ -258,9 +257,17 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                         controlAffinity: ListTileControlAffinity.leading,
                       ),
                       CheckboxListTile(
-                        title: const Text(
-                          "I consent to the use of biometric and/or Bluetooth technology to record my church attendance",
-                          style: TextStyle(color: ChurchColors.bodyText, fontSize: 16),
+                        title: Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(
+                                text:
+                                    'I consent to the use of biometric and/or Bluetooth technology to record my church attendance',
+                              ),
+                            ],
+                          ),
+                          softWrap: true,
+                          maxLines: 2,
                         ),
                         value: _privacyAccepted,
                         onChanged: (val) =>
@@ -361,7 +368,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                                         const SizedBox(width: 4),
                                         Flexible(
                                           child: AutoSizeText(
-                                            "Sign in with Google",
+                                            "Sign up with Google",
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w600,
@@ -418,7 +425,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                                         const SizedBox(width: 4),
                                         Flexible(
                                           child: AutoSizeText(
-                                            "Sign in with Apple",
+                                            "Sign up with Apple",
                                             style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w600,
@@ -446,18 +453,23 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                       children: [
                         const Text(
                           "Already have an account?",
-                          style: TextStyle(color: ChurchColors.bodyText, fontSize: 16),
+                          style: TextStyle(
+                            color: ChurchColors.bodyText,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(width: 4),
                         GestureDetector(
                           onTap: () => Navigator.pushReplacementNamed(
-                              context, '/email-login'),
+                            context,
+                            '/email-login',
+                          ),
                           child: const Text(
                             "Login",
                             style: TextStyle(
                               color: ChurchColors.button,
                               fontSize: 16,
-                              decoration: TextDecoration.underline,
+                              // decoration: TextDecoration.underline,
                             ),
                           ),
                         ),
