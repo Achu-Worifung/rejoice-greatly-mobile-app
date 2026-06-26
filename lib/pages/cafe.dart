@@ -29,7 +29,7 @@ class _CafeState extends State<Cafe> {
   StreamSubscription<User?>? _authSub;
   bool _pageReady = false;
   bool _syncing = false;
-  String? _lastInjectedToken;
+  String? _syncedUid;
 
   @override
   void initState() {
@@ -42,7 +42,7 @@ class _CafeState extends State<Cafe> {
       if (widget.isActive) {
         _syncCafeAuth();
       } else {
-        _lastInjectedToken = null;
+        _syncedUid = null;
       }
     });
   }
@@ -86,25 +86,36 @@ class _CafeState extends State<Cafe> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      _lastInjectedToken = null;
-      await CafeSsoService.applyToWebView(controller, customToken: null);
+      if (_syncedUid != null) {
+        _syncedUid = null;
+        await CafeSsoService.applyToWebView(controller, customToken: null);
+      }
       return;
     }
 
-    _syncing = true;
+    // Already signed this user into the cafe. Each fetchCustomToken() mints a
+    // fresh token, so without this guard every onPageFinished would re-fetch
+    // and re-inject, leaving the loading bar running forever.
+    if (_syncedUid == user.uid) return;
+
+    _setSyncing(true);
     try {
       final customToken = await CafeSsoService.fetchCustomToken();
       if (!mounted) return;
       if (customToken == null || customToken.isEmpty) return;
-      if (customToken == _lastInjectedToken) return;
 
       await CafeSsoService.applyToWebView(controller, customToken: customToken);
-      _lastInjectedToken = customToken;
+      _syncedUid = user.uid;
     } catch (e, st) {
       debugPrint('Cafe tab SSO failed: $e\n$st');
     } finally {
-      _syncing = false;
+      _setSyncing(false);
     }
+  }
+
+  void _setSyncing(bool value) {
+    if (!mounted || _syncing == value) return;
+    setState(() => _syncing = value);
   }
 
   Future<void> _handleBack(BuildContext context) async {

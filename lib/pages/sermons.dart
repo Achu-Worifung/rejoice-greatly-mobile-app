@@ -204,15 +204,16 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
                     ],
                     stops: const [0.0, 0.5, 1.0],
                   ).createShader(bounds),
-                  child: const Text(
-                    'SERMONS',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 19,
-                      letterSpacing: 1.6,
-                      height: 1.1,
-                      color: Colors.white,
+                  child: const Text.rich(
+                    TextSpan(
+                      text: 'SERMONS',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 19,
+                        letterSpacing: 1.6,
+                        height: 1.1,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),

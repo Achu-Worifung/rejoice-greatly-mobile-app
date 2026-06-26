@@ -210,15 +210,16 @@ class _EventsPageState extends State<EventsPage> {
                     colors: [ChurchColors.accent, ChurchColors.button, ChurchColors.accent],
                     stops: const [0.0, 0.5, 1.0],
                   ).createShader(bounds),
-                  child: const Text(
-                    'UPCOMING EVENTS',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 19,
-                      letterSpacing: 1.6,
-                      height: 1.1,
-                      color: Colors.white, // Required for ShaderMask gradient
+                  child: const Text.rich(
+                    TextSpan(
+                      text: 'UPCOMING EVENTS',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 19,
+                        letterSpacing: 1.6,
+                        height: 1.1,
+                        color: Colors.white, // Required for ShaderMask gradient
+                      ),
                     ),
                   ),
                 ),
