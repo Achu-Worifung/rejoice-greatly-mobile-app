@@ -220,6 +220,7 @@ class ChurchApi {
   /// `POST /member/attendance/history` — check-in dates.
   static Future<List<Map<String, dynamic>>> fetchMemberAttendanceHistory() async {
     final map = await _postMember('attendance/history', const {});
+    await _mergeIntoCachedAccount(map);
     final raw = map['recentAttendance'];
     if (raw is! List) return [];
     return raw
