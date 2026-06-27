@@ -738,13 +738,7 @@ class _StatGrid extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        _StatTile(
-          label: 'Current absence streak',
-          value: '$absenceStreak',
-          icon: Icons.trending_down,
-          fullWidth: true,
-        ),
+        
       ],
     );
   }
@@ -787,14 +781,23 @@ class _StatTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label.toUpperCase(),
+                Text.rich(
+                  TextSpan(
+                    text: label.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: ChurchColors.muted,
+                    ),
+                  ),
                   style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
                     color: ChurchColors.muted,
                     letterSpacing: 0.5,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(

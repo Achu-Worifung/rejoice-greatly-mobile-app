@@ -295,18 +295,7 @@ class AttendanceSheet extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _miniStat('Total absences', '$absences'),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _miniStat('Absence streak', '$absenceStreak'),
-              ),
-            ],
-          ),
+        
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,

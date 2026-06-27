@@ -191,9 +191,13 @@ class _EventsPageState extends State<EventsPage> {
 
   // ✨ PREMIUM HEADER
   Widget _buildHeader() {
-    return Padding(
-      padding: ChurchTabPageHeader.kTitlePadding,
-      child: Column(
+    // Pin to the top of the toolbar so kTitlePadding controls the top gap
+    // (AppBar otherwise vertically centers the title, which differs per page).
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: ChurchTabPageHeader.kTitlePadding,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -339,7 +343,8 @@ class _EventsPageState extends State<EventsPage> {
               }).toList(),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
