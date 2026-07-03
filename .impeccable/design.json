@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-03T00:00:00Z",
+  "title": "Design System: Rejoice Greatly",
+  "extensions": {
+    "colorMeta": {
+      "roasted-cocoa": {
+        "role": "primary",
+        "displayName": "Roasted Cocoa",
+        "canonical": "#633A02",
+        "tonalRamp": ["#1F1200", "#331D01", "#4B2B01", "#633A02", "#8A5A1E", "#B08549", "#D6B588", "#F1E3CE"]
+      },
+      "candlelight-cream": {
+        "role": "neutral",
+        "displayName": "Candlelight Cream",
+        "canonical": "#FFF7EB",
+        "tonalRamp": ["#3A3324", "#5C5140", "#8A7C64", "#B8A98C", "#D9CDB4", "#EBE1CE", "#FFF7EB", "#FFFCF6"]
+      },
+      "sanctuary-white": {
+        "role": "neutral",
+        "displayName": "Sanctuary White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["#262626", "#3D3D3D", "#5C5C5C", "#8A8A8A", "#B8B8B8", "#DEDEDE", "#F4F4F4", "#FFFFFF"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#1A1A1A",
+        "tonalRamp": ["#000000", "#1A1A1A", "#2E2E2E", "#474747", "#6B6B6B", "#969696", "#C4C4C4", "#EDEDED"]
+      },
+      "weathered-wood": {
+        "role": "neutral",
+        "displayName": "Weathered Wood",
+        "canonical": "#6B5C4D",
+        "tonalRamp": ["#241E18", "#392F26", "#4F4237", "#6B5C4D", "#8C7A66", "#B0A08A", "#D2C7B6", "#EFE9DF"]
+      },
+      "warm-sand": {
+        "role": "neutral",
+        "displayName": "Warm Sand",
+        "canonical": "#E8DFD0",
+        "tonalRamp": ["#463E30", "#5F5645", "#83785F", "#A89A7E", "#C7BAA0", "#E8DFD0", "#F2ECE0", "#FBF8F2"]
+      },
+      "error-ink": {
+        "role": "tertiary",
+        "displayName": "Error Clay",
+        "canonical": "#8A2C1F",
+        "tonalRamp": ["#3A120C", "#551A12", "#701F16", "#8A2C1F", "#B0503F", "#D3897C", "#E1B0A9", "#FFF1EE"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page-opening greetings; one per screen." },
+      "headline": { "displayName": "Headline", "purpose": "App-bar titles and section headers." },
+      "title": { "displayName": "Title", "purpose": "Card titles — sermon and event names, capped at 2 lines." },
+      "body": { "displayName": "Body", "purpose": "Running text and button labels; 15px floor." },
+      "label": { "displayName": "Label", "purpose": "Dates, captions, input labels; Weathered Wood, 12px floor." }
+    },
+    "shadows": [
+      { "name": "card-lift", "value": "0 8px 20px rgba(99, 58, 2, 0.08)", "purpose": "Default warm card shadow — brown-tinted glow, never neutral black." },
+      { "name": "button-secondary-lift", "value": "0 1px 3px rgba(0, 0, 0, 0.12)", "purpose": "Material elevation 2 for secondary/social buttons; primary stays flat." }
+    ],
+    "motion": [
+      { "name": "focus-radius-shift", "value": "border color → #633A02, radius 12px → 14px", "purpose": "Input focus signal — warm and subtle." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "phone-first; single-column, IndexedStack tabs" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single unmistakable 'do this' action — full-width cocoa, flat.",
+      "html": "<button class=\"ds-btn-primary\">Sign In</button>",
+      "css": ".ds-btn-primary { display: flex; align-items: center; justify-content: center; width: 100%; height: 52px; background: #633A02; color: #FFFFFF; font-size: 15px; font-weight: 600; border: none; border-radius: 14px; cursor: pointer; transition: background 0.18s ease; } .ds-btn-primary:hover { background: #4B2B01; } .ds-btn-primary:focus-visible { outline: 2px solid #633A02; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.7; cursor: default; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Cream, bordered, slightly lifted — social sign-in and non-primary actions.",
+      "html": "<button class=\"ds-btn-secondary\">Sign in with Google</button>",
+      "css": ".ds-btn-secondary { display: flex; align-items: center; justify-content: center; gap: 8px; height: 60px; padding: 0 16px; background: #FFF7EB; color: #1A1A1A; font-size: 16px; border: 1px solid #E8DFD0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); cursor: pointer; transition: background 0.18s ease; } .ds-btn-secondary:hover { background: #FBF3E6; } .ds-btn-secondary:focus-visible { outline: 2px solid #633A02; outline-offset: 2px; }"
+    },
+    {
+      "name": "Sermon Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Signature pattern — cream card, rounded thumbnail, 2-line title + date, circular play button.",
+      "html": "<div class=\"ds-sermon-card\"><div class=\"ds-thumb\"><svg viewBox=\"0 0 24 24\" width=\"32\" height=\"32\" fill=\"#633A02\"><path d=\"M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2z\"/></svg></div><div class=\"ds-meta\"><div class=\"ds-title\">Walking in Grace</div><div class=\"ds-date\">2026-06-29</div></div><button class=\"ds-play\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"#633A02\"><path d=\"M8 5v14l11-7z\"/></svg></button></div>",
+      "css": ".ds-sermon-card { display: flex; align-items: center; gap: 14px; padding: 14px; background: #FFF7EB; border: 1px solid rgba(232,223,208,0.4); border-radius: 16px; box-shadow: 0 8px 20px rgba(99,58,2,0.08); } .ds-thumb { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 12px; background: rgba(99,58,2,0.08); flex-shrink: 0; } .ds-meta { flex: 1; min-width: 0; } .ds-title { font-size: 16px; font-weight: 700; color: #1A1A1A; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; } .ds-date { margin-top: 6px; font-size: 13px; color: #6B5C4D; } .ds-play { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(99,58,2,0.12); cursor: pointer; flex-shrink: 0; } .ds-play:hover { background: rgba(99,58,2,0.2); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Outlined field with muted label/icon; focus warms the border to cocoa.",
+      "html": "<div class=\"ds-field\"><input class=\"ds-input\" placeholder=\"Email\" /></div>",
+      "css": ".ds-input { width: 100%; height: 52px; padding: 0 14px; font-size: 15px; color: #1A1A1A; background: #FFFFFF; border: 1px solid #E8DFD0; border-radius: 12px; transition: border-color 0.18s ease, border-radius 0.18s ease; } .ds-input::placeholder { color: #6B5C4D; } .ds-input:focus { outline: none; border-color: #633A02; border-radius: 14px; }"
+    },
+    {
+      "name": "Error Callout",
+      "kind": "custom",
+      "refersTo": "error-callout",
+      "description": "Warm rose inline callout for validation and failure messages — never harsh system red.",
+      "html": "<div class=\"ds-error\">Please enter a valid email</div>",
+      "css": ".ds-error { padding: 12px; font-size: 12px; font-weight: 500; color: #8A2C1F; background: #FFF1EE; border: 1px solid #E1B0A9; border-radius: 8px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Warm Welcome",
+    "overview": "Rejoice Greatly is the front porch of the church. Opening it should feel like being greeted at the door by name: warm candlelight cream, grounded roasted-cocoa brown, and generous white space that never rushes you. The system is light-first and unhurried — a clean white sanctuary floor, warm cream cards that hold content like a shared table, and a single deep-brown voice for every action worth taking. Warmth here is structural, not decorative — it lives in the palette, the spacing, and the copy, never in ornament. Components are clean and grounded: clear edges, comfortable radii, low-contrast borders, and only a whisper of brown shadow to lift a card off the floor.",
+    "keyCharacteristics": [
+      "Light-first: white floor, warm cream surfaces, deep-brown as the single accent.",
+      "Unhurried: generous spacing, comfortable type, calm hierarchy.",
+      "One-voice color: roasted cocoa is the only action color across the app.",
+      "Warmth through restraint: no ornament; warmth is the palette and the copy.",
+      "Legible for everyone: strong contrast, plain labels, mobile-first tap targets."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Roasted Cocoa (#633A02) is the only action color in the app. If something is tappable and primary, it is cocoa; if it is not, it is not. Never introduce a second accent hue to add interest.", "section": "colors" },
+      { "name": "The Cream-on-White Rule", "body": "Content lives on Candlelight Cream cards; chrome (scaffold, app bar, nav) lives on Sanctuary White. Never invert this into cream chrome with white cards.", "section": "colors" },
+      { "name": "The 12px Floor Rule", "body": "No user-facing text below 12px, ever. This congregation skews broad and non-technical; sub-12px elegance is illegible here.", "section": "typography" },
+      { "name": "The Weight-Not-Color Rule", "body": "Emphasis comes from weight and size, not from coloring text with the accent. Only genuinely tappable text may be cocoa.", "section": "typography" },
+      { "name": "The Warm-Shadow Rule", "body": "Shadows are tinted with Roasted Cocoa at low alpha, never neutral black. A gray drop shadow on a warm surface reads cold and dated.", "section": "elevation" },
+      { "name": "The Flat-Primary Rule", "body": "The primary button is flat (elevation 0). Its color is its elevation. Only secondary/neutral surfaces earn a lift.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep Roasted Cocoa (#633A02) as the single action color — one voice for every primary tap.",
+      "Do put content on Candlelight Cream cards and chrome on Sanctuary White.",
+      "Do tint card shadows with brown at low alpha (#633A02 @ 8%), never neutral black.",
+      "Do convey emphasis with weight and size, not by coloring text.",
+      "Do keep the sermon/event path — card → play, or card → remind — the shortest and most obvious action on any screen.",
+      "Do hold body text at 15px+ and never drop any label below 12px."
+    ],
+    "donts": [
+      "Don't design cold corporate SaaS: no sterile blue/gray chrome, no spreadsheet density, no enterprise-dashboard energy.",
+      "Don't slip into dated megachurch kitsch: no clip-art crosses, no glowing stock-photo sunsets, no cheesy multi-stop gradients, no heavy gray drop shadows.",
+      "Don't clutter: no walls of near-identical cards, no screen with three competing calls-to-action.",
+      "Don't introduce a second accent hue for interest — interest is spacing and copy, not a new color.",
+      "Don't invert the surface roles into cream chrome with white cards; the warmth belongs to the content.",
+      "Don't use gamified pressure — no streak-shaming, badge spam, or aggressive confetti. Nudge, never nag."
+    ]
+  }
+}

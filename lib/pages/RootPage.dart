@@ -4,7 +4,7 @@ import 'package:church_app/pages/login_page.dart';
 import 'package:church_app/pages/user_prep.dart';
 import 'package:church_app/pages/dashboard.dart';
 import 'package:church_app/services/church_api.dart';
-import 'package:church_app/theme/church_colors.dart';
+import 'package:church_app/widgets/branded_loader.dart';
 
 /// App entry: auth check, session restore, then shows login / signup / dashboard.
 class RootPage extends StatefulWidget {
@@ -18,14 +18,10 @@ class _RootPageState extends State<RootPage> {
   Future<SessionRestoreResult>? _sessionFuture;
   String? _restoredUid;
 
-  Widget _loading() {
-    return const Scaffold(
-      backgroundColor: ChurchColors.background,
-      body: Center(
-        child: CircularProgressIndicator(color: ChurchColors.button),
-      ),
-    );
-  }
+  // The same "Warm Welcome" surface the splash settles into, so a slow auth /
+  // session-restore keeps the user in one continuous moment instead of a bare
+  // white spinner after the branded splash.
+  Widget _loading() => const BrandedLoader();
 
   @override
   Widget build(BuildContext context) {

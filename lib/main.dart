@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'routes.dart';
-import 'pages/RootPage.dart';
+import 'pages/splash_screen.dart';
 import 'theme/church_colors.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notifications/notification_service.dart';
@@ -78,7 +78,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       routes: {
-        '/': (context) => const RootPage(),
+        '/': (context) => const SplashScreen(),
         ...AppRoutes.getRoutes(),
       },
       debugShowCheckedModeBanner: false,

@@ -1,0 +1,17 @@
+flutter_native_splash:
+  color: "#633A02"  # Background color (match this in Flutter later!)
+  image: assets/images/logo.png  # Path to your logo asset
+  android: true
+  ios: true
+  fullscreen: true  # Hides status bar (Android)
+  image_width: 200
+ 
+  # Optional: Add text, dark mode support, or resize the logo
+  # color_dark: "#0D47A1"  # Dark mode background color
+  # image_dark: assets/splash/logo_dark.png  # Dark mode logo
+ 
+  # Android 12+ requires separate configuration
+  android_12:
+    color: "#633A02"
+    image: assets/images/logo.png  # Path to your logo asset
+    # icon_background_color: "#FFFFFF"  # Optional: contrast behind icon
