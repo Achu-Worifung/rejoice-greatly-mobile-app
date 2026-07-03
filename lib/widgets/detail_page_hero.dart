@@ -188,7 +188,7 @@ class _DetailHeroImageState extends State<DetailHeroImage> {
 }
 
 class DetailBackOverlayButton extends StatelessWidget {
-  const DetailBackOverlayButton({required this.onPressed});
+  const DetailBackOverlayButton({super.key, required this.onPressed});
 
   final VoidCallback onPressed;
 
@@ -211,7 +211,7 @@ class DetailBackOverlayButton extends StatelessWidget {
 
 /// Category chip under the title on event/sermon detail pages.
 class DetailCategoryChip extends StatelessWidget {
-  const DetailCategoryChip({required this.label});
+  const DetailCategoryChip({super.key, required this.label});
 
   final String label;
 
@@ -224,11 +224,12 @@ class DetailCategoryChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        label.toUpperCase(),
+        label,
         style: const TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w800,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
           color: ChurchColors.accent,
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -237,7 +238,7 @@ class DetailCategoryChip extends StatelessWidget {
 
 /// Icon + text row under the title block on detail pages.
 class DetailInfoRow extends StatelessWidget {
-  const DetailInfoRow({required this.icon, required this.text});
+  const DetailInfoRow({super.key, required this.icon, required this.text});
 
   final IconData icon;
   final String text;

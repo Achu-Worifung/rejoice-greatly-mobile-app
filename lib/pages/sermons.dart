@@ -144,9 +144,14 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
         automaticallyImplyLeading: false,
-        toolbarHeight: 138,
+        toolbarHeight: ChurchTabPageHeader.height,
         centerTitle: true,
-        title: _buildHeader(),
+        title: ChurchTabPageHeader(
+          title: 'Sermons',
+          controller: _searchController,
+          hintText: 'Search sermons...',
+          onChanged: (v) => setState(() => _search = v),
+        ),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: ChurchColors.button,
@@ -174,88 +179,6 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
           _buildSermonList(onlySaved: false),
           _buildSermonList(onlySaved: true),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    // Pin to the top of the toolbar so kTitlePadding controls the top gap
-    // (AppBar otherwise vertically centers the title, which differs per page).
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Padding(
-        padding: ChurchTabPageHeader.kTitlePadding,
-        child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Sermons',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: ChurchColors.bodyText,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Elevated Search Field
-          Container(
-            decoration: BoxDecoration(
-              color: ChurchColors.card,
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (v) => setState(() => _search = v),
-              decoration: InputDecoration(
-                hintText: 'Search sermons...',
-                hintStyle: TextStyle(
-                  color: ChurchColors.muted.withValues(alpha: 0.6),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  color: ChurchColors.muted,
-                  size: 20,
-                ),
-                filled: true,
-                fillColor: Colors.transparent,
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 11,
-                  horizontal: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: ChurchColors.divider.withValues(alpha: 0.25),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(
-                    color: ChurchColors.button.withValues(alpha: 0.7),
-                    width: 1.5,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          ],
-        ),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../theme/church_colors.dart';
 import '../widgets/detail_page_hero.dart';
+import '../widgets/dashboard_label_title.dart';
 
 /// Full-screen event details with poster image; opened via [Navigator.push].
 class EventDetailPage extends StatelessWidget {
@@ -36,7 +37,6 @@ class EventDetailPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      extendBodyBehindAppBar: true,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -66,16 +66,7 @@ class EventDetailPage extends StatelessWidget {
                 if (location.isNotEmpty) DetailInfoRow(icon: Icons.place_outlined, text: location),
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 20),
-                  const Text(
-                    'Details',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: ChurchColors.accent,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  const DashboardLabelText(label: 'Details'),
                   Text(
                     description,
                     style: const TextStyle(

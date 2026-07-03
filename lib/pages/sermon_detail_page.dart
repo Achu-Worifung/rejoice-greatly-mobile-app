@@ -5,6 +5,7 @@ import '../services/church_api.dart';
 import '../services/church_audio_player.dart';
 import '../theme/church_colors.dart';
 import '../widgets/detail_page_hero.dart';
+import '../widgets/dashboard_label_title.dart';
 import '../widgets/sermon_playing_waveform.dart';
 
 /// Full-screen sermon (no bottom nav shell); opened via [Navigator.push].
@@ -111,16 +112,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                   ],
                   if (description.isNotEmpty) ...[
                     const SizedBox(height: 20),
-                    const Text(
-                      'Details',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: ChurchColors.accent,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const DashboardLabelText(label: 'Details'),
                     Text(
                       description,
                       style: const TextStyle(
@@ -235,8 +227,9 @@ class _AudioPlayButton extends StatelessWidget {
             style: FilledButton.styleFrom(
               backgroundColor: ChurchColors.button,
               foregroundColor: ChurchColors.buttonText,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             icon: leadingIcon(),
             label: Text(
