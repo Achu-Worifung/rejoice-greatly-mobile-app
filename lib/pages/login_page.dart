@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
 import '../services/auth_service.dart';
 import '../theme/church_colors.dart';
+import '../widgets/auth_ui.dart';
 import '../main.dart' show navigatorKey;
 
+/// The app's front door. A Roasted Cocoa surface that flows straight out of the
+/// splash — cream welcome copy and three sign-in choices.
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -48,200 +53,102 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _handleApple() =>
       _signIn('apple', () => AuthService().signInWithApple());
 
-  void _handleEmail(BuildContext context) {
+  void _handleEmail() {
     if (_busy != null) return;
     Navigator.pushNamed(context, '/email-login');
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF000000), Color(0xFFD27E09)],
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Positioned(
-            //   left: 0,
-            //   bottom: 0,
-            //   child: SvgPicture.asset(
-            //     'assets/icons/background.svg',
-            //     width: 180,
-            //     fit: BoxFit.contain,
-            //   ),
-            // ),
-            // Positioned(
-            //   right: 0,
-            //   bottom: 0,
-            //   child: Transform(
-            //     alignment: Alignment.center,
-            //     transform: Matrix4.identity()..scale(-1.0, 1.0, 1.0),
-            //     child: SvgPicture.asset(
-            //       'assets/icons/background.svg',
-            //       width: 180,
-            //       fit: BoxFit.contain,
-            //     ),
-            //   ),
-            // ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+    final cream = ChurchColors.card;
+    final busy = _busy != null;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: ChurchColors.button,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
               children: [
-                const SizedBox(height: 80),
-                // Image.asset(
-                //   'assets/images/logo.png',
-                //   width: 140,
-                //   height: 140,
-                // ),
-                // const SizedBox(height: 24),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      "WELCOME TO REJOICE GREATLY",
-                      maxLines: 1,
-                      softWrap: false,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Secure and seamless check-ins for every service",
+                const Spacer(flex: 2),
+                Text(
+                  'Welcome to\nRejoice Greatly',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const Expanded(child: SizedBox()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _googleButton(context),
-                      const SizedBox(height: 10),
-                      _appleButton(context),
-                      const SizedBox(height: 10),
-                      _emailButton(context),
-                    ],
+                    color: cream,
+                    fontSize: 32,
+                    height: 1.15,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Automatic attendance powered by\nsecure facial recognition",
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                const SizedBox(height: 14),
+                Text(
+                  'Secure, seamless check-ins for every service.',
                   textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: cream.withValues(alpha: 0.85),
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
                 ),
-                const SizedBox(height: 15),
+                const Spacer(flex: 3),
+                ChurchSocialButton(
+                  label: 'Continue with Google',
+                  icon: FontAwesomeIcons.google,
+                  loading: _busy == 'google',
+                  enabled: !busy,
+                  onPressed: _handleGoogle,
+                ),
+                const SizedBox(height: 12),
+                ChurchSocialButton(
+                  label: 'Continue with Apple',
+                  icon: FontAwesomeIcons.apple,
+                  loading: _busy == 'apple',
+                  enabled: !busy,
+                  onPressed: _handleApple,
+                ),
+                const SizedBox(height: 12),
+                ChurchSocialButton.ghost(
+                  label: 'Continue with Email',
+                  icon: Icons.email_outlined,
+                  enabled: !busy,
+                  onPressed: _handleEmail,
+                ),
+                const SizedBox(height: 28),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 15,
+                      color: cream.withValues(alpha: 0.75),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Automatic attendance, powered by secure facial recognition.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: cream.withValues(alpha: 0.8),
+                          fontSize: 12.5,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _googleButton(BuildContext context) {
-    return _socialButton(
-      text: "Sign in with Google",
-      icon: FontAwesomeIcons.google,
-      isFa: true,
-      bg: ChurchColors.card,
-      fg: ChurchColors.bodyText,
-      loading: _busy == 'google',
-      onPressed: _handleGoogle,
-    );
-  }
-
-  Widget _appleButton(BuildContext context) {
-    return _socialButton(
-      text: "Sign in with Apple",
-      icon: FontAwesomeIcons.apple,
-      isFa: true,
-      bg: ChurchColors.card,
-      fg: ChurchColors.bodyText,
-      loading: _busy == 'apple',
-      onPressed: _handleApple,
-    );
-  }
-
-  Widget _emailButton(BuildContext context) {
-    return _socialButton(
-      text: "Sign in with Email",
-      icon: Icons.email_outlined,
-      isFa: false,
-      bg: ChurchColors.button,
-      fg: ChurchColors.buttonText,
-      loading: false,
-      onPressed: () => _handleEmail(context),
-    );
-  }
-
-  Widget _socialButton({
-    required String text,
-    required dynamic icon,
-    required bool isFa,
-    required Color bg,
-    required Color fg,
-    required bool loading,
-    required VoidCallback onPressed,
-  }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _busy != null ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          disabledBackgroundColor: bg,
-          disabledForegroundColor: fg.withValues(alpha: 0.6),
-          side: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.6)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          elevation: 2,
         ),
-        child: loading
-            ? SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2, color: fg),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  isFa
-                      ? FaIcon(icon, size: 24, color: fg)
-                      : Icon(icon, size: 24, color: fg),
-                  const SizedBox(width: 8),
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: fg,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
       ),
     );
   }

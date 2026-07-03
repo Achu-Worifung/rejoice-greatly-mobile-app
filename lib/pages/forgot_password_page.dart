@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
+import '../widgets/auth_ui.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -102,23 +103,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_error != null) ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF1EE),
-              border: Border.all(color: const Color(0xFFE1B0A9)),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              _error!,
-              style: const TextStyle(
-                color: Color(0xFF8A2C1F),
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+          AuthErrorCallout(_error!),
           const SizedBox(height: 16),
         ],
         Form(
@@ -127,27 +112,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _send(),
             style: const TextStyle(color: ChurchColors.bodyText),
-            decoration: InputDecoration(
-              labelText: 'Email',
-              labelStyle: const TextStyle(color: ChurchColors.muted),
-              prefixIcon: const Icon(Icons.email_outlined, color: ChurchColors.muted),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: ChurchColors.divider),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: ChurchColors.button),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.redAccent),
-              ),
-              focusedErrorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.redAccent),
-              ),
+            decoration: authInputDecoration(
+              label: 'Email',
+              icon: Icons.email_outlined,
             ),
             validator: (v) {
               if (v == null || v.trim().isEmpty) return 'Please enter your email';
@@ -157,37 +127,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _sending ? null : _send,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ChurchColors.button,
-              disabledBackgroundColor: ChurchColors.button,
-              foregroundColor: ChurchColors.buttonText,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _sending
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: ChurchColors.buttonText,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text(
-                    'Send reset link',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-          ),
+        ChurchPrimaryButton(
+          label: 'Send reset link',
+          loading: _sending,
+          onPressed: _send,
         ),
         const SizedBox(height: 20),
         Center(
@@ -257,24 +200,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
           ),
           const SizedBox(height: 28),
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _goBack,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChurchColors.button,
-                foregroundColor: ChurchColors.buttonText,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Back to sign in',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-            ),
+          ChurchPrimaryButton(
+            label: 'Back to sign in',
+            onPressed: _goBack,
           ),
         ],
       ),
