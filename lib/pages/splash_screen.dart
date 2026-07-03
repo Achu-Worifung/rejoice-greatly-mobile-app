@@ -53,8 +53,9 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2200),
     );
 
-    // Light status-bar icons over the brown surface, matching the fullscreen
-    // native splash.
+    // Match the fullscreen native splash: hide the system bars so no status bar
+    // pops in at the handoff. Restored in [_goNext] before entering the app.
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -91,7 +92,12 @@ class _SplashScreenState extends State<SplashScreen>
     if (_navigated || !mounted) return;
     _navigated = true;
 
-    // Hand the light-content style back to the app's light theme.
+    // Bring the system bars back for the app, and hand the light-content style
+    // back to the app's light theme.
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -136,9 +142,10 @@ class _SplashScreenState extends State<SplashScreen>
             final haloOpacity = _seg(0.0, 0.5, Curves.easeOutCubic) * 0.9;
             final haloScale = 0.7 + 0.3 * _seg(0.0, 0.55, Curves.easeOutCubic);
 
-            // Emblem starts near the native splash's size (~1.4× the resting
-            // size) and settles down as the welcome composes around it.
-            final entranceScale = 1.4 - 0.4 * _seg(0.0, 0.62, Curves.easeOutCubic);
+            // The emblem holds at exactly the native splash's size and position
+            // across the handoff — no entrance scale, so there is no size pop.
+            // The reveal is carried by the halo, shimmer, and scripture instead.
+            const entranceScale = 1.0;
             final breathScale = 1.0 + 0.016 * _breath.value;
 
             final scriptureOpacity = _seg(0.55, 0.85, Curves.easeOut);

@@ -10,7 +10,9 @@ import '../theme/church_colors.dart';
 /// flashing into a bare white spinner.
 const Color kSplashBackground = ChurchColors.button; // Roasted Cocoa #633A02
 const Color kSplashCream = ChurchColors.card; //        Candlelight Cream #FFF7EB
-const double kEmblemSize = 140;
+// Matches the native splash's rendered size (splash_logo.png 640px ÷ 4 ≈ 160dp)
+// so the emblem never changes size across the native → Flutter handoff.
+const double kEmblemSize = 160;
 
 /// The square the emblem lives in on both surfaces. Larger than the emblem so
 /// the splash can start the emblem near the native size and settle it inward

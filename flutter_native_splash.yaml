@@ -1,17 +1,22 @@
 flutter_native_splash:
-  color: "#633A02"  # Background color (match this in Flutter later!)
-  image: assets/images/logo.png  # Path to your logo asset
+  # Roasted Cocoa — must match the Flutter splash background (ChurchColors.button).
+  color: "#633A02"
+
+  # A pre-sized 640px source. flutter_native_splash treats the image as the
+  # xxxhdpi (4x) asset, so 640 / 4 renders the emblem at ~160dp — big enough to
+  # match the Flutter splash's resting emblem exactly, for an invisible handoff.
+  # (The full-resolution master lives at assets/images/logo.png for the in-app
+  # emblem and launcher icons; this is the splash-sized derivative.)
+  image: assets/images/splash_logo.png
+
   android: true
   ios: true
-  fullscreen: true  # Hides status bar (Android)
-  image_width: 200
- 
-  # Optional: Add text, dark mode support, or resize the logo
-  # color_dark: "#0D47A1"  # Dark mode background color
-  # image_dark: assets/splash/logo_dark.png  # Dark mode logo
- 
-  # Android 12+ requires separate configuration
+  web: false
+  fullscreen: true # Hides the status bar during the native splash.
+
+  # Android 12+ renders the splash icon in a fixed OS window (~240dp), so the
+  # emblem is a touch smaller there by platform decree; the Flutter splash
+  # smooths that over immediately after handoff.
   android_12:
     color: "#633A02"
-    image: assets/images/logo.png  # Path to your logo asset
-    # icon_background_color: "#FFFFFF"  # Optional: contrast behind icon
+    image: assets/images/splash_logo.png
