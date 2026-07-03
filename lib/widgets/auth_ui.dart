@@ -3,6 +3,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../theme/church_colors.dart';
 
+// ChurchPrimaryButton now lives with the app-wide button vocabulary; re-exported
+// here so the auth screens can keep importing it from auth_ui.
+export 'church_buttons.dart' show ChurchPrimaryButton;
+
 /// Shared building blocks for the auth screens (landing, sign in, sign up,
 /// forgot password). Extracted so the four screens stop drifting: one button
 /// vocabulary, one error style, one input decoration — all aligned to
@@ -89,61 +93,6 @@ class AuthErrorCallout extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// The single "do this" action: cocoa fill, white text, 14px radius, flat.
-/// Pass [loading] to swap the label for a spinner.
-class ChurchPrimaryButton extends StatelessWidget {
-  const ChurchPrimaryButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-    this.loading = false,
-    this.height = 52,
-  });
-
-  final String label;
-  final VoidCallback? onPressed;
-  final bool loading;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: height,
-      child: ElevatedButton(
-        onPressed: loading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ChurchColors.button,
-          foregroundColor: ChurchColors.buttonText,
-          disabledBackgroundColor: ChurchColors.button,
-          disabledForegroundColor: ChurchColors.buttonText,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: loading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: ChurchColors.buttonText,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  color: ChurchColors.buttonText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
       ),
     );
   }

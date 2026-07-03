@@ -8,6 +8,9 @@ import '../services/auth_service.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
+import '../widgets/church_buttons.dart';
+import '../widgets/dashboard_label_title.dart';
+import '../widgets/skeletons.dart';
 
 class MePage extends StatefulWidget {
   const MePage({super.key});
@@ -41,7 +44,53 @@ class _MePageState extends State<MePage> {
   }
 
   static const Color _danger = Color(0xFFC62828);
-  static const Color _dangerDark = Color(0xFF8E0000);
+
+  Widget _meSkeleton() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: ChurchColors.cardDecoration(shadow: const []),
+          child: Row(
+            children: const [
+              Skeleton(width: 72, height: 72, radius: 20),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Skeleton(width: 150, height: 16, radius: 6),
+                    SizedBox(height: 10),
+                    Skeleton(width: 190, height: 12, radius: 6),
+                    SizedBox(height: 8),
+                    Skeleton(width: 110, height: 12, radius: 6),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 28),
+        Row(
+          children: const [
+            Expanded(child: Skeleton(height: 76, radius: 16)),
+            SizedBox(width: 12),
+            Expanded(child: Skeleton(height: 76, radius: 16)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: const [
+            Expanded(child: Skeleton(height: 76, radius: 16)),
+            SizedBox(width: 12),
+            Expanded(child: Skeleton(height: 76, radius: 16)),
+          ],
+        ),
+      ],
+    );
+  }
 
   Future<void> _logout() async {
     final confirm = await showDialog<bool>(
@@ -91,42 +140,14 @@ class _MePageState extends State<MePage> {
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(ctx, true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ChurchColors.button,
-                    foregroundColor: ChurchColors.buttonText,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Yes, log out',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
+              ChurchDangerButton(
+                label: 'Yes, log out',
+                onPressed: () => Navigator.pop(ctx, true),
               ),
               const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ChurchColors.accent,
-                    side: const BorderSide(color: ChurchColors.divider),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Stay signed in',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
+              ChurchSecondaryButton(
+                label: 'Stay signed in',
+                onPressed: () => Navigator.pop(ctx, false),
               ),
             ],
           ),
@@ -161,9 +182,7 @@ class _MePageState extends State<MePage> {
 
   List<_AttendanceActivity> _parseActivities(List<Map<String, dynamic>> raw) {
     final out = <_AttendanceActivity>[];
-    for (final item in raw) {
-      if (item is! Map) continue;
-      final m = Map<String, dynamic>.from(item);
+    for (final m in raw) {
       final dateStr = m['date']?.toString() ?? '';
       if (dateStr.isEmpty) continue;
       DateTime? dt = DateTime.tryParse(dateStr);
@@ -195,9 +214,7 @@ class _MePageState extends State<MePage> {
         future: _pageFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: ChurchColors.button),
-            );
+            return _meSkeleton();
           }
           final result = snapshot.data;
           final profile = result?.profile;
@@ -230,28 +247,21 @@ class _MePageState extends State<MePage> {
                       style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
-                    if (signedIn)
-                      FilledButton(
+                    if (signedIn) ...[
+                      ChurchPrimaryButton(
+                        label: 'Try again',
                         onPressed: () => _reload(forceRefresh: true),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: ChurchColors.button,
-                          foregroundColor: ChurchColors.buttonText,
-                        ),
-                        child: const Text('Try again'),
                       ),
-                    if (signedIn) const SizedBox(height: 10),
-                    FilledButton(
-                      onPressed: _onBack,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: signedIn
-                            ? ChurchColors.card
-                            : ChurchColors.button,
-                        foregroundColor: signedIn
-                            ? ChurchColors.bodyText
-                            : ChurchColors.buttonText,
+                      const SizedBox(height: 10),
+                      ChurchSecondaryButton(
+                        label: 'Back to app',
+                        onPressed: _onBack,
                       ),
-                      child: const Text('Back to app'),
-                    ),
+                    ] else
+                      ChurchPrimaryButton(
+                        label: 'Back to app',
+                        onPressed: _onBack,
+                      ),
                   ],
                 ),
               ),
@@ -324,13 +334,10 @@ class _MePageState extends State<MePage> {
                           style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
                         ),
                         const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: () => Navigator.pushNamed(context, '/complete-signup'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: ChurchColors.button,
-                            foregroundColor: ChurchColors.buttonText,
-                          ),
-                          child: const Text('Finish signup'),
+                        ChurchPrimaryButton(
+                          label: 'Finish signup',
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/complete-signup'),
                         ),
                       ],
                     ),
@@ -353,16 +360,7 @@ class _MePageState extends State<MePage> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  Text(
-                    'ATTENDANCE',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: ChurchColors.accent,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const DashboardLabelText(label: 'Attendance'),
                   if (stats != null)
                     _StatGrid(
                       currentStreak: _i(stats['currentStreak']),
@@ -389,16 +387,7 @@ class _MePageState extends State<MePage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Text(
-                    'ACTIVITY',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: ChurchColors.accent,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const DashboardLabelText(label: 'Activity'),
                   _AttendanceActivityList(
                     activities: _parseActivities(result?.activities ?? []),
                   ),
@@ -406,64 +395,11 @@ class _MePageState extends State<MePage> {
                 const SizedBox(height: 36),
                 const Divider(color: ChurchColors.divider, height: 1),
                 const SizedBox(height: 20),
-                Text(
-                  'SESSION',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: _danger.withValues(alpha: 0.85),
-                    letterSpacing: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _logout,
-                    borderRadius: BorderRadius.circular(14),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [_danger, _dangerDark],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _danger.withValues(alpha: 0.35),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Container(
-                        width: double.infinity,
-                        height: 56,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.power_settings_new_rounded,
-                              color: Colors.white.withValues(alpha: 0.95),
-                              size: 22,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Log out of account',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.98),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.3,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                const DashboardLabelText(label: 'Session', color: _danger),
+                ChurchDangerButton(
+                  label: 'Log out of account',
+                  icon: Icons.power_settings_new_rounded,
+                  onPressed: _logout,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -749,18 +685,15 @@ class _StatTile extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.fullWidth = false,
   });
 
   final String label;
   final String value;
   final IconData icon;
-  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(16),
       decoration: ChurchColors.cardDecoration(
         shadow: const [],
@@ -781,20 +714,14 @@ class _StatTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text.rich(
-                  TextSpan(
-                    text: label.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      color: ChurchColors.muted,
-                    ),
-                  ),
+                Text(
+                  label,
                   style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                     color: ChurchColors.muted,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.2,
+                    height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

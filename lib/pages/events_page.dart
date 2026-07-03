@@ -6,6 +6,8 @@ import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_tab_page_header.dart';
+import '../widgets/church_buttons.dart';
+import '../widgets/skeletons.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -108,7 +110,7 @@ class _EventsPageState extends State<EventsPage> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: ChurchColors.button));
+      return const SkeletonList(count: 6, thumbSize: 86, padding: EdgeInsets.fromLTRB(16, 16, 16, 32));
     }
     if (_error != null) {
       return Center(
@@ -133,13 +135,12 @@ class _EventsPageState extends State<EventsPage> {
                 style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _load,
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChurchColors.button,
-                  foregroundColor: ChurchColors.buttonText,
+              SizedBox(
+                width: 160,
+                child: ChurchPrimaryButton(
+                  label: 'Try again',
+                  onPressed: _load,
                 ),
-                child: const Text('Retry'),
               ),
             ],
           ),
@@ -201,56 +202,17 @@ class _EventsPageState extends State<EventsPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Gradient Title with Accents
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon(Icons.auto_awesome_rounded, size: 16, color: ChurchColors.accent.withValues(alpha: 0.6)),
-              // const SizedBox(width: 10),
-              Flexible(
-                child: ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: (bounds) => LinearGradient(
-                    colors: [ChurchColors.accent, ChurchColors.button, ChurchColors.accent],
-                    stops: const [0.0, 0.5, 1.0],
-                  ).createShader(bounds),
-                  child: const Text.rich(
-                    TextSpan(
-                      text: 'UPCOMING EVENTS',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 19,
-                        letterSpacing: 1.6,
-                        height: 1.1,
-                        color: Colors.white, // Required for ShaderMask gradient
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // const SizedBox(width: 10),
-              // Icon(Icons.auto_awesome_rounded, size: 16, color: ChurchColors.accent.withValues(alpha: 0.6)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Soft Gradient Divider
-          Container(
-            height: 2,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(1),
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  ChurchColors.accent.withValues(alpha: 0.5),
-                  ChurchColors.button,
-                  ChurchColors.accent.withValues(alpha: 0.5),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
-              ),
+          const Text(
+            'Upcoming events',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: ChurchColors.bodyText,
+              letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           // Elevated Search Field
           Container(
             decoration: BoxDecoration(
@@ -351,7 +313,7 @@ class _EventsPageState extends State<EventsPage> {
 
   Widget _buildDateSection(String date, List<Map<String, dynamic>> events) {
     final dt = DateTime.parse(date);
-    final header = DateFormat('EEEE, MMM d, y').format(dt).toUpperCase();
+    final header = DateFormat('EEEE, MMM d').format(dt);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,9 +324,9 @@ class _EventsPageState extends State<EventsPage> {
             header,
             style: const TextStyle(
               color: ChurchColors.accent,
-              fontWeight: FontWeight.w800,
-              fontSize: 11,
-              letterSpacing: 0.6,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+              letterSpacing: 0.2,
             ),
           ),
         ),
@@ -470,12 +432,12 @@ class _EventsPageState extends State<EventsPage> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              (event['category'] as String? ?? 'General').toUpperCase(),
+                              event['category'] as String? ?? 'General',
                               style: const TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
                                 color: ChurchColors.accent,
-                                letterSpacing: 0.4,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ),

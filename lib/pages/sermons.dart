@@ -10,6 +10,8 @@ import '../services/church_audio_player.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_tab_page_header.dart';
+import '../widgets/church_buttons.dart';
+import '../widgets/skeletons.dart';
 import '../widgets/sermon_play_icon.dart';
 
 class SermonsPage extends StatefulWidget {
@@ -153,16 +155,16 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
           unselectedLabelColor: ChurchColors.muted,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w800,
-            fontSize: 12,
-            letterSpacing: 0.6,
+            fontSize: 14,
+            letterSpacing: 0.2,
           ),
           unselectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 14,
           ),
           tabs: const [
-            Tab(text: 'ALL'),
-            Tab(text: 'SAVED'),
+            Tab(text: 'All'),
+            Tab(text: 'Saved'),
           ],
         ),
       ),
@@ -187,68 +189,17 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Gradient Title with Sparkle Accents
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon(
-              //   Icons.auto_awesome_rounded,
-              //   size: 16,
-              //   color: ChurchColors.accent.withValues(alpha: 0.6),
-              // ),
-              // const SizedBox(width: 10),
-              Flexible(
-                child: ShaderMask(
-                  blendMode: BlendMode.srcIn,
-                  shaderCallback: (bounds) => LinearGradient(
-                    colors: [
-                      ChurchColors.accent,
-                      ChurchColors.button,
-                      ChurchColors.accent,
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                  ).createShader(bounds),
-                  child: const Text.rich(
-                    TextSpan(
-                      text: 'SERMONS',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 19,
-                        letterSpacing: 1.6,
-                        height: 1.1,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              // const SizedBox(width: 10),
-              // Icon(
-              //   Icons.auto_awesome_rounded,
-              //   size: 16,
-              //   color: ChurchColors.accent.withValues(alpha: 0.6),
-              // ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          // Soft Gradient Divider
-          Container(
-            height: 2,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(1),
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  ChurchColors.accent.withValues(alpha: 0.5),
-                  ChurchColors.button,
-                  ChurchColors.accent.withValues(alpha: 0.5),
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
-              ),
+          const Text(
+            'Sermons',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: ChurchColors.bodyText,
+              letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           // Elevated Search Field
           Container(
             decoration: BoxDecoration(
@@ -311,7 +262,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
 
   Widget _buildSermonList({required bool onlySaved}) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: ChurchColors.button));
+      return const SkeletonList(count: 6, thumbSize: 76);
     }
     if (_error != null) {
       return Center(
@@ -337,13 +288,12 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
                 style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
               const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _fetchSermons,
-                style: FilledButton.styleFrom(
-                  backgroundColor: ChurchColors.button,
-                  foregroundColor: ChurchColors.buttonText,
+              SizedBox(
+                width: 160,
+                child: ChurchPrimaryButton(
+                  label: 'Try again',
+                  onPressed: _fetchSermons,
                 ),
-                child: const Text('Retry'),
               ),
             ],
           ),

@@ -1,5 +1,4 @@
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -15,6 +14,8 @@ import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import 'church_app_bar.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/church_buttons.dart';
+import '../widgets/skeletons.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -259,12 +260,12 @@ class _DashboardPageState extends State<DashboardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 16),
-                  const DashboardLabelText(label: 'VERSE OF THE WEEK'),
+                  const DashboardLabelText(label: 'Verse of the week'),
                   FutureBuilder<Map<String, dynamic>>(
                     future: _verseFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const LoadingPlaceholder();
+                        return _verseSkeleton();
                       }
                       if (snapshot.hasError) {
                         return _ErrorCard(
@@ -291,12 +292,12 @@ class _DashboardPageState extends State<DashboardPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  const DashboardLabelText(label: 'LATEST SERMON'),
+                  const DashboardLabelText(label: 'Latest sermon'),
                   FutureBuilder<List<dynamic>>(
                     future: _sermonFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const LoadingPlaceholder();
+                        return const SkeletonRowCard(thumbSize: 72);
                       }
                       if (snapshot.hasError ||
                           snapshot.data == null ||
@@ -317,8 +318,8 @@ class _DashboardPageState extends State<DashboardPage> {
                     },
                   ),
                   const SizedBox(height: 12),
-                  _buildDashboardCtaButton(
-                    label: 'VIEW MORE',
+                  ChurchSecondaryButton(
+                    label: 'View all sermons',
                     onPressed: widget.onViewAllSermons,
                   ),
                   const SizedBox(height: 32),
@@ -326,16 +327,13 @@ class _DashboardPageState extends State<DashboardPage> {
                     future: _eventsFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Column(
+                        return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            DashboardLabelText(label: 'UPCOMING EVENTS'),
-                            Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Center(
-                                child: CircularProgressIndicator(color: ChurchColors.button),
-                              ),
-                            ),
+                          children: const [
+                            DashboardLabelText(label: 'Upcoming events'),
+                            SkeletonRowCard(thumbSize: 86),
+                            SizedBox(height: 12),
+                            SkeletonRowCard(thumbSize: 86),
                           ],
                         );
                       }
@@ -366,8 +364,8 @@ class _DashboardPageState extends State<DashboardPage> {
                           UpcomingEventsSection(events: data.items),
                           if (widget.onViewAllEvents != null) ...[
                             const SizedBox(height: 12),
-                            _buildDashboardCtaButton(
-                              label: 'VIEW ALL EVENTS',
+                            ChurchSecondaryButton(
+                              label: 'View all events',
                               onPressed: widget.onViewAllEvents,
                             ),
                           ],
@@ -396,34 +394,22 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Widget _buildDashboardCtaButton({
-    required String label,
-    VoidCallback? onPressed,
-  }) {
-    return SizedBox(
-      height: 44,
+  Widget _verseSkeleton() {
+    return Container(
       width: double.infinity,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ChurchColors.button,
-          foregroundColor: ChurchColors.buttonText,
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          minimumSize: const Size(double.infinity, 44),
-          fixedSize: const Size(double.infinity, 44),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: onPressed,
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
+      padding: const EdgeInsets.all(22),
+      decoration: ChurchColors.cardDecoration(shadow: const []),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Skeleton(height: 14, radius: 6),
+          SizedBox(height: 10),
+          Skeleton(height: 14, radius: 6),
+          SizedBox(height: 10),
+          Skeleton(width: 180, height: 14, radius: 6),
+          SizedBox(height: 18),
+          Skeleton(width: 120, height: 12, radius: 6),
+        ],
       ),
     );
   }
@@ -478,20 +464,6 @@ class VerseOfTheWeekCard extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class LoadingPlaceholder extends StatelessWidget {
-  const LoadingPlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(20),
-        child: CircularProgressIndicator(color: ChurchColors.button),
       ),
     );
   }
@@ -559,7 +531,7 @@ class _DashboardEventsError extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const DashboardLabelText(label: 'UPCOMING EVENTS'),
+        const DashboardLabelText(label: 'Upcoming events'),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -616,7 +588,7 @@ class _DashboardEventsEmpty extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const DashboardLabelText(label: 'UPCOMING EVENTS'),
+        const DashboardLabelText(label: 'Upcoming events'),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(18),
@@ -641,31 +613,9 @@ class _DashboardEventsEmpty extends StatelessWidget {
               ),
               if (onViewAll != null) ...[
                 const SizedBox(height: 12),
-                SizedBox(
-                  height: 44,
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: onViewAll,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ChurchColors.button,
-                      foregroundColor: ChurchColors.buttonText,
-                      elevation: 0,
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(double.infinity, 44),
-                      fixedSize: const Size(double.infinity, 44),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'VIEW ALL EVENTS',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
+                ChurchSecondaryButton(
+                  label: 'View all events',
+                  onPressed: onViewAll,
                 ),
               ],
             ],
