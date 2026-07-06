@@ -240,8 +240,7 @@ class ChurchApi {
 
     // Reuse the me-page cache when it is still within the weekly TTL.
     final cachedAt = await UserSessionStore.readMePageCachedAt();
-    if (cachedAt != null &&
-        DateTime.now().difference(cachedAt) < _mePageCacheDuration) {
+    if (cachedAt != null && _memberCacheIsFresh(cachedAt)) {
       final cached = await getCachedAccountJson();
       if (cached != null) {
         return ProfileLoadResult(
@@ -275,8 +274,7 @@ class ChurchApi {
   static Future<MemberStatsResult> loadMemberStats() async {
     // Reuse the me-page cache when it is still within the weekly TTL.
     final cachedAt = await UserSessionStore.readMePageCachedAt();
-    if (cachedAt != null &&
-        DateTime.now().difference(cachedAt) < _mePageCacheDuration) {
+    if (cachedAt != null && _memberCacheIsFresh(cachedAt)) {
       final cached = await getCachedAccountJson();
       if (cached != null && cached.containsKey('currentStreak')) {
         return MemberStatsResult(
@@ -305,6 +303,17 @@ class ChurchApi {
 
   static const Duration _mePageCacheDuration = Duration(days: 7);
 
+  /// Whether locally cached member data (profile, stats, streak) is still fresh
+  /// enough to serve without a network call.
+  ///
+  /// Sundays always miss: attendance is taken on the service day, so the Me page
+  /// and the streak/attendance display must reflect today's check-in rather than
+  /// a stale weekly snapshot. Every other day the weekly TTL applies.
+  static bool _memberCacheIsFresh(DateTime cachedAt) {
+    if (DateTime.now().weekday == DateTime.sunday) return false;
+    return DateTime.now().difference(cachedAt) < _mePageCacheDuration;
+  }
+
   static List<Map<String, dynamic>> _activitiesFromAccount(
     Map<String, dynamic> account,
   ) {
@@ -319,7 +328,8 @@ class ChurchApi {
   /// Loads the Me page data.
   ///
   /// Returns cached data immediately when the last server sync is less than
-  /// [_mePageCacheDuration] old, skipping all network calls.
+  /// [_mePageCacheDuration] old, skipping all network calls. Sundays always
+  /// refresh from the server (see [_memberCacheIsFresh]).
   /// Pass [forceRefresh] to bypass the cache (e.g. pull-to-refresh).
   static Future<MePageLoadResult> loadMePage({bool forceRefresh = false}) async {
     final user = await waitForSignedInUser();
@@ -329,8 +339,7 @@ class ChurchApi {
 
     if (!forceRefresh) {
       final cachedAt = await UserSessionStore.readMePageCachedAt();
-      if (cachedAt != null &&
-          DateTime.now().difference(cachedAt) < _mePageCacheDuration) {
+      if (cachedAt != null && _memberCacheIsFresh(cachedAt)) {
         final cached = await getCachedAccountJson();
         if (cached != null) {
           final hasProfile = hasMemberProfile(cached);

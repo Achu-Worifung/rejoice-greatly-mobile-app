@@ -272,6 +272,9 @@ class AuthService {
   Future<void> logout() async {
     await NotificationService().logout();
     await UserSessionStore.clear();
+    // Home data (verse, sermons, events) is a global in-memory cache, not tied
+    // to the session store — drop it so the next account never sees stale data.
+    ChurchApi.invalidateHomeCache();
     if (!kIsWeb) {
       await _googleSignIn.signOut();
     }
