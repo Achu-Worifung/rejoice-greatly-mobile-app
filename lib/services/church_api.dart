@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../notifications/notification_service.dart';
 import 'user_session_store.dart';
 
 /// Result of restoring session on cold start.
@@ -139,6 +140,15 @@ class ChurchApi {
       final provider = prefs.getString(UserSessionStore.authProviderKey) ??
           inferAuthProvider(user);
       await persistAccountFromServer(auth, provider: provider);
+
+      final firebaseUid = auth['firebaseUid'] ?? '';
+      if ('$firebaseUid'.isNotEmpty) {
+        // Fire-and-forget: re-links this device's push subscription to the
+        // user on every silent session restore (e.g. after a reinstall),
+        // not just interactive sign-in.
+        NotificationService().login('$firebaseUid', email: user.email);
+      }
+
       return SessionRestoreResult(
         loggedIn: true,
         signupComplete: isSignupComplete(auth),
