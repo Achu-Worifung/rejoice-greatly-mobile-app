@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../notifications/notification_service.dart';
 import 'api_envelope.dart';
 import 'user_facing_error.dart';
 import 'user_session_store.dart';
@@ -255,6 +256,14 @@ class ChurchApi {
           prefs.getString(UserSessionStore.authProviderKey) ??
           inferAuthProvider(user);
       await persistAccountFromServer(auth, provider: provider);
+
+      final firebaseUid = auth['firebaseUid'] ?? '';
+      if ('$firebaseUid'.isNotEmpty) {
+        // Fire-and-forget: re-links this device's push subscription to the
+        // user on every silent session restore (e.g. after a reinstall),
+        // not just interactive sign-in.
+        NotificationService().login('$firebaseUid', email: user.email);
+      }
 
       // A member who finished onboarding without a facial scan (age-gated
       // minor, or an explicit "no thanks") is only marked complete on-device —
