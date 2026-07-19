@@ -229,13 +229,13 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
-        // leading: IconButton(
-        //   onPressed: () {
-        //     Navigator.pushNamed(context, '/profile');
-        //   },
-        //   padding: const EdgeInsets.only(left: 8),
-        //   icon: _buildAvatar(),
-        // ),
+        leading: IconButton(
+          onPressed: () {
+            Navigator.pushNamed(context, '/profile');
+          },
+          padding: const EdgeInsets.only(left: 8),
+          icon: _buildAvatar(),
+        ),
         actions: [
           IconButton(
             icon: SvgPicture.asset(
