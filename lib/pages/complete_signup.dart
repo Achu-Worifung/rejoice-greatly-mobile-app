@@ -9,9 +9,12 @@ import 'package:flutter/foundation.dart';
 
 import '../util/video_handler_web.dart'
     if (dart.library.io) '../util/video_handler_mobile.dart';
+import '../util/camera_frame.dart';
 import '../theme/church_colors.dart';
 import '../services/auth_service.dart';
 import '../main.dart' show navigatorKey;
+
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 class CompleteSignup extends StatefulWidget {
   const CompleteSignup({super.key});
@@ -30,12 +33,81 @@ class _CompleteSignupState extends State<CompleteSignup> {
   bool _canuseImg = true;
   Key _cameraViewKey = UniqueKey();
 
+  // create a FaceDetector instance with desired options
+  final FaceDetector _faceDetector = FaceDetector(
+    options: FaceDetectorOptions(
+      enableContours: true,
+      enableClassification: true,
+      enableLandmarks: true,
+      enableTracking: true,
+    ),
+  );
+
+  /// Head angles the user has covered so far, so we can confirm they actually
+  /// rotated rather than holding still.
+  bool _seenLeft = false;
+  bool _seenRight = false;
+  bool _seenUp = false;
+  bool _seenDown = false;
+  bool _seenCentre = false;
+
+  /// Degrees away from centre that counts as a deliberate turn.
+  static const double _turnThreshold = 20;
+
+  /// Lower than [_turnThreshold]: ML Kit under-reports downward pitch and
+  /// loses the face as the chin occludes the eyes.
+  static const double _pitchDownThreshold = 12;
+
+  /// TEMPORARY — throttles diagnostic logging.
+  int _frameCount = 0;
+
+  /// Guards against re-entering detection while a frame is still processing.
+  bool _isDetecting = false;
+
+  int get _coverageCount => [
+        _seenCentre,
+        _seenLeft,
+        _seenRight,
+        _seenUp,
+        _seenDown,
+      ].where((seen) => seen).length;
+
+  bool get _hasFullCoverage => _coverageCount == 5;
+
+  String get _headingText {
+    if (!_handler.supportsFrameStream) return "Center your face";
+    if (_hasFullCoverage) return "That's everything — thank you";
+    return "Turn your head slowly";
+  }
+
+  /// Asks for one direction at a time so the step never feels like a checklist.
+  String get _guidanceText {
+    if (!_handler.supportsFrameStream) {
+      return "Position your face inside the frame and\nlook directly at the camera";
+    }
+    if (_hasFullCoverage) return "You can take your photo whenever you're ready";
+    if (!_seenCentre) return "Settle your face inside the frame and\nlook straight at the camera";
+    if (!_seenLeft) return "Now turn your head slowly to the left";
+    if (!_seenRight) return "And now slowly to the right";
+    if (!_seenUp) return "Lovely — now tilt your chin up a little";
+    return "Last one — tilt your chin down a little";
+  }
+
+  void _resetCoverage() {
+    _seenCentre = false;
+    _seenLeft = false;
+    _seenRight = false;
+    _seenUp = false;
+    _seenDown = false;
+  }
+
   @override
   void initState() {
     super.initState();
     _handler = VideoHandler();
-    _initializeCamera();
     _ensurePostgresAccount();
+    // Detection can only start once the camera reports ready.
+    _initializeCamera().then((_) => _startFaceDetection());
   }
 
   /// Parent-app users may exist in Firebase only; upsert before photo upload.
@@ -56,6 +128,95 @@ class _CompleteSignupState extends State<CompleteSignup> {
         _error =
             'Could not register your account on the server. Check your connection and tap Retry.';
       });
+    }
+  }
+  Future<void> _startFaceDetection() async {
+    // TEMPORARY diagnostics — remove with lib/dev_flags.dart.
+    debugPrint('FACE: cameraReady=$_isCameraReady '
+        'supportsFrameStream=${_handler.supportsFrameStream}');
+
+    if (!_isCameraReady || !_handler.supportsFrameStream) return;
+
+    try {
+      await _handler.startFrameStream(_onCameraFrame);
+      debugPrint('FACE: frame stream started');
+    } catch (e) {
+      // Detection is a guidance aid; capture must still work without it.
+      debugPrint('Could not start face detection: $e');
+    }
+  }
+
+  Future<void> _onCameraFrame(CameraFrame frame) async {
+    if (_isDetecting || !mounted) return;
+    _isDetecting = true;
+
+    try {
+      final format = InputImageFormatValue.fromRawValue(frame.formatRaw);
+      final rotation =
+          InputImageRotationValue.fromRawValue(frame.rotationDegrees);
+      if (format == null || rotation == null) return;
+
+      final inputImage = InputImage.fromBytes(
+        bytes: frame.bytes,
+        metadata: InputImageMetadata(
+          size: Size(frame.width.toDouble(), frame.height.toDouble()),
+          rotation: rotation,
+          format: format,
+          bytesPerRow: frame.bytesPerRow,
+        ),
+      );
+
+      final faces = await _faceDetector.processImage(inputImage);
+      if (!mounted) return;
+      _recordHeadAngles(faces);
+    } catch (e) {
+      debugPrint('Face detection failed: $e');
+    } finally {
+      _isDetecting = false;
+    }
+  }
+
+  /// Marks which directions the user has turned toward. Only a single face is
+  /// tracked — more than one in frame is ambiguous, so we ignore the frame.
+  void _recordHeadAngles(List<Face> faces) {
+    // TEMPORARY diagnostics — every ~10th frame, so the log stays readable.
+    _frameCount++;
+    final shouldLog = _frameCount % 10 == 0;
+
+    if (faces.length != 1) {
+      // Losing the face entirely is the usual failure when the chin drops.
+      if (shouldLog) debugPrint('FACE: ${faces.length} faces in frame');
+      return;
+    }
+
+    final face = faces.first;
+    final yaw = face.headEulerAngleY; // negative = user's right
+    final pitch = face.headEulerAngleX; // positive = chin up
+    if (yaw == null || pitch == null) {
+      if (shouldLog) debugPrint('FACE: null angles (yaw=$yaw pitch=$pitch)');
+      return;
+    }
+
+    if (shouldLog) {
+      debugPrint('FACE: yaw=${yaw.toStringAsFixed(1)} '
+          'pitch=${pitch.toStringAsFixed(1)} coverage=$_coverageCount/5');
+    }
+
+    final before = _coverageCount;
+
+    if (yaw.abs() < 10 && pitch.abs() < 10) _seenCentre = true;
+    if (yaw > _turnThreshold) _seenLeft = true;
+    if (yaw < -_turnThreshold) _seenRight = true;
+    if (pitch > _turnThreshold) _seenUp = true;
+    // Asymmetric on purpose: a dropped chin occludes the eyes, so ML Kit both
+    // under-reports negative pitch and loses the face sooner than it does
+    // looking up. A symmetric gate is effectively unreachable here.
+    if (pitch < -_pitchDownThreshold) _seenDown = true;
+
+    if (_coverageCount != before) {
+      debugPrint('FACE: covered $_coverageCount/5 '
+          '(yaw=${yaw.toStringAsFixed(1)} pitch=${pitch.toStringAsFixed(1)})');
+      setState(() {});
     }
   }
 
@@ -80,6 +241,8 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
   Future<void> _capturePhoto() async {
     try {
+      // takePicture() and an active image stream contend for the camera.
+      await _handler.stopFrameStream();
       final bytes = await _handler.capturePhoto();
       if (bytes != null && mounted) {
         setState(() {
@@ -111,12 +274,14 @@ class _CompleteSignupState extends State<CompleteSignup> {
       _error = null;
       _isCameraReady = false;
       _cameraViewKey = UniqueKey();
+      _resetCoverage();
     });
 
     try {
       await _handler.restartPreview();
       if (!mounted) return;
       setState(() => _isCameraReady = _handler.isCameraReady);
+      await _startFaceDetection();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -130,11 +295,14 @@ class _CompleteSignupState extends State<CompleteSignup> {
     setState(() {
       _isCameraReady = false;
       _cameraViewKey = UniqueKey();
+      _resetCoverage();
     });
     try {
+      await _handler.stopFrameStream();
       await _handler.flipCamera();
       if (mounted) {
         setState(() => _isCameraReady = _handler.isCameraReady);
+        await _startFaceDetection();
       }
     } catch (e) {
       if (mounted) {
@@ -239,7 +407,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
   @override
   void dispose() {
+    _handler.stopFrameStream();
     _handler.dispose();
+    _faceDetector.close();
     super.dispose();
   }
 
@@ -362,9 +532,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
                   _errorBanner(),
                 ],
                 const Spacer(),
-                const Text(
-                  "Center your face",
-                  style: TextStyle(
+                Text(
+                  _headingText,
+                  style: const TextStyle(
                     color: ChurchColors.buttonText,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -372,7 +542,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  "Position your face inside the frame and\nlook directly at the camera",
+                  _guidanceText,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: ChurchColors.buttonText.withValues(alpha: 0.75),
@@ -477,23 +647,29 @@ class _CompleteSignupState extends State<CompleteSignup> {
   }
 
   Widget _shutterButton() {
+    // Where live detection is unavailable (web), never block the capture.
+    final ready = !_handler.supportsFrameStream || _hasFullCoverage;
     return GestureDetector(
-      onTap: _capturePhoto,
-      child: Container(
-        width: 80,
-        height: 80,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
-          color: Colors.white.withValues(alpha: 0.2),
-        ),
-        child: Center(
-          child: Container(
-            width: 62,
-            height: 62,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
+      onTap: ready ? _capturePhoto : null,
+      child: AnimatedOpacity(
+        opacity: ready ? 1 : 0.4,
+        duration: const Duration(milliseconds: 250),
+        child: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 4),
+            color: Colors.white.withValues(alpha: 0.2),
+          ),
+          child: Center(
+            child: Container(
+              width: 62,
+              height: 62,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
             ),
           ),
         ),

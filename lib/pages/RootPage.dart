@@ -5,6 +5,8 @@ import 'package:church_app/pages/user_prep.dart';
 import 'package:church_app/pages/dashboard.dart';
 import 'package:church_app/services/church_api.dart';
 import 'package:church_app/widgets/branded_loader.dart';
+import 'package:church_app/pages/complete_signup.dart';
+import 'package:church_app/dev_flags.dart';
 
 /// App entry: auth check, session restore, then shows login / signup / dashboard.
 class RootPage extends StatefulWidget {
@@ -25,6 +27,13 @@ class _RootPageState extends State<RootPage> {
 
   @override
   Widget build(BuildContext context) {
+    // TEMPORARY: see lib/dev_flags.dart. Bypasses auth entirely for device
+    // testing of the camera step.
+    if (forceCompleteSignup) {
+      debugPrint('DEV: forceCompleteSignup is ON — bypassing auth/onboarding.');
+      return const CompleteSignup();
+    }
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, authSnapshot) {

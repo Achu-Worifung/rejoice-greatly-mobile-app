@@ -4,6 +4,8 @@ import 'dart:ui_web' as ui;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
+import 'camera_frame.dart';
+
 class VideoHandler {
   late html.VideoElement _videoElement;
   html.MediaStream? _mediaStream;
@@ -142,6 +144,13 @@ class VideoHandler {
   bool get isCameraReady => _isCameraReady;
 
   bool get isFrontCamera => _isFrontCamera;
+
+  /// ML Kit has no web implementation, so live face detection is mobile-only.
+  bool get supportsFrameStream => false;
+
+  Future<void> startFrameStream(void Function(CameraFrame frame) onFrame) async {}
+
+  Future<void> stopFrameStream() async {}
 
   // Returns the camera preview widget for web
   Widget buildCameraView() {
