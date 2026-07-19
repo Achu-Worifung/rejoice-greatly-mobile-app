@@ -191,7 +191,7 @@ class ChurchApi {
 
   /// Auth only — `POST /auth/firebase`.
   static Future<Map<String, dynamic>> syncAuthAccount() async {
-    final tokenBundle = await _requireIdToken();
+    final tokenBundle = await requireIdToken();
     final prefs = await SharedPreferences.getInstance();
     final provider = prefs.getString(UserSessionStore.authProviderKey) ??
         inferAuthProvider(tokenBundle.user);
@@ -459,7 +459,7 @@ class ChurchApi {
     };
     if (name != null) body['name'] = name;
 
-    final map = await _postJson('/auth/firebase', body);
+    final map = await postJson('/auth/firebase', body);
     await _mergeIntoCachedAccount(map);
     return map;
   }
@@ -479,17 +479,17 @@ class ChurchApi {
     String path,
     Map<String, dynamic> extra,
   ) async {
-    final tokenBundle = await _requireIdToken();
+    final tokenBundle = await requireIdToken();
     final body = <String, dynamic>{
       'idToken': tokenBundle.token,
       ...extra,
     };
-    return _postJson('/member/$path', body);
+    return postJson('/member/$path', body);
   }
 
   static const Duration _httpTimeout = Duration(seconds: 30);
 
-  static Future<Map<String, dynamic>> _postJson(
+  static Future<Map<String, dynamic>> postJson(
     String path,
     Map<String, dynamic> body,
   ) async {
@@ -513,7 +513,9 @@ class ChurchApi {
     }
   }
 
-  static Future<({User user, String token})> _requireIdToken() async {
+  /// Public so sibling services (e.g. [ProfilePictureUpload]) can reuse the
+  /// reload-and-retry behaviour rather than reimplementing it.
+  static Future<({User user, String token})> requireIdToken() async {
     final user = await waitForSignedInUser();
     if (user == null) {
       throw StateError('Not signed in to Firebase');
