@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../services/api_envelope.dart';
 import '../services/church_api.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -188,7 +189,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         final body = await response.stream.bytesToString();
         String? imgUrl;
         try {
-          final data = json.decode(body) as Map<String, dynamic>;
+          final data = unwrapApiMap(body);
           imgUrl = data['imgURL'] as String?;
         } catch (e) {
           // Upload succeeded; a malformed body must not fail the signup.
@@ -247,6 +248,8 @@ class _CompleteSignupState extends State<CompleteSignup> {
       return 'Account could not be found. Please check your connection and try again.';
     }
     try {
+      // Deliberately not unwrapped: a failure envelope carries `message` at the
+      // top level and a null `data`, so the keys below already match it.
       final decoded = json.decode(body);
       if (decoded is Map) {
         for (final key in ['msg', 'message', 'error', 'detail']) {

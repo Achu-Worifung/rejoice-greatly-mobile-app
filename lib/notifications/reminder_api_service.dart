@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../dataobject/reminder_items.dart';
+import '../services/api_envelope.dart';
 import '../services/church_api.dart';
 
 class ReminderApiService {
@@ -25,7 +26,7 @@ class ReminderApiService {
       final response = await http.get(uri, headers: _headers).timeout(_timeout);
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
+        final List<dynamic> jsonList = unwrapApiList(response.body);
         return jsonList.map((j) => ReminderItem.fromJson(j)).toList();
       } else {
         throw ApiException('Failed to fetch reminders', response.statusCode);
@@ -43,7 +44,7 @@ class ReminderApiService {
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
-        return ReminderItem.fromJson(json.decode(response.body));
+        return ReminderItem.fromJson(unwrapApiMap(response.body));
       } else {
         throw ApiException('Reminder not found', response.statusCode);
       }
@@ -64,7 +65,7 @@ class ReminderApiService {
           .timeout(_timeout);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return ReminderItem.fromJson(json.decode(response.body));
+        return ReminderItem.fromJson(unwrapApiMap(response.body));
       } else {
         throw ApiException('Failed to create reminder', response.statusCode);
       }
@@ -85,7 +86,7 @@ class ReminderApiService {
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
-        return ReminderItem.fromJson(json.decode(response.body));
+        return ReminderItem.fromJson(unwrapApiMap(response.body));
       } else {
         throw ApiException('Failed to update reminder', response.statusCode);
       }
@@ -118,7 +119,7 @@ class ReminderApiService {
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
-        return ReminderItem.fromJson(json.decode(response.body));
+        return ReminderItem.fromJson(unwrapApiMap(response.body));
       } else {
         throw ApiException('Failed to toggle reminder', response.statusCode);
       }

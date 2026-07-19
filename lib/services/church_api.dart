@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'api_envelope.dart';
 import 'user_session_store.dart';
 
 /// Result of restoring session on cold start.
@@ -506,7 +507,7 @@ class ChurchApi {
       throw Exception('${uri.path} failed: ${r.statusCode} ${r.body}');
     }
     try {
-      return Map<String, dynamic>.from(json.decode(r.body) as Map);
+      return unwrapApiMap(r.body);
     } on FormatException {
       throw Exception('${uri.path} returned an invalid response');
     }
@@ -607,7 +608,7 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw Exception('weekly-verse/current failed: ${r.statusCode}');
     }
-    final data = json.decode(r.body) as Map<String, dynamic>;
+    final data = unwrapApiMap(r.body);
     _verseCache = data;
     _verseCachedAt = DateTime.now();
     return data;
@@ -619,7 +620,7 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw Exception('events/top4 failed: ${r.statusCode}');
     }
-    return json.decode(r.body) as List<dynamic>;
+    return unwrapApiList(r.body);
   }
 
   static Future<List<dynamic>> getDashboardEventInstances() async {
@@ -666,7 +667,7 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw Exception('events/upcoming failed: ${r.statusCode}');
     }
-    final list = json.decode(r.body) as List<dynamic>;
+    final list = unwrapApiList(r.body);
     if (list.isNotEmpty) return list;
     // Fall back to top4 when the upcoming endpoint returns nothing.
     return getTop4Events();
@@ -684,7 +685,7 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw Exception('sermons failed: ${r.statusCode}');
     }
-    final data = json.decode(r.body) as List<dynamic>;
+    final data = unwrapApiList(r.body);
     _sermonsCache = data;
     _sermonsCachedAt = DateTime.now();
     return data;
@@ -696,7 +697,7 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw Exception('sermons/$id failed: ${r.statusCode}');
     }
-    return json.decode(r.body) as Map<String, dynamic>;
+    return unwrapApiMap(r.body);
   }
 
   static List<Map<String, dynamic>> mapEventInstances(List<dynamic> list) {

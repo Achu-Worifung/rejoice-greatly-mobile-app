@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:webview_flutter/webview_flutter.dart';
 
+import 'api_envelope.dart';
 import 'church_api.dart';
 
 /// Passes the native app's Firebase session into the Mood Changing Cafe WebView.
@@ -47,7 +48,7 @@ class CafeSsoService {
     if (r.statusCode != 200) {
       throw Exception('auth/custom-token failed: ${r.statusCode} ${r.body}');
     }
-    final map = json.decode(r.body) as Map<String, dynamic>;
+    final map = unwrapApiMap(r.body);
     return map['customToken'] as String?;
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../dataobject/admin-type.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../services/api_envelope.dart';
 import '../services/church_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -98,7 +99,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
           .timeout(const Duration(seconds: 30));
       if (!mounted) return;
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
+        final Map<String, dynamic> data = unwrapApiMap(response.body);
         setState(() {
           _totalPresent = _parseMembers(data['totalPresent']);
           _totalAbsent = _parseMembers(data['totalAbsent']);

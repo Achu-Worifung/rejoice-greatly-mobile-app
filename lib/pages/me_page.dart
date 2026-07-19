@@ -205,10 +205,10 @@ class _MePageState extends State<MePage> {
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.pageTitle(
         'My profile',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
-          onPressed: _onBack,
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
+        //   onPressed: _onBack,
+        // ),
       ),
       body: FutureBuilder<MePageLoadResult>(
         future: _pageFuture,

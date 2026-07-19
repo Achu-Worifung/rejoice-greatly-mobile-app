@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../dataobject/admin-type.dart';
+import '../services/api_envelope.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,7 +43,7 @@ class _OverviewWidgetState extends State<OverviewWidget> {
         headers: {"Content-Type": "application/json"},
       );
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final Map<String, dynamic> responseData = unwrapApiMap(response.body);
         print('here is all the fetched data from backend: $responseData');
 
         setState(() {
