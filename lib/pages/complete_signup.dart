@@ -55,9 +55,6 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// loses the face as the chin occludes the eyes.
   static const double _pitchDownThreshold = 12;
 
-  /// TEMPORARY — throttles diagnostic logging.
-  int _frameCount = 0;
-
   /// Guards against re-entering detection while a frame is still processing.
   bool _isDetecting = false;
 
@@ -128,15 +125,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
   Future<void> _startFaceDetection() async {
-    // TEMPORARY diagnostics — remove with lib/dev_flags.dart.
-    debugPrint('FACE: cameraReady=$_isCameraReady '
-        'supportsFrameStream=${_handler.supportsFrameStream}');
-
     if (!_isCameraReady || !_handler.supportsFrameStream) return;
 
     try {
       await _handler.startFrameStream(_onCameraFrame);
-      debugPrint('FACE: frame stream started');
     } catch (e) {
       // Detection is a guidance aid; capture must still work without it.
       debugPrint('Could not start face detection: $e');
@@ -176,28 +168,13 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// Marks which directions the user has turned toward. Only a single face is
   /// tracked — more than one in frame is ambiguous, so we ignore the frame.
   void _recordHeadAngles(List<Face> faces) {
-    // TEMPORARY diagnostics — every ~10th frame, so the log stays readable.
-    _frameCount++;
-    final shouldLog = _frameCount % 10 == 0;
-
-    if (faces.length != 1) {
-      // Losing the face entirely is the usual failure when the chin drops.
-      if (shouldLog) debugPrint('FACE: ${faces.length} faces in frame');
-      return;
-    }
+    // Losing the face entirely is the usual failure when the chin drops.
+    if (faces.length != 1) return;
 
     final face = faces.first;
     final yaw = face.headEulerAngleY; // negative = user's right
     final pitch = face.headEulerAngleX; // positive = chin up
-    if (yaw == null || pitch == null) {
-      if (shouldLog) debugPrint('FACE: null angles (yaw=$yaw pitch=$pitch)');
-      return;
-    }
-
-    if (shouldLog) {
-      debugPrint('FACE: yaw=${yaw.toStringAsFixed(1)} '
-          'pitch=${pitch.toStringAsFixed(1)} coverage=$_coverageCount/5');
-    }
+    if (yaw == null || pitch == null) return;
 
     final before = _coverageCount;
 

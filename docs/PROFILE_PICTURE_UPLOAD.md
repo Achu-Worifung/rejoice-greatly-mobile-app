@@ -9,10 +9,10 @@ Client: `lib/services/profile_picture_upload.dart`, called from
 
 ## Why three steps
 
-The old endpoint (`POST /auth/picture-upload`, multipart) let the backend
-validate the face from the request body. With a direct-to-blob upload the
-backend never sees the bytes in flight, so validation moves to a **commit**
-call after the blob lands.
+The retired endpoint (`POST /auth/picture-upload`, multipart — now removed, and
+it returns 404) let the backend validate the face from the request body. With a
+direct-to-blob upload the backend never sees the bytes in flight, so validation
+moves to a **commit** call after the blob lands.
 
 ```
 1. POST /auth/picture-upload/sas      -> SAS URL + fresh AES-256-GCM key
@@ -117,12 +117,16 @@ Backend work, in order:
 Returned as `errorCode` in the standard `ApiResponse` envelope (see
 `lib/services/api_envelope.dart`), **not** as bare HTTP statuses:
 
-| `errorCode`            | Meaning                        | Suggested status |
-|------------------------|--------------------------------|------------------|
-| `FACE_NOT_CLEAR`       | Image too blurry / low quality | 422              |
-| `MULTIPLE_FACES`       | More than one face present     | 422              |
-| `NO_FACE_DETECTED`     | No face found                  | 422              |
-| `UPLOAD_TOKEN_EXPIRED` | Grant spent or past expiry     | 410              |
+| `errorCode`            | Status | Meaning                              |
+|------------------------|--------|--------------------------------------|
+| `FACE_NOT_CLEAR`       | 422    | Undecodable or unreadable image      |
+| `MULTIPLE_FACES`       | 422    | More than one person in frame        |
+| `NO_FACE_DETECTED`     | 422    | No person found                      |
+| `UPLOAD_TOKEN_EXPIRED` | 410    | Grant spent, expired, or blob absent |
+| `UPLOAD_TOO_LARGE`     | 413    | Blob over the server's size cap      |
+| `NOT_UPLOAD_OWNER`     | 403    | Token belongs to another account     |
+| `TOO_MANY_UPLOADS`     | 429    | Past the per-account grant limit     |
+| `DETECTION_FAILED`     | 500    | Detector broke; grant stays reusable |
 
 The previous endpoint overloaded `400` / `401` / `403` for the three face
 cases. That must not carry over: `commit` can genuinely return `401` on an
@@ -139,9 +143,13 @@ bare 401/403 as a session failure.
   obvious abuse path.
 - The staging container should have **no public access** and no anonymous read.
 
-## Follow-up not covered here
+## How the published image stays private
 
-The published `imgURL` is currently a plain URL fetched with no auth. If member
-photos should not be world-readable given the URL, that needs a read-SAS or
-CDN-token scheme — which ripples through every `Image.network` call site listed
-above, so it is deliberately out of scope for this change.
+The container blocks public access, so bare blob URLs are unreadable. The
+database stores the bare URL and every API response signs it with a 7-day
+read-only SAS (`BlobSasService.signUrl`) on the way out — which is why
+`Image.network(imgURL)` works at all. The app refreshes those URLs on each
+sync, so the TTL only has to outlive a cached session.
+
+Nothing extra is needed here: the *published* image is protected by the read
+SAS, and the *staging* blob by client-side encryption.

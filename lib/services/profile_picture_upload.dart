@@ -306,6 +306,13 @@ class ProfilePictureUpload {
           PictureUploadError.network,
           'Your upload link expired. Please try again.',
         );
+      case 'NOT_UPLOAD_OWNER':
+        // Also a 403, but the session is fine — it is the grant that is wrong.
+        // Matched here so it does not fall through to "sign in again".
+        return const PictureUploadException(
+          PictureUploadError.unknown,
+          'That upload could not be verified. Please try again.',
+        );
     }
 
     if (statusCode == 401 || statusCode == 403) {
