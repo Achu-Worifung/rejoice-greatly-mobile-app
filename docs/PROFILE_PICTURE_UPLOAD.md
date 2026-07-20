@@ -7,6 +7,21 @@ never shipped in the app.
 Client: `lib/services/profile_picture_upload.dart`, called from
 `lib/pages/complete_signup.dart`.
 
+## Multi-angle enrolment (multiple mugs per member)
+
+Signup captures **10–15 stills** as the member turns their head (ML Kit guides
+the rotation and a new shot is taken each time the pose changes enough). Each
+still runs the **full three-step flow below independently** — so one signup
+issues 10–15 SAS grants and 10–15 commits. Every committed image becomes its own
+recognition **mug** on the backend (a `face_image` row), giving the kiosk
+several embeddings per person for pose/lighting robustness. The member's display
+`imgURL` is set from the first shot that commits successfully; blurry frames that
+fail face validation are skipped as long as at least one lands.
+
+Because a single signup now issues many grants, the backend's per-account
+`picture.upload.max-grants-per-hour` must clear 15 plus a retry or two (set to
+40).
+
 ## Why three steps
 
 The retired endpoint (`POST /auth/picture-upload`, multipart — now removed, and
