@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../services/church_api.dart';
 import '../services/profile_picture_upload.dart';
@@ -40,58 +42,85 @@ class _CompleteSignupState extends State<CompleteSignup> {
     ),
   );
 
-  /// Head angles the user has covered so far, so we can confirm they actually
-  /// rotated rather than holding still.
+  /// Head angles the user has covered so far, purely to nudge the guidance
+  /// text — capture itself is driven by how much the pose has changed, not by
+  /// these flags.
   bool _seenLeft = false;
   bool _seenRight = false;
-  bool _seenUp = false;
   bool _seenDown = false;
   bool _seenCentre = false;
 
   /// Degrees away from centre that counts as a deliberate turn.
   static const double _turnThreshold = 20;
 
-  /// Lower than [_turnThreshold]: ML Kit under-reports downward pitch and
-  /// loses the face as the chin occludes the eyes.
-  static const double _pitchDownThreshold = 12;
+  /// Well below [_turnThreshold]: ML Kit under-reports downward pitch and loses
+  /// the face as the chin occludes the eyes, so we accept a shallow tilt as
+  /// chin-down and grab the shot immediately (see [_recordHeadAngles]). Chin-*up*
+  /// is unreliable in the other direction, so it is deliberately never requested.
+  static const double _pitchDownThreshold = 8;
 
   /// Guards against re-entering detection while a frame is still processing.
   bool _isDetecting = false;
 
-  int get _coverageCount => [
-        _seenCentre,
-        _seenLeft,
-        _seenRight,
-        _seenUp,
-        _seenDown,
-      ].where((seen) => seen).length;
+  // --- Multi-shot enrolment -------------------------------------------------
 
-  bool get _hasFullCoverage => _coverageCount == 5;
+  /// Several angles of the same face are captured so the recognition backend
+  /// can store multiple "mugs" per member — more embeddings, more robust
+  /// matching. Each shot is uploaded as its own picture.
+  final List<Uint8List> _shots = [];
+
+  /// Pose of the last captured shot, so the next capture only fires once the
+  /// head has moved a meaningful amount — that is what spreads the shots
+  /// across angles instead of grabbing near-identical frames.
+  double? _lastShotYaw;
+  double? _lastShotPitch;
+
+  /// True while a still is being taken (the frame stream is paused for it).
+  bool _isCapturing = false;
+
+  /// True once the member taps Continue and moves to the review/submit screen.
+  bool _reviewing = false;
+
+  /// Progress text shown while the batch uploads.
+  String? _uploadStatus;
+
+  /// Enough distinct shots to enrol; keep capturing up to [_maxShots].
+  static const int _minShots = 10;
+  static const int _maxShots = 15;
+
+  /// Degrees of yaw/pitch change from the last shot before another is taken.
+  static const double _poseDelta = 8;
+
+  bool get _hasEnoughShots => _shots.length >= _minShots;
 
   String get _headingText {
     if (!_handler.supportsFrameStream) return "Center your face";
-    if (_hasFullCoverage) return "That's everything — thank you";
+    if (_hasEnoughShots) return "That's everything — thank you";
     return "Turn your head slowly";
   }
 
-  /// Asks for one direction at a time so the step never feels like a checklist.
+  /// Nudges the member to keep rotating so shots span several angles. Chin-up
+  /// is intentionally never requested — ML Kit reports it unreliably.
   String get _guidanceText {
     if (!_handler.supportsFrameStream) {
       return "Position your face inside the frame and\nlook directly at the camera";
     }
-    if (_hasFullCoverage) return "You can take your photo whenever you're ready";
-    if (!_seenCentre) return "Settle your face inside the frame and\nlook straight at the camera";
+    if (_hasEnoughShots) {
+      return "Great — that's plenty. Tap the button to continue.";
+    }
+    if (!_seenCentre) {
+      return "Settle your face inside the frame and\nlook straight at the camera";
+    }
     if (!_seenLeft) return "Now turn your head slowly to the left";
     if (!_seenRight) return "And now slowly to the right";
-    if (!_seenUp) return "Lovely — now tilt your chin up a little";
-    return "Last one — tilt your chin down a little";
+    if (!_seenDown) return "Now tilt your chin down a little";
+    return "Keep turning slowly so we catch a few angles";
   }
 
   void _resetCoverage() {
     _seenCentre = false;
     _seenLeft = false;
     _seenRight = false;
-    _seenUp = false;
     _seenDown = false;
   }
 
@@ -165,8 +194,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
 
-  /// Marks which directions the user has turned toward. Only a single face is
-  /// tracked — more than one in frame is ambiguous, so we ignore the frame.
+  /// Tracks head direction (for the guidance nudges) and fires a capture when
+  /// the pose has moved enough. Only a single face is tracked — more than one
+  /// in frame is ambiguous, so we ignore the frame.
   void _recordHeadAngles(List<Face> faces) {
     // Losing the face entirely is the usual failure when the chin drops.
     if (faces.length != 1) return;
@@ -176,22 +206,37 @@ class _CompleteSignupState extends State<CompleteSignup> {
     final pitch = face.headEulerAngleX; // positive = chin up
     if (yaw == null || pitch == null) return;
 
-    final before = _coverageCount;
-
     if (yaw.abs() < 10 && pitch.abs() < 10) _seenCentre = true;
     if (yaw > _turnThreshold) _seenLeft = true;
     if (yaw < -_turnThreshold) _seenRight = true;
-    if (pitch > _turnThreshold) _seenUp = true;
-    // Asymmetric on purpose: a dropped chin occludes the eyes, so ML Kit both
-    // under-reports negative pitch and loses the face sooner than it does
-    // looking up. A symmetric gate is effectively unreachable here.
-    if (pitch < -_pitchDownThreshold) _seenDown = true;
 
-    if (_coverageCount != before) {
-      debugPrint('FACE: covered $_coverageCount/5 '
-          '(yaw=${yaw.toStringAsFixed(1)} pitch=${pitch.toStringAsFixed(1)})');
-      setState(() {});
+    // Chin-down is unreliable: ML Kit both under-reports negative pitch and
+    // loses the face as the chin occludes the eyes. So the first frame we do
+    // see it, grab a shot immediately rather than waiting for the usual
+    // pose-change gate — that window may not come again. (Chin-up is left out
+    // entirely; it is unreliable in the other direction.)
+    final chinDownNow = pitch < -_pitchDownThreshold;
+    final firstChinDown = chinDownNow && !_seenDown;
+    if (chinDownNow) _seenDown = true;
+
+    _maybeCaptureShot(yaw, pitch, force: firstChinDown);
+  }
+
+  /// Fires a capture on the first face seen, on the first chin-down frame
+  /// ([force]), and otherwise each time the head has moved [_poseDelta] degrees
+  /// from the last shot — until [_maxShots] are collected.
+  void _maybeCaptureShot(double yaw, double pitch, {bool force = false}) {
+    if (_isCapturing || _shots.length >= _maxShots) return;
+
+    if (!force) {
+      final movedEnough = _lastShotYaw == null ||
+          (yaw - _lastShotYaw!).abs() >= _poseDelta ||
+          (pitch - _lastShotPitch!).abs() >= _poseDelta;
+      if (!movedEnough) return;
     }
+
+    // Fire-and-forget: _isCapturing and the guard above serialise captures.
+    unawaited(_captureShot(yaw, pitch));
   }
 
   Future<void> _initializeCamera() async {
@@ -213,21 +258,43 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
 
-  Future<void> _capturePhoto() async {
+  /// Takes one still for the current pose. The frame stream and takePicture()
+  /// contend for the camera, so the stream is paused for the shot and resumed
+  /// afterwards unless we have hit [_maxShots].
+  Future<void> _captureShot(double yaw, double pitch) async {
+    if (_isCapturing || _shots.length >= _maxShots) return;
+    _isCapturing = true;
     try {
-      // takePicture() and an active image stream contend for the camera.
       await _handler.stopFrameStream();
       final bytes = await _handler.capturePhoto();
-      if (bytes != null && mounted) {
-        setState(() {
-          _capturedBytes = bytes;
-          _error = null;
-        });
+      if (bytes != null) {
+        _shots.add(bytes);
+        _lastShotYaw = yaw;
+        _lastShotPitch = pitch;
+        if (mounted) {
+          setState(() {
+            // First shot doubles as the review thumbnail.
+            _capturedBytes ??= bytes;
+            _error = null;
+          });
+        }
       }
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _error = "Failed to capture photo");
+      debugPrint('Auto-capture failed: $e');
+    } finally {
+      // Resume guidance/detection for the next angle unless we are full.
+      if (mounted && _shots.length < _maxShots) {
+        await _startFaceDetection();
+      }
+      _isCapturing = false;
     }
+  }
+
+  /// Leaves the capture screen for the review/submit screen.
+  Future<void> _finishCapturing() async {
+    await _handler.stopFrameStream();
+    if (!mounted) return;
+    setState(() => _reviewing = true);
   }
 
   /// This screen can be the root route (RootPage shows it directly when a
@@ -245,6 +312,12 @@ class _CompleteSignupState extends State<CompleteSignup> {
   Future<void> _retake() async {
     setState(() {
       _capturedBytes = null;
+      _shots.clear();
+      _lastShotYaw = null;
+      _lastShotPitch = null;
+      _reviewing = false;
+      _uploadStatus = null;
+      _canuseImg = true;
       _error = null;
       _isCameraReady = false;
       _cameraViewKey = UniqueKey();
@@ -286,11 +359,12 @@ class _CompleteSignupState extends State<CompleteSignup> {
   }
 
   Future<void> _submitSignup() async {
-    if (_capturedBytes == null) return;
+    if (_shots.isEmpty) return;
 
     setState(() {
       _isLoading = true;
       _error = null;
+      _uploadStatus = null;
     });
 
     try {
@@ -310,15 +384,47 @@ class _CompleteSignupState extends State<CompleteSignup> {
         return;
       }
 
-      // Uploads straight to Azure under a short-lived SAS, encrypted in
-      // transit-to-storage; the backend validates the face on commit and
-      // returns the published, servable URL.
-      final imgUrl = await ProfilePictureUpload.upload(_capturedBytes!);
+      // Each shot is uploaded as its own encrypted picture and becomes one
+      // recognition mug on the backend. A blurry frame from the burst can
+      // legitimately fail face validation — skip those and keep the rest, as
+      // long as at least one lands.
+      String? primaryUrl;
+      int uploaded = 0;
+      PictureUploadException? faceRejection;
+
+      for (var i = 0; i < _shots.length; i++) {
+        if (mounted) {
+          setState(() => _uploadStatus = 'Uploading ${i + 1} of ${_shots.length}…');
+        }
+        try {
+          final url = await ProfilePictureUpload.upload(_shots[i]);
+          primaryUrl ??= url;
+          uploaded++;
+        } on PictureUploadException catch (e) {
+          // A rejected *face* just means that one frame is unusable. A network
+          // or session failure is fatal to the whole batch — rethrow it.
+          if (_isFaceRejection(e.kind)) {
+            faceRejection = e;
+            continue;
+          }
+          rethrow;
+        }
+      }
+
+      if (uploaded == 0 || primaryUrl == null) {
+        if (!mounted) return;
+        setState(() {
+          _error = faceRejection?.message ??
+              'None of your photos worked. Please retake.';
+          _canuseImg = false;
+        });
+        return;
+      }
 
       final cached = await ChurchApi.getCachedAccountJson();
       final merged = <String, dynamic>{
         if (cached != null) ...cached,
-        'imgURL': imgUrl,
+        'imgURL': primaryUrl,
         'signupComplete': true,
       };
       await ChurchApi.persistAccountFromServer(merged);
@@ -328,8 +434,8 @@ class _CompleteSignupState extends State<CompleteSignup> {
       if (!mounted) return;
       setState(() {
         _error = e.message;
-        // Only a rejected *face* means this particular photo is unusable; a
-        // network or session failure should leave the photo retryable as-is.
+        // Only a rejected *face* means the shots are unusable; a network or
+        // session failure should leave them retryable as-is.
         _canuseImg = !_isFaceRejection(e.kind);
       });
     } catch (e) {
@@ -337,7 +443,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
       if (!mounted) return;
       setState(() => _error = "Network error. Please try again.");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) setState(() {
+        _isLoading = false;
+        _uploadStatus = null;
+      });
     }
   }
 
@@ -382,10 +491,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          _capturedBytes != null ? _buildPreview() : _buildCamera(),
+          _reviewing ? _buildPreview() : _buildCamera(),
           if (_error != null &&
               _error!.contains('register your account') &&
-              _capturedBytes == null)
+              !_reviewing)
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
@@ -499,10 +608,12 @@ class _CompleteSignupState extends State<CompleteSignup> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleButton(Icons.close, _retake, !_canuseImg),
-                    const Text(
-                      "USE THIS PHOTO?",
-                      style: TextStyle(
+                    _circleButton(Icons.close, _retake, _isLoading),
+                    Text(
+                      _shots.length == 1
+                          ? "USE THIS PHOTO?"
+                          : "USE THESE ${_shots.length} PHOTOS?",
+                      style: const TextStyle(
                         color: ChurchColors.buttonText,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
@@ -521,7 +632,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                     Expanded(
                       child: _bottomButton(
                         label: "Retake",
-                        onTap: _retake,
+                        onTap: _isLoading ? null : _retake,
                         color: ChurchColors.buttonText.withValues(alpha: 0.15),
                         border: ChurchColors.buttonText.withValues(alpha: 0.3),
                         textColor: ChurchColors.buttonText,
@@ -531,7 +642,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
                     Expanded(
                       flex: 2,
                       child: _bottomButton(
-                        label: _isLoading ? "Uploading..." : "Use This Photo",
+                        label: _isLoading
+                            ? (_uploadStatus ?? "Uploading…")
+                            : "Use ${_shots.length == 1 ? 'Photo' : 'Photos'}",
                         onTap: _isLoading ? null : _submitSignup,
                         color: ChurchColors.button,
                         isLoading: _isLoading,
@@ -571,34 +684,67 @@ class _CompleteSignupState extends State<CompleteSignup> {
   }
 
   Widget _shutterButton() {
-    // Where live detection is unavailable (web), never block the capture.
-    final ready = !_handler.supportsFrameStream || _hasFullCoverage;
-    return GestureDetector(
-      onTap: ready ? _capturePhoto : null,
-      child: AnimatedOpacity(
-        opacity: ready ? 1 : 0.4,
-        duration: const Duration(milliseconds: 250),
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 4),
-            color: Colors.white.withValues(alpha: 0.2),
+    // Capture is automatic as the head turns; this button confirms and moves
+    // on. Where live detection is unavailable (web) there is no auto-capture,
+    // so allow a single manual shot instead.
+    final manual = !_handler.supportsFrameStream;
+    final ready = manual ? _shots.isEmpty : _hasEnoughShots;
+    final onTap = manual ? _captureManualShot : (ready ? _finishCapturing : null);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (!manual)
+          Text(
+            "${_shots.length} / $_maxShots captured",
+            style: TextStyle(
+              color: ChurchColors.buttonText.withValues(alpha: 0.9),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          child: Center(
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: onTap,
+          child: AnimatedOpacity(
+            opacity: (manual || ready) ? 1 : 0.4,
+            duration: const Duration(milliseconds: 250),
             child: Container(
-              width: 62,
-              height: 62,
-              decoration: const BoxDecoration(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white,
+                border: Border.all(color: Colors.white, width: 4),
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+              child: Center(
+                child: manual
+                    ? Container(
+                        width: 62,
+                        height: 62,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Icon(
+                        ready ? Icons.check : Icons.hourglass_bottom,
+                        color: Colors.white,
+                        size: 34,
+                      ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
+  }
+
+  /// Manual single capture for platforms without a live detection stream
+  /// (web): grab one shot and go straight to review.
+  Future<void> _captureManualShot() async {
+    await _captureShot(0, 0);
+    if (!mounted || _shots.isEmpty) return;
+    setState(() => _reviewing = true);
   }
 
   Widget _circleButton(IconData icon, VoidCallback onTap, bool disabled) {
