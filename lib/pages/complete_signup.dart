@@ -1,8 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import '../services/church_api.dart';
-import 'package:http/http.dart' as http;
+import '../services/profile_picture_upload_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -167,66 +165,41 @@ class _CompleteSignupState extends State<CompleteSignup> {
         return;
       }
 
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ChurchApi.baseUrl}/auth/picture-upload'),
-      );
-
-      request.fields['firebaseUid'] = user.uid;
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          'Image',
-          _capturedBytes!,
-          filename: 'profile.jpg',
-        ),
-      );
-
-      final response =
-          await request.send().timeout(const Duration(seconds: 60));
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = await response.stream.bytesToString();
-        String? imgUrl;
-        try {
-          final data = json.decode(body) as Map<String, dynamic>;
-          imgUrl = data['imgURL'] as String?;
-        } catch (e) {
-          // Upload succeeded; a malformed body must not fail the signup.
-          debugPrint('CompleteSignup: could not parse upload response: $e');
-        }
-        final cached = await ChurchApi.getCachedAccountJson();
-        final merged = <String, dynamic>{
-          if (cached != null) ...cached,
-          if (imgUrl != null && imgUrl.isNotEmpty) 'imgURL': imgUrl,
-          'signupComplete': true,
-        };
-        await ChurchApi.persistAccountFromServer(merged);
+      // Fresh Firebase ID token: the backend authenticates the upload and the
+      // commit with it (no more firebaseUid form field).
+      final idToken = await user.getIdToken();
+      if (idToken == null || idToken.isEmpty) {
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/dashboard');
-
-      } else if (response.statusCode == 400) {
-        if (!mounted) return;
-        setState(() {
-          _canuseImg = false;
-          _error = "Facial Image not clear enough.";
-        });
-      } else if (response.statusCode == 401) {
-        if (!mounted) return;
-        setState(() {
-          _canuseImg = false;
-          _error = "Multiple faces detected.";
-        });
-      } else if (response.statusCode == 403) {
-        if (!mounted) return;
-        setState(() {
-          _canuseImg = false;
-          _error = "No face detected.";
-        });
-      } else {
-        final body = await response.stream.bytesToString();
-        if (!mounted) return;
-        setState(() => _error = _uploadErrorMessage(response.statusCode, body));
+        setState(() => _error = "Not authenticated");
+        return;
       }
+
+      // Encrypt on-device and PUT straight to Azure under a short-lived SAS,
+      // then commit so the backend validates the face and publishes the photo.
+      final imgUrl = await ProfilePictureUploadService.upload(
+        idToken: idToken,
+        jpegBytes: _capturedBytes!,
+      );
+
+      final cached = await ChurchApi.getCachedAccountJson();
+      final merged = <String, dynamic>{
+        if (cached != null) ...cached,
+        if (imgUrl.isNotEmpty) 'imgURL': imgUrl,
+        'signupComplete': true,
+      };
+      await ChurchApi.persistAccountFromServer(merged);
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } on PictureUploadException catch (e) {
+      if (!mounted) return;
+      // Face-quality failures mean the shot is unusable — force a retake.
+      final retake = e.code == 'NO_FACE_DETECTED' ||
+          e.code == 'MULTIPLE_FACES' ||
+          e.code == 'FACE_NOT_CLEAR';
+      setState(() {
+        if (retake) _canuseImg = false;
+        _error = _messageForUploadCode(e.code, e.message);
+      });
     } catch (e) {
       debugPrint("Upload error: $e");
       if (!mounted) return;
@@ -236,27 +209,31 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
 
+  String _messageForUploadCode(String code, String serverMessage) {
+    switch (code) {
+      case 'NO_FACE_DETECTED':
+        return 'No face detected. Use a clear front-facing photo.';
+      case 'MULTIPLE_FACES':
+        return 'Multiple faces detected. Use a photo with only you in frame.';
+      case 'FACE_NOT_CLEAR':
+        return 'Facial image not clear enough.';
+      case 'UPLOAD_TOKEN_EXPIRED':
+        return 'Your upload session expired. Please try again.';
+      case 'TOO_MANY_UPLOADS':
+        return 'Too many attempts. Please wait a moment and try again.';
+      case 'UPLOAD_TOO_LARGE':
+        return 'That photo is too large. Please try again.';
+      default:
+        return serverMessage.isNotEmpty
+            ? serverMessage
+            : 'Upload failed. Please try again.';
+    }
+  }
+
   @override
   void dispose() {
     _handler.dispose();
     super.dispose();
-  }
-
-  String _uploadErrorMessage(int statusCode, String body) {
-    if (statusCode == 404) {
-      return 'Account could not be found. Please check your connection and try again.';
-    }
-    try {
-      final decoded = json.decode(body);
-      if (decoded is Map) {
-        for (final key in ['msg', 'message', 'error', 'detail']) {
-          final v = decoded[key];
-          if (v is String && v.trim().isNotEmpty) return v.trim();
-        }
-      }
-    } catch (_) {}
-    if (body.trim().isNotEmpty && body.length < 200) return body.trim();
-    return 'Upload failed ($statusCode). Please try again.';
   }
 
   @override
