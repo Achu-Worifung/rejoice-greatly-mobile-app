@@ -53,10 +53,11 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// Degrees away from centre that counts as a deliberate turn.
   static const double _turnThreshold = 20;
 
-  /// Lower than [_turnThreshold]: ML Kit under-reports downward pitch and
-  /// loses the face as the chin occludes the eyes. Chin-*up* is unreliable on
-  /// ML Kit, so it is deliberately never requested.
-  static const double _pitchDownThreshold = 12;
+  /// Well below [_turnThreshold]: ML Kit under-reports downward pitch and loses
+  /// the face as the chin occludes the eyes, so we accept a shallow tilt as
+  /// chin-down and grab the shot immediately (see [_recordHeadAngles]). Chin-*up*
+  /// is unreliable in the other direction, so it is deliberately never requested.
+  static const double _pitchDownThreshold = 8;
 
   /// Guards against re-entering detection while a frame is still processing.
   bool _isDetecting = false;
@@ -208,22 +209,31 @@ class _CompleteSignupState extends State<CompleteSignup> {
     if (yaw.abs() < 10 && pitch.abs() < 10) _seenCentre = true;
     if (yaw > _turnThreshold) _seenLeft = true;
     if (yaw < -_turnThreshold) _seenRight = true;
-    // Chin-down only: ML Kit both under-reports negative pitch and loses the
-    // face sooner than it does looking up, so chin-up is left out entirely.
-    if (pitch < -_pitchDownThreshold) _seenDown = true;
 
-    _maybeCaptureShot(yaw, pitch);
+    // Chin-down is unreliable: ML Kit both under-reports negative pitch and
+    // loses the face as the chin occludes the eyes. So the first frame we do
+    // see it, grab a shot immediately rather than waiting for the usual
+    // pose-change gate — that window may not come again. (Chin-up is left out
+    // entirely; it is unreliable in the other direction.)
+    final chinDownNow = pitch < -_pitchDownThreshold;
+    final firstChinDown = chinDownNow && !_seenDown;
+    if (chinDownNow) _seenDown = true;
+
+    _maybeCaptureShot(yaw, pitch, force: firstChinDown);
   }
 
-  /// Fires a capture on the first face seen, then again each time the head has
-  /// moved [_poseDelta] degrees from the last shot, until [_maxShots] collected.
-  void _maybeCaptureShot(double yaw, double pitch) {
+  /// Fires a capture on the first face seen, on the first chin-down frame
+  /// ([force]), and otherwise each time the head has moved [_poseDelta] degrees
+  /// from the last shot — until [_maxShots] are collected.
+  void _maybeCaptureShot(double yaw, double pitch, {bool force = false}) {
     if (_isCapturing || _shots.length >= _maxShots) return;
 
-    final movedEnough = _lastShotYaw == null ||
-        (yaw - _lastShotYaw!).abs() >= _poseDelta ||
-        (pitch - _lastShotPitch!).abs() >= _poseDelta;
-    if (!movedEnough) return;
+    if (!force) {
+      final movedEnough = _lastShotYaw == null ||
+          (yaw - _lastShotYaw!).abs() >= _poseDelta ||
+          (pitch - _lastShotPitch!).abs() >= _poseDelta;
+      if (!movedEnough) return;
+    }
 
     // Fire-and-forget: _isCapturing and the guard above serialise captures.
     unawaited(_captureShot(yaw, pitch));
