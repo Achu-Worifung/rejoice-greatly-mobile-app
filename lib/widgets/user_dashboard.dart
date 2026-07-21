@@ -1,11 +1,9 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../components/sermon_card.dart';
-import '../components/show_streak.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
 import '../pages/sermon_detail_page.dart';
@@ -154,15 +152,6 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'Good evening, $name!';
   }
 
-  void _showAttendanceStats() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => const AttendanceStatsLoader(),
-    );
-  }
-
   Widget _avatarPlaceholder() {
     return Container(
       height: 40,
@@ -236,17 +225,6 @@ class _DashboardPageState extends State<DashboardPage> {
           padding: const EdgeInsets.only(left: 8),
           icon: _buildAvatar(),
         ),
-        actions: [
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/lightning.svg',
-              colorFilter: const ColorFilter.mode(ChurchColors.accent, BlendMode.srcIn),
-              width: 24,
-            ),
-            onPressed: _showAttendanceStats,
-          ),
-          const SizedBox(width: 4),
-        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(
