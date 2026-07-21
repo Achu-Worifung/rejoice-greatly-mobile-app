@@ -90,6 +90,11 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// matching. Each shot is uploaded as its own picture.
   final List<Uint8List> _shots = [];
 
+  /// The head angle each captured shot belongs to, kept parallel to [_shots]
+  /// so the per-angle cap ([_maxShotsPerSide]) can spread the batch across
+  /// sides instead of letting one long sweep consume it.
+  final List<_ShotBucket> _shotBuckets = [];
+
   /// Pose of the last captured shot, so the next capture only fires once the
   /// head has moved a meaningful amount — that is what spreads the shots
   /// across angles instead of grabbing near-identical frames.
@@ -114,14 +119,31 @@ class _CompleteSignupState extends State<CompleteSignup> {
   static const int _minShots = 10;
   static const int _maxShots = 15;
 
+  /// Most shots kept for any single angle (centre / left / right / chin-down),
+  /// so a long sweep to one side can't eat the whole batch and starve the
+  /// others. Four angles × this cap comfortably covers [_maxShots]. Tunable.
+  static const int _maxShotsPerSide = 4;
+
   /// Degrees of yaw/pitch change from the last shot before another is taken.
   static const double _poseDelta = 8;
 
   bool get _hasEnoughShots => _shots.length >= _minShots;
 
+  /// Nothing left to nudge for: every angle we ask about (centre, left, right,
+  /// chin-down) has been covered, or we've simply hit the hard shot cap. Used
+  /// for the heading/guidance/arrow only — the Continue button unlocks earlier,
+  /// at [_hasEnoughShots], so the member is never blocked if ML Kit fails to
+  /// register the (deliberately shallow, unreliable) chin-down.
+  ///
+  /// Note this deliberately does *not* short-circuit on [_hasEnoughShots]: the
+  /// left/right sweep alone usually reaches 10 shots before the chin-down step,
+  /// and gating on the count there meant the chin-down cue never appeared.
+  bool get _coverageComplete =>
+      _shots.length >= _maxShots || (_hasEnoughShots && _seenDown);
+
   String get _headingText {
     if (!_handler.supportsFrameStream) return "Center your face";
-    if (_hasEnoughShots) return "That's everything — thank you";
+    if (_coverageComplete) return "That's everything — thank you";
     return "Turn your head slowly";
   }
 
@@ -131,7 +153,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
     if (!_handler.supportsFrameStream) {
       return "Position your face inside the frame and\nlook directly at the camera";
     }
-    if (_hasEnoughShots) {
+    if (_coverageComplete) {
       return "Great — that's plenty. Tap the button to continue.";
     }
     if (!_seenCentre) {
@@ -145,9 +167,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
   /// The head movement currently being requested, so the preview can show a
   /// matching directional cue alongside the text nudge. Null while the member
-  /// is still centring, or once enough angles are covered.
+  /// is still centring, or once every angle is covered.
   _GuidanceDirection? get _currentDirection {
-    if (!_handler.supportsFrameStream || _hasEnoughShots || !_seenCentre) {
+    if (!_handler.supportsFrameStream || _coverageComplete || !_seenCentre) {
       return null;
     }
     if (!_seenLeft) return _GuidanceDirection.left;
@@ -276,12 +298,25 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
   /// Fires a capture on the first face seen, on the first chin-down frame
   /// ([force]), and otherwise each time the head has moved [_poseDelta] degrees
-  /// from the last shot — until [_maxShots] are collected.
+  /// from the last shot — until [_maxShots] are collected, and never more than
+  /// [_maxShotsPerSide] for any one angle.
   void _maybeCaptureShot(double yaw, double pitch, {bool force = false}) {
     if (_isCapturing) return;
     // At the cap we normally stop, unless a retake is waiting to overwrite the
     // last shot in place.
     if (_shots.length >= _maxShots && !_replaceLastShot) return;
+
+    // Per-angle cap so one long sweep can't consume the whole batch. A pending
+    // retake overwrites the last shot in place, so its slot doesn't count
+    // toward the angle it's about to leave.
+    final bucket = _bucketFor(yaw, pitch);
+    var bucketCount = _countForBucket(bucket);
+    if (_replaceLastShot &&
+        _shotBuckets.isNotEmpty &&
+        _shotBuckets.last == bucket) {
+      bucketCount -= 1;
+    }
+    if (bucketCount >= _maxShotsPerSide) return;
 
     if (!force) {
       final movedEnough = _lastShotYaw == null ||
@@ -292,6 +327,23 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
     // Fire-and-forget: _isCapturing and the guard above serialise captures.
     unawaited(_captureShot(yaw, pitch));
+  }
+
+  /// Classifies a pose into the angle "bucket" it counts against. Chin-down
+  /// wins over yaw so a downward shot isn't miscounted as centre/left/right.
+  _ShotBucket _bucketFor(double yaw, double pitch) {
+    if (pitch < -_pitchDownThreshold) return _ShotBucket.down;
+    if (yaw > _turnThreshold) return _ShotBucket.left;
+    if (yaw < -_turnThreshold) return _ShotBucket.right;
+    return _ShotBucket.centre;
+  }
+
+  int _countForBucket(_ShotBucket bucket) {
+    var n = 0;
+    for (final b in _shotBuckets) {
+      if (b == bucket) n++;
+    }
+    return n;
   }
 
   Future<void> _initializeCamera() async {
@@ -335,12 +387,15 @@ class _CompleteSignupState extends State<CompleteSignup> {
           });
         }
       } else {
+        final bucket = _bucketFor(yaw, pitch);
         if (_replaceLastShot && _shots.isNotEmpty) {
           // Retake: overwrite the last shot in place so the total holds steady.
           _shots[_shots.length - 1] = bytes;
+          _shotBuckets[_shotBuckets.length - 1] = bucket;
           _replaceLastShot = false;
         } else {
           _shots.add(bytes);
+          _shotBuckets.add(bucket);
         }
         _lastShotYaw = yaw;
         _lastShotPitch = pitch;
@@ -969,6 +1024,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
 /// Head movement the capture flow is currently asking for.
 enum _GuidanceDirection { left, right, down }
+
+/// The angle a captured shot is counted against for the per-side cap.
+enum _ShotBucket { centre, left, right, down }
 
 /// A soft, repeating arrow that bobs in the direction the member should move
 /// their head — a visual companion to the text nudge during capture. Kept
