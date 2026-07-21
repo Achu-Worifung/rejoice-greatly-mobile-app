@@ -149,12 +149,39 @@ class VideoHandler {
         : (sensorOrientation - deviceRotation + 360) % 360;
   }
 
-  // Returns the camera preview widget for mobile
+  // Returns the camera preview widget for mobile, scaled to fill the screen
+  // without distorting the image. The Stack this sits in stretches its
+  // children to the full screen size regardless of aspect ratio.
+  //
+  // CameraPreview already wraps its texture in the correct AspectRatio for the
+  // current orientation, so it must NOT be forced into a fixed-size box — that
+  // squashes the texture (the source of the stretched preview). Instead let it
+  // keep its natural aspect ratio and scale it up until it covers the screen,
+  // clipping the overflow: a full-bleed preview with no distortion.
   Widget buildCameraView() {
-    if (_controller != null && _controller!.value.isInitialized) {
-      return CameraPreview(_controller!);
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return Container(color: Colors.black);
     }
-    return Container(color: Colors.black);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final previewRatio = controller.value.aspectRatio; // landscape (w/h)
+        final screenRatio = constraints.maxWidth / constraints.maxHeight;
+        // Scale factor that makes the preview cover the screen. aspectRatio is
+        // reported landscape, so on a portrait screen this product is < 1 and
+        // gets inverted to scale up instead of down.
+        var scale = screenRatio * previewRatio;
+        if (scale < 1) scale = 1 / scale;
+        return ClipRect(
+          child: Transform.scale(
+            scale: scale,
+            alignment: Alignment.center,
+            child: Center(child: CameraPreview(controller)),
+          ),
+        );
+      },
+    );
   }
 
   void dispose() {

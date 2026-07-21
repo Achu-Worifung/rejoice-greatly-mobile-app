@@ -55,11 +55,13 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// Degrees away from centre that counts as a deliberate turn.
   static const double _turnThreshold = 20;
 
-  /// Well below [_turnThreshold]: ML Kit under-reports downward pitch and loses
-  /// the face as the chin occludes the eyes, so we accept a shallow tilt as
-  /// chin-down and grab the shot immediately (see [_recordHeadAngles]). Chin-*up*
-  /// is unreliable in the other direction, so it is deliberately never requested.
-  static const double _pitchDownThreshold = 8;
+  /// Still below [_turnThreshold]: ML Kit under-reports downward pitch and loses
+  /// the face as the chin occludes the eyes, so we can't demand a full turn's
+  /// worth of tilt — but we ask for a clear, deliberate chin-down and grab the
+  /// shot immediately the first frame we see it (see [_recordHeadAngles]).
+  /// Chin-*up* is unreliable in the other direction, so it is deliberately
+  /// never requested.
+  static const double _pitchDownThreshold = 14;
 
   /// Guards against re-entering detection while a frame is still processing.
   bool _isDetecting = false;
@@ -96,6 +98,11 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
   /// True while a still is being taken (the frame stream is paused for it).
   bool _isCapturing = false;
+
+  /// Set when the member taps Retake: the next capture overwrites the final
+  /// shot in place instead of appending, so the batch never drops below the
+  /// count they already have. Cleared once that replacement lands.
+  bool _replaceLastShot = false;
 
   /// True once the member taps Continue and moves to the review/submit screen.
   bool _reviewing = false;
@@ -134,6 +141,19 @@ class _CompleteSignupState extends State<CompleteSignup> {
     if (!_seenRight) return "And now slowly to the right";
     if (!_seenDown) return "Now tilt your chin down a little";
     return "Keep turning slowly so we catch a few angles";
+  }
+
+  /// The head movement currently being requested, so the preview can show a
+  /// matching directional cue alongside the text nudge. Null while the member
+  /// is still centring, or once enough angles are covered.
+  _GuidanceDirection? get _currentDirection {
+    if (!_handler.supportsFrameStream || _hasEnoughShots || !_seenCentre) {
+      return null;
+    }
+    if (!_seenLeft) return _GuidanceDirection.left;
+    if (!_seenRight) return _GuidanceDirection.right;
+    if (!_seenDown) return _GuidanceDirection.down;
+    return null;
   }
 
   void _resetCoverage() {
@@ -258,7 +278,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// ([force]), and otherwise each time the head has moved [_poseDelta] degrees
   /// from the last shot — until [_maxShots] are collected.
   void _maybeCaptureShot(double yaw, double pitch, {bool force = false}) {
-    if (_isCapturing || _shots.length >= _maxShots) return;
+    if (_isCapturing) return;
+    // At the cap we normally stop, unless a retake is waiting to overwrite the
+    // last shot in place.
+    if (_shots.length >= _maxShots && !_replaceLastShot) return;
 
     if (!force) {
       final movedEnough = _lastShotYaw == null ||
@@ -297,7 +320,8 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// the source of freezes on some Android devices). Platforms without a
   /// stream (web) fall back to the handler's own still-capture call.
   Future<void> _captureShot(double yaw, double pitch) async {
-    if (_isCapturing || _shots.length >= _maxShots) return;
+    if (_isCapturing) return;
+    if (_shots.length >= _maxShots && !_replaceLastShot) return;
     _isCapturing = true;
     try {
       final bytes = _handler.supportsFrameStream
@@ -311,13 +335,19 @@ class _CompleteSignupState extends State<CompleteSignup> {
           });
         }
       } else {
-        _shots.add(bytes);
+        if (_replaceLastShot && _shots.isNotEmpty) {
+          // Retake: overwrite the last shot in place so the total holds steady.
+          _shots[_shots.length - 1] = bytes;
+          _replaceLastShot = false;
+        } else {
+          _shots.add(bytes);
+        }
         _lastShotYaw = yaw;
         _lastShotPitch = pitch;
         if (mounted) {
           setState(() {
             // First shot doubles as the review thumbnail.
-            _capturedBytes ??= bytes;
+            _capturedBytes = _shots.first;
             _error = null;
           });
         }
@@ -325,9 +355,15 @@ class _CompleteSignupState extends State<CompleteSignup> {
     } catch (e) {
       debugPrint('Auto-capture failed: $e');
     } finally {
-      // No-op when the stream was never stopped (the buffered-frame path);
-      // only actually restarts anything on the web fallback path.
-      if (mounted && _shots.length < _maxShots) {
+      // Done once the batch is full and no retake replacement is still pending.
+      final done = _shots.length >= _maxShots && !_replaceLastShot;
+      if (mounted && done) {
+        // Stop the preview stream so ML Kit isn't left running face detection
+        // on every frame with nothing left to capture. It restarts on retake.
+        await _handler.stopFrameStream();
+      } else if (mounted) {
+        // No-op when the stream was never stopped (the buffered-frame path);
+        // only actually restarts anything on the web fallback path.
         await _startFaceDetection();
       }
       _isCapturing = false;
@@ -396,10 +432,16 @@ class _CompleteSignupState extends State<CompleteSignup> {
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
   }
 
+  /// Returns to the camera to redo the most recent angle. No shot is discarded
+  /// — the batch stays whole and the next capture overwrites the final shot in
+  /// place (see [_replaceLastShot]), so the count never drops. Earlier shots,
+  /// and the guidance progress toward them, are kept rather than starting the
+  /// whole enrolment over.
   Future<void> _retake() async {
     setState(() {
-      _capturedBytes = null;
-      _shots.clear();
+      // Arm an in-place overwrite of the last shot rather than removing it.
+      _replaceLastShot = _shots.isNotEmpty;
+      // A null pose forces the next detected frame to capture immediately.
       _lastShotYaw = null;
       _lastShotPitch = null;
       _reviewing = false;
@@ -408,7 +450,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
       _error = null;
       _isCameraReady = false;
       _cameraViewKey = UniqueKey();
-      _resetCoverage();
+      // Re-search for the face at normal speed after the restart, but keep
+      // the seen-angle guidance flags as-is — that progress isn't lost.
+      _faceTracked = false;
     });
 
     try {
@@ -625,6 +669,15 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
         _gradientOverlay(fromTop: true),
         _gradientOverlay(fromTop: false),
+
+        // Animated arrow over the face, bobbing the way the member should move
+        // their head next (turn left/right, or tilt the chin down) — a visual
+        // companion to the text nudge below.
+        if (_isCameraReady && _currentDirection != null)
+          Align(
+            alignment: const Alignment(0, 0.2),
+            child: _DirectionCue(direction: _currentDirection!),
+          ),
 
         SafeArea(
           child: Padding(
@@ -909,6 +962,85 @@ class _CompleteSignupState extends State<CompleteSignup> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Head movement the capture flow is currently asking for.
+enum _GuidanceDirection { left, right, down }
+
+/// A soft, repeating arrow that bobs in the direction the member should move
+/// their head — a visual companion to the text nudge during capture. Kept
+/// deliberately gentle (slow, semi-transparent) to match the app's unhurried,
+/// "greeted, not processed" feel.
+class _DirectionCue extends StatefulWidget {
+  const _DirectionCue({required this.direction});
+
+  final _GuidanceDirection direction;
+
+  @override
+  State<_DirectionCue> createState() => _DirectionCueState();
+}
+
+class _DirectionCueState extends State<_DirectionCue>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 950),
+  )..repeat(reverse: true);
+
+  IconData get _icon {
+    switch (widget.direction) {
+      case _GuidanceDirection.left:
+        return Icons.keyboard_arrow_left;
+      case _GuidanceDirection.right:
+        return Icons.keyboard_arrow_right;
+      case _GuidanceDirection.down:
+        return Icons.keyboard_arrow_down;
+    }
+  }
+
+  /// Unit direction the arrow drifts as it bobs.
+  Offset get _motion {
+    switch (widget.direction) {
+      case _GuidanceDirection.left:
+        return const Offset(-1, 0);
+      case _GuidanceDirection.right:
+        return const Offset(1, 0);
+      case _GuidanceDirection.down:
+        return const Offset(0, 1);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = Curves.easeInOut.transform(_controller.value);
+        return Opacity(
+          opacity: 0.5 + 0.5 * t,
+          child: Transform.translate(
+            offset: _motion * (10 * t),
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: ChurchColors.bodyText.withValues(alpha: 0.35),
+        ),
+        child: Icon(_icon, color: ChurchColors.buttonText, size: 40),
       ),
     );
   }

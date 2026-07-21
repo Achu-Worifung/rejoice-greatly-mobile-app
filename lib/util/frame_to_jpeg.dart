@@ -1,6 +1,20 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
+
+/// Midtone-lift curve applied to every decoded channel so the still roughly
+/// matches the hardware preview. The raw YUV/BGRA stream frames come through
+/// darker than the on-screen preview — most visibly on Samsung front cameras,
+/// which brighten the preview surface with tone-mapping the image stream never
+/// receives. Gamma < 1 lifts shadows/midtones while leaving highlights almost
+/// untouched (no clipping), so it can't blow out a well-lit scene. Tunable:
+/// lower = brighter. Precomputed once per isolate as a 256-entry lookup table.
+const double _previewGamma = 0.55;
+final List<int> _brightenLut = List<int>.generate(256, (v) {
+  final lifted = (255.0 * math.pow(v / 255.0, _previewGamma)).round();
+  return lifted < 0 ? 0 : (lifted > 255 ? 255 : lifted);
+});
 
 /// Everything needed to turn one buffered preview frame into a JPEG,
 /// bundled so it can cross the isolate boundary via [compute].
@@ -42,6 +56,11 @@ Uint8List encodeFrameToJpeg(FrameJpegRequest req) {
 /// Assumes the chroma plane shares the luma row stride, which matches the
 /// single merged buffer the `camera` plugin hands back for
 /// ImageFormatGroup.nv21 (see camera_frame.dart).
+///
+/// Uses the *full-range* (JFIF) BT.601 coefficients — Y spans 0–255 with no
+/// 16/235 headroom. The camera stream delivers full-range luma, so the older
+/// limited-range math (Y-16, ×1.164 gain) clipped the shadows and made the
+/// captured still look noticeably darker than the hardware preview.
 img.Image _decodeNv21(FrameJpegRequest req) {
   final bytes = req.bytes;
   final width = req.width;
@@ -54,20 +73,23 @@ img.Image _decodeNv21(FrameJpegRequest req) {
     final rowStart = j * stride;
     final uvRowStart = frameSize + (j >> 1) * stride;
     for (var i = 0; i < width; i++) {
-      final y = (0xff & bytes[rowStart + i]) - 16;
+      final y = 0xff & bytes[rowStart + i];
       final uvCol = (i >> 1) * 2;
       final v = (0xff & bytes[uvRowStart + uvCol]) - 128;
       final u = (0xff & bytes[uvRowStart + uvCol + 1]) - 128;
 
-      final y1192 = 1192 * (y < 0 ? 0 : y);
-      var r = (y1192 + 1634 * v);
-      var g = (y1192 - 833 * v - 400 * u);
-      var b = (y1192 + 2066 * u);
-      r = (r < 0 ? 0 : (r > 262143 ? 262143 : r)) >> 10;
-      g = (g < 0 ? 0 : (g > 262143 ? 262143 : g)) >> 10;
-      b = (b < 0 ? 0 : (b > 262143 ? 262143 : b)) >> 10;
+      // Full-range BT.601, integer approximation at 1/1024 precision:
+      //   r = y + 1.402·v
+      //   g = y - 0.344·u - 0.714·v
+      //   b = y + 1.772·u
+      var r = y + ((1436 * v) >> 10);
+      var g = y - ((352 * u + 731 * v) >> 10);
+      var b = y + ((1815 * u) >> 10);
+      r = r < 0 ? 0 : (r > 255 ? 255 : r);
+      g = g < 0 ? 0 : (g > 255 ? 255 : g);
+      b = b < 0 ? 0 : (b > 255 ? 255 : b);
 
-      image.setPixelRgb(i, j, r, g, b);
+      image.setPixelRgb(i, j, _brightenLut[r], _brightenLut[g], _brightenLut[b]);
     }
   }
   return image;
@@ -89,7 +111,8 @@ img.Image _decodeBgra8888(FrameJpegRequest req) {
       final b = bytes[idx];
       final g = bytes[idx + 1];
       final r = bytes[idx + 2];
-      image.setPixelRgb(i, j, r, g, b);
+      image.setPixelRgb(
+          i, j, _brightenLut[r], _brightenLut[g], _brightenLut[b]);
     }
   }
   return image;
