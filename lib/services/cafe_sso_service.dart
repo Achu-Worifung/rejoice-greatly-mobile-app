@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import 'api_envelope.dart';
@@ -12,6 +13,49 @@ import 'church_api.dart';
 /// Passes the native app's Firebase session into the Mood Changing Cafe WebView.
 class CafeSsoService {
   CafeSsoService._();
+
+  /// The last member whose session was pushed into the cafe WebView. Persisted
+  /// (outside [UserSessionStore], so it survives logout) so a later login can
+  /// tell whether the WebView is still carrying a *different* member's cafe
+  /// session + cached order history and needs wiping first.
+  static const String _lastCafeUidKey = 'cafe_last_uid';
+
+  static Future<String?> readLastCafeUid() async {
+    final p = await SharedPreferences.getInstance();
+    return p.getString(_lastCafeUidKey);
+  }
+
+  static Future<void> writeLastCafeUid(String uid) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_lastCafeUidKey, uid);
+  }
+
+  static Future<void> clearLastCafeUid() async {
+    final p = await SharedPreferences.getInstance();
+    await p.remove(_lastCafeUidKey);
+  }
+
+  /// Fully clears the cafe WebView's stored session and cached data so a
+  /// previous member's order history can never leak to the next account:
+  /// signs Firebase out, then drops cookies and localStorage for the origin.
+  static Future<void> wipeSession(WebViewController controller) async {
+    if (kIsWeb) return;
+    try {
+      await controller.runJavaScript(_signOutScript());
+    } catch (e) {
+      debugPrint('CafeSso: signOut script failed: $e');
+    }
+    try {
+      await controller.clearLocalStorage();
+    } catch (e) {
+      debugPrint('CafeSso: clearLocalStorage failed: $e');
+    }
+    try {
+      await WebViewCookieManager().clearCookies();
+    } catch (e) {
+      debugPrint('CafeSso: clearCookies failed: $e');
+    }
+  }
 
   static String get cafeBaseUrl =>
       dotenv.env['CAFE_WEB_URL'] ?? 'https://moodchangingcafe.vercel.app';

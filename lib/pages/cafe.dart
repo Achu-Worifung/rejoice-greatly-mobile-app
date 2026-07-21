@@ -31,6 +31,10 @@ class _CafeState extends State<Cafe> {
   bool _syncing = false;
   String? _syncedUid;
 
+  /// Members we've already wiped + reloaded the WebView for this session, so a
+  /// post-reload re-sync doesn't wipe/reload again in a loop.
+  final Set<String> _wipedForUid = {};
+
   @override
   void initState() {
     super.initState();
@@ -86,9 +90,11 @@ class _CafeState extends State<Cafe> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      if (_syncedUid != null) {
+      final lastUid = await CafeSsoService.readLastCafeUid();
+      if (_syncedUid != null || lastUid != null) {
         _syncedUid = null;
-        await CafeSsoService.applyToWebView(controller, customToken: null);
+        await CafeSsoService.clearLastCafeUid();
+        await CafeSsoService.wipeSession(controller);
       }
       return;
     }
@@ -98,14 +104,34 @@ class _CafeState extends State<Cafe> {
     // and re-inject, leaving the loading bar running forever.
     if (_syncedUid == user.uid) return;
 
+    // A different member's session may still be cached in the WebView from
+    // before a logout/login (the cafe app persists its own Firebase session
+    // and order history in localStorage/IndexedDB, which survives account
+    // switches). Wipe and reload before injecting the new member's token so
+    // the previous account's order history can't leak through.
+    final lastUid = await CafeSsoService.readLastCafeUid();
+    final accountChanged = lastUid != null && lastUid != user.uid;
+
     _setSyncing(true);
     try {
+      if (accountChanged && !_wipedForUid.contains(user.uid)) {
+        _wipedForUid.add(user.uid);
+        await CafeSsoService.wipeSession(controller);
+        if (!mounted) return;
+        _pageReady = false;
+        // Reload on a clean origin; onPageFinished re-invokes this method,
+        // which now injects the new token (wipe is guarded per-uid above).
+        await controller.loadRequest(CafeSsoService.cafeUri);
+        return;
+      }
+
       final customToken = await CafeSsoService.fetchCustomToken();
       if (!mounted) return;
       if (customToken == null || customToken.isEmpty) return;
 
       await CafeSsoService.applyToWebView(controller, customToken: customToken);
       _syncedUid = user.uid;
+      await CafeSsoService.writeLastCafeUid(user.uid);
     } catch (e, st) {
       debugPrint('Cafe tab SSO failed: $e\n$st');
     } finally {
