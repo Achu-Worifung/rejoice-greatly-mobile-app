@@ -26,7 +26,6 @@ class CompleteSignup extends StatefulWidget {
 class _CompleteSignupState extends State<CompleteSignup> {
   late VideoHandler _handler;
   Uint8List? _capturedBytes;
-  bool _isLoading = false;
   bool _isRegisteringAccount = true;
   String? _error;
   bool _isCameraReady = false;
@@ -104,13 +103,22 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// True while a still is being taken (the frame stream is paused for it).
   bool _isCapturing = false;
 
-  /// Set when the member taps Retake: the next capture overwrites the final
-  /// shot in place instead of appending, so the batch never drops below the
-  /// count they already have. Cleared once that replacement lands.
-  bool _replaceLastShot = false;
+  /// Which screen the flow is on: auto-capturing, uploading, or the final
+  /// "all done" page. Capture is fully automatic — there is no manual shutter
+  /// on mobile and no review/retake step.
+  _SignupPhase _phase = _SignupPhase.capturing;
 
-  /// True once the member taps Continue and moves to the review/submit screen.
-  bool _reviewing = false;
+  /// The frontal shot chosen as the profile picture (the most squarely centred
+  /// face): its index in [_shots] and its score (lower = more frontal), so a
+  /// better one can take over as capture continues. [_capturedBytes] mirrors
+  /// the current pick for the later screens to display.
+  int? _frontalIndex;
+  double _frontalScore = double.infinity;
+
+  /// Once enough shots exist, finish shortly after capture stalls, so the flow
+  /// never hangs waiting on the (unreliable) chin-down or a capped angle.
+  Timer? _settleTimer;
+  static const _settleAfter = Duration(seconds: 3);
 
   /// Progress text shown while the batch uploads.
   String? _uploadStatus;
@@ -301,22 +309,14 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// from the last shot — until [_maxShots] are collected, and never more than
   /// [_maxShotsPerSide] for any one angle.
   void _maybeCaptureShot(double yaw, double pitch, {bool force = false}) {
-    if (_isCapturing) return;
-    // At the cap we normally stop, unless a retake is waiting to overwrite the
-    // last shot in place.
-    if (_shots.length >= _maxShots && !_replaceLastShot) return;
+    // Ignore frames still arriving after we've left the capture phase, so a
+    // late shot can't mutate _shots while the upload loop is iterating it.
+    if (_phase != _SignupPhase.capturing) return;
+    if (_isCapturing || _shots.length >= _maxShots) return;
 
-    // Per-angle cap so one long sweep can't consume the whole batch. A pending
-    // retake overwrites the last shot in place, so its slot doesn't count
-    // toward the angle it's about to leave.
+    // Per-angle cap so one long sweep can't consume the whole batch.
     final bucket = _bucketFor(yaw, pitch);
-    var bucketCount = _countForBucket(bucket);
-    if (_replaceLastShot &&
-        _shotBuckets.isNotEmpty &&
-        _shotBuckets.last == bucket) {
-      bucketCount -= 1;
-    }
-    if (bucketCount >= _maxShotsPerSide) return;
+    if (_countForBucket(bucket) >= _maxShotsPerSide) return;
 
     if (!force) {
       final movedEnough = _lastShotYaw == null ||
@@ -372,8 +372,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// the source of freezes on some Android devices). Platforms without a
   /// stream (web) fall back to the handler's own still-capture call.
   Future<void> _captureShot(double yaw, double pitch) async {
-    if (_isCapturing) return;
-    if (_shots.length >= _maxShots && !_replaceLastShot) return;
+    if (_isCapturing || _shots.length >= _maxShots) return;
     _isCapturing = true;
     try {
       final bytes = _handler.supportsFrameStream
@@ -388,41 +387,59 @@ class _CompleteSignupState extends State<CompleteSignup> {
         }
       } else {
         final bucket = _bucketFor(yaw, pitch);
-        if (_replaceLastShot && _shots.isNotEmpty) {
-          // Retake: overwrite the last shot in place so the total holds steady.
-          _shots[_shots.length - 1] = bytes;
-          _shotBuckets[_shotBuckets.length - 1] = bucket;
-          _replaceLastShot = false;
-        } else {
-          _shots.add(bytes);
-          _shotBuckets.add(bucket);
-        }
+        _shots.add(bytes);
+        _shotBuckets.add(bucket);
         _lastShotYaw = yaw;
         _lastShotPitch = pitch;
-        if (mounted) {
-          setState(() {
-            // First shot doubles as the review thumbnail.
-            _capturedBytes = _shots.first;
-            _error = null;
-          });
-        }
+        _registerFrontalCandidate(_shots.length - 1, bucket, yaw, pitch, bytes);
+        if (mounted) setState(() => _error = null);
       }
     } catch (e) {
       debugPrint('Auto-capture failed: $e');
     } finally {
-      // Done once the batch is full and no retake replacement is still pending.
-      final done = _shots.length >= _maxShots && !_replaceLastShot;
-      if (mounted && done) {
-        // Stop the preview stream so ML Kit isn't left running face detection
-        // on every frame with nothing left to capture. It restarts on retake.
-        await _handler.stopFrameStream();
-      } else if (mounted) {
-        // No-op when the stream was never stopped (the buffered-frame path);
-        // only actually restarts anything on the web fallback path.
-        await _startFaceDetection();
-      }
       _isCapturing = false;
+      if (mounted) _afterCapture();
     }
+  }
+
+  /// Chooses the profile picture as capture goes: the most frontal (centre)
+  /// shot — smallest combined yaw+pitch, i.e. looking most squarely at the
+  /// camera. Non-centre shots seed [_capturedBytes] only as a fallback so the
+  /// later screens always have an image to show.
+  void _registerFrontalCandidate(
+      int index, _ShotBucket bucket, double yaw, double pitch, Uint8List bytes) {
+    if (bucket != _ShotBucket.centre) {
+      _capturedBytes ??= bytes;
+      return;
+    }
+    final score = yaw.abs() + pitch.abs();
+    if (score < _frontalScore) {
+      _frontalScore = score;
+      _frontalIndex = index;
+      _capturedBytes = bytes;
+    }
+  }
+
+  /// Runs after each shot lands (mobile only — web finishes via the manual
+  /// shutter). Finishes immediately once every angle is covered, otherwise —
+  /// once we have enough — finishes after a short lull so the flow can't stall
+  /// on the unreliable chin-down or a side that's hit its cap.
+  void _afterCapture() {
+    if (_phase != _SignupPhase.capturing) return;
+    if (_coverageComplete) {
+      unawaited(_finishCapturing());
+    } else if (_hasEnoughShots) {
+      _scheduleSettle();
+    }
+  }
+
+  void _scheduleSettle() {
+    _settleTimer?.cancel();
+    _settleTimer = Timer(_settleAfter, () {
+      if (mounted && _phase == _SignupPhase.capturing && _hasEnoughShots) {
+        unawaited(_finishCapturing());
+      }
+    });
   }
 
   /// Encodes the most recently buffered preview frame to JPEG on a worker
@@ -468,11 +485,15 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
 
-  /// Leaves the capture screen for the review/submit screen.
+  /// All the shots we need are in — stop the camera and upload straight away.
+  /// There is no review step: on success the flow lands on the "all done" page.
   Future<void> _finishCapturing() async {
+    if (_phase != _SignupPhase.capturing) return;
+    _settleTimer?.cancel();
+    setState(() => _phase = _SignupPhase.submitting);
     await _handler.stopFrameStream();
     if (!mounted) return;
-    setState(() => _reviewing = true);
+    await _submitSignup();
   }
 
   /// This screen can be the root route (RootPage shows it directly when a
@@ -487,27 +508,25 @@ class _CompleteSignupState extends State<CompleteSignup> {
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
   }
 
-  /// Returns to the camera to redo the most recent angle. No shot is discarded
-  /// — the batch stays whole and the next capture overwrites the final shot in
-  /// place (see [_replaceLastShot]), so the count never drops. Earlier shots,
-  /// and the guidance progress toward them, are kept rather than starting the
-  /// whole enrolment over.
-  Future<void> _retake() async {
+  /// Clears the batch and returns to the camera to start capture over. Only
+  /// reached from the upload screen when every frame was rejected — there is no
+  /// per-shot retake in the automatic flow.
+  Future<void> _restartCapture() async {
     setState(() {
-      // Arm an in-place overwrite of the last shot rather than removing it.
-      _replaceLastShot = _shots.isNotEmpty;
-      // A null pose forces the next detected frame to capture immediately.
+      _shots.clear();
+      _shotBuckets.clear();
+      _frontalIndex = null;
+      _frontalScore = double.infinity;
+      _capturedBytes = null;
       _lastShotYaw = null;
       _lastShotPitch = null;
-      _reviewing = false;
-      _uploadStatus = null;
-      _canuseImg = true;
+      _resetCoverage();
       _error = null;
+      _canuseImg = true;
+      _uploadStatus = null;
+      _phase = _SignupPhase.capturing;
       _isCameraReady = false;
       _cameraViewKey = UniqueKey();
-      // Re-search for the face at normal speed after the restart, but keep
-      // the seen-angle guidance flags as-is — that progress isn't lost.
-      _faceTracked = false;
     });
 
     try {
@@ -544,13 +563,17 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
 
+  /// Uploads the profile picture first — the one image sign-up actually needs —
+  /// then marks the account complete and shows the done page. The remaining
+  /// shots are extra recognition "mugs"; those upload in the background so the
+  /// member isn't kept waiting on all fifteen. The backend associates each
+  /// upload with the account server-side, so we don't need their URLs here.
   Future<void> _submitSignup() async {
     if (_shots.isEmpty) return;
 
     setState(() {
-      _isLoading = true;
       _error = null;
-      _uploadStatus = null;
+      _uploadStatus = 'Finishing up…';
     });
 
     try {
@@ -570,25 +593,25 @@ class _CompleteSignupState extends State<CompleteSignup> {
         return;
       }
 
-      // Each shot is uploaded as its own encrypted picture and becomes one
-      // recognition mug on the backend. A blurry frame from the burst can
-      // legitimately fail face validation — skip those and keep the rest, as
-      // long as at least one lands.
-      String? primaryUrl;
-      int uploaded = 0;
+      // Upload the frontal shot for the profile first; if that one frame is
+      // rejected, fall back through the others until one lands. Only this
+      // upload is awaited — it's all sign-up needs to complete.
+      final order = <int>[
+        ?_frontalIndex,
+        for (var i = 0; i < _shots.length; i++)
+          if (i != _frontalIndex) i,
+      ];
+      String? profileUrl;
+      var profileIndex = -1;
       PictureUploadException? faceRejection;
-
-      for (var i = 0; i < _shots.length; i++) {
-        if (mounted) {
-          setState(() => _uploadStatus = 'Uploading ${i + 1} of ${_shots.length}…');
-        }
+      for (final i in order) {
         try {
-          final url = await ProfilePictureUpload.upload(_shots[i]);
-          primaryUrl ??= url;
-          uploaded++;
+          profileUrl = await ProfilePictureUpload.upload(_shots[i]);
+          profileIndex = i;
+          break;
         } on PictureUploadException catch (e) {
-          // A rejected *face* just means that one frame is unusable. A network
-          // or session failure is fatal to the whole batch — rethrow it.
+          // A rejected *face* just means that frame is unusable — try the next.
+          // A network/session failure is fatal to the batch — rethrow it.
           if (_isFaceRejection(e.kind)) {
             faceRejection = e;
             continue;
@@ -597,11 +620,11 @@ class _CompleteSignupState extends State<CompleteSignup> {
         }
       }
 
-      if (uploaded == 0 || primaryUrl == null) {
+      if (profileUrl == null) {
         if (!mounted) return;
         setState(() {
           _error = faceRejection?.message ??
-              'None of your photos worked. Please retake.';
+              'None of your photos worked. Please try again.';
           _canuseImg = false;
         });
         return;
@@ -610,12 +633,20 @@ class _CompleteSignupState extends State<CompleteSignup> {
       final cached = await ChurchApi.getCachedAccountJson();
       final merged = <String, dynamic>{
         if (cached != null) ...cached,
-        'imgURL': primaryUrl,
+        'imgURL': profileUrl,
         'signupComplete': true,
       };
       await ChurchApi.persistAccountFromServer(merged);
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      setState(() => _phase = _SignupPhase.done);
+
+      // Enrich recognition with the other angles without blocking the member —
+      // fire-and-forget, it keeps running even after they move to the dashboard.
+      final mugs = [
+        for (var i = 0; i < _shots.length; i++)
+          if (i != profileIndex) _shots[i],
+      ];
+      if (mugs.isNotEmpty) unawaited(_uploadMugsInBackground(mugs));
     } on PictureUploadException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -629,15 +660,34 @@ class _CompleteSignupState extends State<CompleteSignup> {
       if (!mounted) return;
       setState(() => _error = "Network error. Please try again.");
     } finally {
-      if (mounted) setState(() {
-        _isLoading = false;
-        _uploadStatus = null;
-      });
+      if (mounted) setState(() => _uploadStatus = null);
     }
+  }
+
+  /// Best-effort background upload of the extra mugs, a few at a time so a
+  /// mobile connection isn't hit with all of them at once. Fire-and-forget:
+  /// failures are logged, not surfaced, and it never touches the widget, so it
+  /// is safe to keep running after the member has moved on to the dashboard.
+  Future<void> _uploadMugsInBackground(List<Uint8List> mugs) async {
+    const maxConcurrent = 3;
+    var next = 0;
+    Future<void> worker() async {
+      while (next < mugs.length) {
+        final bytes = mugs[next++];
+        try {
+          await ProfilePictureUpload.upload(bytes);
+        } catch (e) {
+          debugPrint('Background mug upload failed: $e');
+        }
+      }
+    }
+
+    await Future.wait([for (var i = 0; i < maxConcurrent; i++) worker()]);
   }
 
   @override
   void dispose() {
+    _settleTimer?.cancel();
     _handler.stopFrameStream();
     _handler.dispose();
     _faceDetector.close();
@@ -674,33 +724,39 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
     return Scaffold(
       backgroundColor: ChurchColors.bodyText,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          _reviewing ? _buildPreview() : _buildCamera(),
-          if (_error != null &&
-              _error!.contains('register your account') &&
-              !_reviewing)
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
-                child: Column(
-                  children: [
-                    _errorBanner(),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: _ensurePostgresAccount,
-                      child: const Text(
-                        'Retry',
-                        style: TextStyle(color: ChurchColors.button),
-                      ),
+      body: switch (_phase) {
+        _SignupPhase.capturing => _buildCapturing(),
+        _SignupPhase.submitting => _buildProcessing(),
+        _SignupPhase.done => _buildComplete(),
+      },
+    );
+  }
+
+  Widget _buildCapturing() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _buildCamera(),
+        if (_error != null && _error!.contains('register your account'))
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
+              child: Column(
+                children: [
+                  _errorBanner(),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _ensurePostgresAccount,
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(color: ChurchColors.button),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -778,76 +834,8 @@ class _CompleteSignupState extends State<CompleteSignup> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                _shutterButton(),
+                _captureFooter(),
                 const SizedBox(height: 40),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPreview() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Image.memory(_capturedBytes!, fit: BoxFit.cover),
-        _gradientOverlay(fromTop: true),
-        _gradientOverlay(fromTop: false),
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _circleButton(Icons.close, _retake, _isLoading),
-                    Text(
-                      _shots.length == 1
-                          ? "USE THIS PHOTO?"
-                          : "USE THESE ${_shots.length} PHOTOS?",
-                      style: const TextStyle(
-                        color: ChurchColors.buttonText,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    const SizedBox(width: 44),
-                  ],
-                ),
-                const Spacer(),
-                if (_error != null) ...[
-                  _errorBanner(),
-                  const SizedBox(height: 16),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: _bottomButton(
-                        label: "Retake",
-                        onTap: _isLoading ? null : _retake,
-                        color: ChurchColors.buttonText.withValues(alpha: 0.15),
-                        border: ChurchColors.buttonText.withValues(alpha: 0.3),
-                        textColor: ChurchColors.buttonText,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: _bottomButton(
-                        label: _isLoading
-                            ? (_uploadStatus ?? "Uploading…")
-                            : "Use ${_shots.length == 1 ? 'Photo' : 'Photos'}",
-                        onTap: _isLoading ? null : _submitSignup,
-                        color: ChurchColors.button,
-                        isLoading: _isLoading,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -878,55 +866,36 @@ class _CompleteSignupState extends State<CompleteSignup> {
     );
   }
 
-  Widget _shutterButton() {
-    // Capture is automatic as the head turns; this button confirms and moves
-    // on. Where live detection is unavailable (web) there is no auto-capture,
-    // so allow a single manual shot instead.
-    final manual = !_handler.supportsFrameStream;
-    final ready = manual ? _shots.isEmpty : _hasEnoughShots;
-    final onTap = manual ? _captureManualShot : (ready ? _finishCapturing : null);
+  /// Footer under the guidance text. Capture is fully automatic on mobile, so
+  /// there is no shutter — just a progress bar that fills as shots come in and
+  /// hands off to the upload screen on its own. Web has no live detection, so
+  /// it keeps a single manual shutter.
+  Widget _captureFooter() {
+    if (!_handler.supportsFrameStream) return _manualShutter();
+
+    final progress = (_shots.length / _maxShots).clamp(0.0, 1.0);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (!manual)
-          Text(
-            "${_shots.length} / $_maxShots captured",
-            style: TextStyle(
-              color: ChurchColors.buttonText.withValues(alpha: 0.9),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+        Text(
+          "${_shots.length} / $_maxShots captured",
+          style: TextStyle(
+            color: ChurchColors.buttonText.withValues(alpha: 0.9),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
+        ),
         const SizedBox(height: 12),
-        GestureDetector(
-          onTap: onTap,
-          child: AnimatedOpacity(
-            opacity: (manual || ready) ? 1 : 0.4,
-            duration: const Duration(milliseconds: 250),
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 4),
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
-              child: Center(
-                child: manual
-                    ? Container(
-                        width: 62,
-                        height: 62,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                        ),
-                      )
-                    : Icon(
-                        ready ? Icons.check : Icons.hourglass_bottom,
-                        color: Colors.white,
-                        size: 34,
-                      ),
-              ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: 220,
+            height: 6,
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: ChurchColors.buttonText.withValues(alpha: 0.2),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(ChurchColors.button),
             ),
           ),
         ),
@@ -934,12 +903,150 @@ class _CompleteSignupState extends State<CompleteSignup> {
     );
   }
 
-  /// Manual single capture for platforms without a live detection stream
-  /// (web): grab one shot and go straight to review.
+  /// Web-only single manual shutter: grab one shot and go straight to upload.
+  Widget _manualShutter() {
+    final ready = _shots.isEmpty && _isCameraReady;
+    return GestureDetector(
+      onTap: ready ? _captureManualShot : null,
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 4),
+          color: Colors.white.withValues(alpha: 0.2),
+        ),
+        child: Center(
+          child: Container(
+            width: 62,
+            height: 62,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _captureManualShot() async {
     await _captureShot(0, 0);
     if (!mounted || _shots.isEmpty) return;
-    setState(() => _reviewing = true);
+    await _finishCapturing();
+  }
+
+  /// Upload screen: a spinner with progress while the batch uploads, or an
+  /// error with the appropriate recovery (retry the upload for a transient
+  /// failure, or re-capture if every frame was rejected).
+  Widget _buildProcessing() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _profileAvatar(120),
+              const SizedBox(height: 28),
+              if (_error == null) ...[
+                const CircularProgressIndicator(color: ChurchColors.button),
+                const SizedBox(height: 20),
+                Text(
+                  _uploadStatus ?? 'Finishing up…',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: ChurchColors.buttonText,
+                    fontSize: 15,
+                  ),
+                ),
+              ] else ...[
+                _errorBanner(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: _bottomButton(
+                    label: _canuseImg ? 'Try Again' : 'Retake photos',
+                    onTap: _canuseImg ? _submitSignup : _restartCapture,
+                    color: ChurchColors.button,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Final screen: confirms enrolment is done and offers the way in.
+  Widget _buildComplete() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          children: [
+            const Spacer(),
+            _profileAvatar(150),
+            const SizedBox(height: 32),
+            const Icon(Icons.check_circle,
+                color: ChurchColors.card, size: 40),
+            const SizedBox(height: 16),
+            const Text(
+              "You're all set!",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: ChurchColors.buttonText,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Your profile is ready. Welcome to Rejoice Greatly — we're\nglad you're here.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: ChurchColors.buttonText.withValues(alpha: 0.75),
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: _bottomButton(
+                label: 'Go to Dashboard',
+                onTap: _goToDashboard,
+                color: ChurchColors.button,
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Circular avatar of the chosen frontal (profile) shot, shown on the upload
+  /// and completion screens.
+  Widget _profileAvatar(double size) {
+    return Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: ChurchColors.card,
+        border: Border.all(color: ChurchColors.button, width: 3),
+      ),
+      child: _capturedBytes != null
+          ? Image.memory(_capturedBytes!, fit: BoxFit.cover)
+          : const Icon(Icons.person, color: ChurchColors.button, size: 64),
+    );
+  }
+
+  void _goToDashboard() {
+    Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   Widget _circleButton(IconData icon, VoidCallback onTap, bool disabled) {
@@ -1021,6 +1128,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
     );
   }
 }
+
+/// Which screen the sign-up flow is showing.
+enum _SignupPhase { capturing, submitting, done }
 
 /// Head movement the capture flow is currently asking for.
 enum _GuidanceDirection { left, right, down }
