@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:church_app/pages/login_page.dart';
-import 'package:church_app/pages/user_prep.dart';
+import 'package:church_app/pages/date_of_birth_page.dart';
 import 'package:church_app/pages/dashboard.dart';
 import 'package:church_app/services/church_api.dart';
 import 'package:church_app/widgets/branded_loader.dart';
@@ -66,9 +66,10 @@ class _RootPageState extends State<RootPage> {
             if (session.signupComplete) {
               return const Dashboard();
             }
-            // Same onboarding entry as a fresh sign-in (camera screen is
-            // pushed from here, so its back button works in both flows).
-            return const UserPrepPage();
+            // Same onboarding entry as a fresh sign-in: the date-of-birth gate,
+            // which then routes into the facial-recognition intro or straight
+            // to the dashboard depending on age.
+            return const DobPage();
           },
         );
       },

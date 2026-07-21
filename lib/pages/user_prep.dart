@@ -4,6 +4,8 @@ import 'package:auto_size_text/auto_size_text.dart';
 
 import '../theme/church_colors.dart';
 import '../services/auth_service.dart';
+import '../services/church_api.dart';
+import '../widgets/church_buttons.dart';
 import '../main.dart' show navigatorKey;
 
 class UserPrepPage extends StatefulWidget {
@@ -25,6 +27,88 @@ class _UserPrepPageState extends State<UserPrepPage> {
     }
     await AuthService().logout();
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
+  }
+
+  bool _skipping = false;
+
+  /// Lets a member decline facial recognition for now. Signup is finished
+  /// on-device (they can add a photo later from their profile) and they go
+  /// straight to the dashboard.
+  Future<void> _skipFacialScan() async {
+    if (_skipping) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          decoration: ChurchColors.cardDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: ChurchColors.button.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.no_photography_outlined,
+                  color: ChurchColors.accent,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Skip face check-in?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: ChurchColors.bodyText,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "You can explore the app right away. Without a face photo you "
+                "won't be able to check in automatically — you can add one "
+                "anytime from your profile.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: ChurchColors.muted,
+                  height: 1.45,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ChurchPrimaryButton(
+                label: 'Skip for now',
+                onPressed: () => Navigator.pop(ctx, true),
+              ),
+              const SizedBox(height: 10),
+              ChurchSecondaryButton(
+                label: 'Set up my face',
+                onPressed: () => Navigator.pop(ctx, false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    setState(() => _skipping = true);
+    try {
+      await ChurchApi.markSignupCompleteLocally();
+    } catch (e) {
+      debugPrint('UserPrepPage: markSignupCompleteLocally failed: $e');
+    }
+    if (!mounted) return;
+    navigatorKey.currentState
+        ?.pushNamedAndRemoveUntil('/dashboard', (route) => false);
   }
 
   final List<Map<String, dynamic>> _slides = [
@@ -160,12 +244,16 @@ class _UserPrepPageState extends State<UserPrepPage> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/complete-signup');
-                  },
+                  onPressed: _skipping
+                      ? null
+                      : () {
+                          Navigator.pushNamed(context, '/complete-signup');
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ChurchColors.button,
                     foregroundColor: ChurchColors.buttonText,
+                    disabledBackgroundColor: ChurchColors.button,
+                    disabledForegroundColor: ChurchColors.buttonText,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -177,17 +265,18 @@ class _UserPrepPageState extends State<UserPrepPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              // TextButton(
-              //   onPressed: () => Navigator.pop(context),
-              //   child: Text(
-              //     "I'd rather not do this",
-              //     style: TextStyle(
-              //       fontSize: 14,
-              //       color: Colors.grey.shade500,
-              //     ),
-              //   ),
-              // ),
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: _skipping ? null : _skipFacialScan,
+                child: Text(
+                  "No thanks, maybe later",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: ChurchColors.muted,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
