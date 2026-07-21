@@ -39,7 +39,12 @@ class VideoHandler {
 
       _controller = CameraController(
         camera,
-        ResolutionPreset.high,
+        // Medium keeps the live NV21/bgra8888 stream light enough for ML Kit
+        // on slower/mid-range chips (this preset drives both the preview
+        // stream and takePicture() output; the face-recognition backend
+        // doesn't need full-res stills, and this stream ran at ResolutionPreset.high
+        // before, which was heavy enough to freeze devices like the S10e).
+        ResolutionPreset.medium,
         enableAudio: false,
         // ML Kit only accepts nv21/bgra8888 stream frames. takePicture() still
         // returns JPEG regardless, so the upload path is unaffected.

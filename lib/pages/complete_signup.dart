@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../util/video_handler_web.dart'
     if (dart.library.io) '../util/video_handler_mobile.dart';
 import '../util/camera_frame.dart';
+import '../util/frame_to_jpeg.dart';
 import '../theme/church_colors.dart';
 import '../services/auth_service.dart';
 import '../main.dart' show navigatorKey;
@@ -35,10 +36,11 @@ class _CompleteSignupState extends State<CompleteSignup> {
   // create a FaceDetector instance with desired options
   final FaceDetector _faceDetector = FaceDetector(
     options: FaceDetectorOptions(
-      enableContours: true,
-      enableClassification: true,
-      enableLandmarks: true,
-      enableTracking: true,
+      enableContours: false,
+      enableClassification: false,
+      enableLandmarks: false,
+      enableTracking: false,
+      performanceMode: FaceDetectorMode.fast,
     ),
   );
 
@@ -61,6 +63,23 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
   /// Guards against re-entering detection while a frame is still processing.
   bool _isDetecting = false;
+
+  /// Most recent preview frame, kept so a capture can be encoded straight
+  /// from the buffer instead of stopping the stream to call takePicture().
+  CameraFrame? _lastFrame;
+
+  /// Throttles ML Kit calls so a slow/mid-range chip isn't fed a detection
+  /// request on every single preview frame (source of jank on devices like
+  /// the Galaxy S10e). Adaptive: poll quickly while hunting for a face, then
+  /// back off once one is being tracked — ~5Hz is plenty to follow a head
+  /// turning slowly, and most detection work on a "found" frame is spent
+  /// waiting on the next capture anyway.
+  DateTime? _lastDetectionAt;
+  bool _faceTracked = false;
+  static const _searchingDetectionGap = Duration(milliseconds: 80);
+  static const _trackingDetectionGap = Duration(milliseconds: 200);
+  Duration get _minDetectionGap =>
+      _faceTracked ? _trackingDetectionGap : _searchingDetectionGap;
 
   // --- Multi-shot enrolment -------------------------------------------------
 
@@ -122,6 +141,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
     _seenLeft = false;
     _seenRight = false;
     _seenDown = false;
+    _faceTracked = false;
   }
 
   @override
@@ -165,7 +185,18 @@ class _CompleteSignupState extends State<CompleteSignup> {
   }
 
   Future<void> _onCameraFrame(CameraFrame frame) async {
-    if (_isDetecting || !mounted) return;
+    if (!mounted) return;
+    // Always kept fresh, independent of the detection throttle below, so a
+    // capture can grab the most recent frame rather than a stale one.
+    _lastFrame = frame;
+    if (_isDetecting) return;
+
+    final now = DateTime.now();
+    if (_lastDetectionAt != null &&
+        now.difference(_lastDetectionAt!) < _minDetectionGap) {
+      return;
+    }
+    _lastDetectionAt = now;
     _isDetecting = true;
 
     try {
@@ -198,6 +229,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// the pose has moved enough. Only a single face is tracked — more than one
   /// in frame is ambiguous, so we ignore the frame.
   void _recordHeadAngles(List<Face> faces) {
+    _faceTracked = faces.length == 1;
     // Losing the face entirely is the usual failure when the chin drops.
     if (faces.length != 1) return;
 
@@ -258,16 +290,27 @@ class _CompleteSignupState extends State<CompleteSignup> {
     }
   }
 
-  /// Takes one still for the current pose. The frame stream and takePicture()
-  /// contend for the camera, so the stream is paused for the shot and resumed
-  /// afterwards unless we have hit [_maxShots].
+  /// Takes one still for the current pose. Where a live frame stream exists
+  /// (mobile), the shot is decoded straight from the most recently buffered
+  /// preview frame — the stream is never stopped, so there is no
+  /// takePicture()/stream-toggle to contend with or hang (that toggle was
+  /// the source of freezes on some Android devices). Platforms without a
+  /// stream (web) fall back to the handler's own still-capture call.
   Future<void> _captureShot(double yaw, double pitch) async {
     if (_isCapturing || _shots.length >= _maxShots) return;
     _isCapturing = true;
     try {
-      await _handler.stopFrameStream();
-      final bytes = await _handler.capturePhoto();
-      if (bytes != null) {
+      final bytes = _handler.supportsFrameStream
+          ? await _captureFromBufferedFrame()
+          : await _captureFromHandler();
+
+      if (bytes == null) {
+        if (mounted) {
+          setState(() {
+            _error = "That shot didn't come through. Keep turning slowly.";
+          });
+        }
+      } else {
         _shots.add(bytes);
         _lastShotYaw = yaw;
         _lastShotPitch = pitch;
@@ -282,11 +325,55 @@ class _CompleteSignupState extends State<CompleteSignup> {
     } catch (e) {
       debugPrint('Auto-capture failed: $e');
     } finally {
-      // Resume guidance/detection for the next angle unless we are full.
+      // No-op when the stream was never stopped (the buffered-frame path);
+      // only actually restarts anything on the web fallback path.
       if (mounted && _shots.length < _maxShots) {
         await _startFaceDetection();
       }
       _isCapturing = false;
+    }
+  }
+
+  /// Encodes the most recently buffered preview frame to JPEG on a worker
+  /// isolate. Doesn't touch the camera at all, so it can't race or hang the
+  /// capture pipeline the way stopping/restarting the stream around
+  /// takePicture() could on some devices (notably Samsung/Exynos).
+  Future<Uint8List?> _captureFromBufferedFrame() async {
+    final frame = _lastFrame;
+    if (frame == null) return null;
+
+    final format = InputImageFormatValue.fromRawValue(frame.formatRaw);
+    if (format == null) return null;
+
+    final request = FrameJpegRequest(
+      bytes: Uint8List.fromList(frame.bytes),
+      width: frame.width,
+      height: frame.height,
+      bytesPerRow: frame.bytesPerRow,
+      rotationDegrees: frame.rotationDegrees,
+      isNv21: format == InputImageFormat.nv21,
+    );
+
+    try {
+      return await compute(encodeFrameToJpeg, request)
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      debugPrint('Frame-to-JPEG encode failed: $e');
+      return null;
+    }
+  }
+
+  /// Fallback for platforms without a live frame stream (web): use the
+  /// handler's own still-capture call.
+  Future<Uint8List?> _captureFromHandler() async {
+    try {
+      return await _handler.capturePhoto().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
+    } catch (e) {
+      debugPrint('capturePhoto failed: $e');
+      return null;
     }
   }
 
