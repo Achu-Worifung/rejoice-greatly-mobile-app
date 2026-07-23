@@ -1,7 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.NFC"/>
     <uses-feature android:name="android.hardware.camera"/>
+    <!-- NFC is used for tag check-in but is not required to install the app. -->
+    <uses-feature android:name="android.hardware.nfc" android:required="false"/>
     <queries>
     <intent>
         <action android:name="android.intent.action.VIEW" />

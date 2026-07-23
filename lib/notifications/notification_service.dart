@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
+import '../widgets/attendance_banner.dart';
+
 /// Wires up the OneSignal SDK so this device registers a push subscription
 /// and can receive the notifications the backend sends/schedules via the
 /// OneSignal REST API.
@@ -34,6 +36,30 @@ class NotificationService {
 
       // Show notifications while the app is in the foreground too.
       OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+        final data = event.notification.additionalData;
+        final type = data == null ? null : data['type'];
+
+        if (type == 'attendance') {
+          // A fresh NFC check-in already raised an in-app confirmation banner.
+          // When the backend's "You're marked present" push lands in the
+          // foreground moments later, suppress it so the member isn't notified
+          // twice for the same check-in.
+          if (AttendanceBanner.recentlyShown) {
+            event.preventDefault();
+            return;
+          }
+          // Marked present some other way (e.g. from another device): surface
+          // it in-app with the same banner instead of the system notification.
+          event.preventDefault();
+          AttendanceBanner.show(
+            title: event.notification.title,
+            message: event.notification.body ??
+                'You’re marked present for today.',
+            tone: AttendanceBannerTone.success,
+          );
+          return;
+        }
+
         event.notification.display();
       });
 

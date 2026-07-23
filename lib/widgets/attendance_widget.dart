@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../services/api_envelope.dart';
 import '../services/church_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'nfc_write_tag_sheet.dart';
 
 class AttendanceWidget extends StatefulWidget {
   const AttendanceWidget({super.key});
@@ -195,6 +196,13 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
             fontSize: 24,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Provision NFC tag',
+            icon: const Icon(Icons.nfc_rounded, color: Color(0xFF011A3E)),
+            onPressed: () => showNfcWriteTagSheet(context),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),

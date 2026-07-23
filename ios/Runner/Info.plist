@@ -12,6 +12,8 @@
 		<array>
 			<string>remote-notification</string>
 		</array>
+		<key>NFCReaderUsageDescription</key>
+		<string>Rejoice Greatly uses NFC to check you in when you tap the tag at the venue.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>To capture photos and videos, please grant camera access.</string>
 		<key>NSMicrophoneUsageDescription</key>

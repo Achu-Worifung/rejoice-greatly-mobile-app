@@ -11,6 +11,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_envelope.dart';
 import 'user_session_store.dart';
 
+/// Thrown by [ChurchApi.nfcCheckin] when the server responds with a non-200
+/// status. Unlike the generic exceptions [ChurchApi.postJson] throws, this
+/// preserves the HTTP status and the envelope's `errorCode`/`message` so the
+/// caller can distinguish 401 (re-login) from 404 (unrecognized tag) etc.
+class ChurchApiException implements Exception {
+  const ChurchApiException(
+    this.statusCode, {
+    this.errorCode,
+    this.serverMessage,
+  });
+
+  final int statusCode;
+  final String? errorCode;
+  final String? serverMessage;
+
+  @override
+  String toString() =>
+      'ChurchApiException($statusCode, errorCode: $errorCode, message: $serverMessage)';
+}
+
 /// Result of restoring session on cold start.
 class SessionRestoreResult {
   const SessionRestoreResult({
@@ -488,6 +508,60 @@ class ChurchApi {
   }
 
   static const Duration _httpTimeout = Duration(seconds: 30);
+
+  /// `POST /attendance/nfc/checkin` — marks the signed-in member present for
+  /// today from a [tagId] read off a physical NFC tag.
+  ///
+  /// Follows the same body-auth convention as the `/member/**` calls: the
+  /// Firebase id token travels in the JSON body, not a Bearer header. Returns
+  /// the unwrapped success `data` map (`message`, `name`, `attendedAt`,
+  /// `alreadyPresent`). Throws [ChurchApiException] carrying the HTTP status on
+  /// a non-200 response so the caller can react to 401/404 distinctly.
+  static Future<Map<String, dynamic>> nfcCheckin(String tagId) async {
+    final tokenBundle = await requireIdToken();
+    final uri = Uri.parse('$baseUrl/attendance/nfc/checkin');
+    final r = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'idToken': tokenBundle.token,
+            'tagId': tagId,
+          }),
+        )
+        .timeout(_httpTimeout);
+
+    debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
+    if (r.statusCode == 200) {
+      try {
+        return unwrapApiMap(r.body);
+      } on FormatException {
+        throw const ChurchApiException(
+          200,
+          serverMessage: 'The server returned an invalid response.',
+        );
+      }
+    }
+
+    // Error envelope: `message`/`errorCode` sit at the top level with a null
+    // `data`, so decode the raw body rather than unwrapping it.
+    String? message;
+    String? errorCode;
+    try {
+      final decoded = json.decode(r.body);
+      if (decoded is Map) {
+        message = decoded['message'] as String?;
+        errorCode = decoded['errorCode'] as String?;
+      }
+    } catch (_) {
+      // Non-JSON error body; fall through with nulls.
+    }
+    throw ChurchApiException(
+      r.statusCode,
+      errorCode: errorCode,
+      serverMessage: message,
+    );
+  }
 
   static Future<Map<String, dynamic>> postJson(
     String path,

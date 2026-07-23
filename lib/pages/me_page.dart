@@ -10,6 +10,7 @@ import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/nfc_checkin_card.dart';
 import '../widgets/skeletons.dart';
 
 class MePage extends StatefulWidget {
@@ -361,6 +362,10 @@ class _MePageState extends State<MePage> {
                   ],
                   const SizedBox(height: 24),
                   const DashboardLabelText(label: 'Attendance'),
+                  NfcCheckInCard(
+                    onCheckedIn: () => _reload(forceRefresh: true),
+                  ),
+                  const SizedBox(height: 16),
                   if (stats != null)
                     _StatGrid(
                       currentStreak: _i(stats['currentStreak']),
