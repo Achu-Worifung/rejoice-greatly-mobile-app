@@ -45,6 +45,12 @@ void main() async {
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+/// App-wide messenger so banners (e.g. the NFC check-in confirmation, and
+/// foreground attendance pushes) can be shown from outside the widget tree —
+/// notably from the OneSignal foreground listener.
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -53,6 +59,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Rejoice Greatly',
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       initialRoute: '/',
       theme: ThemeData(
         useMaterial3: true,
