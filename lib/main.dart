@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'routes.dart';
 import 'pages/splash_screen.dart';
 import 'theme/church_colors.dart';
+import 'theme/page_transitions.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
@@ -69,6 +70,7 @@ class MyApp extends StatelessWidget {
           primary: ChurchColors.button,
         ),
         scaffoldBackgroundColor: ChurchColors.background,
+        pageTransitionsTheme: kChurchPageTransitionsTheme,
         appBarTheme: const AppBarTheme(
           backgroundColor: ChurchColors.background,
           surfaceTintColor: Colors.transparent,
