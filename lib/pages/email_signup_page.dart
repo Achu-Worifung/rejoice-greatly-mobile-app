@@ -217,7 +217,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                         style: _consentTextStyle,
                         children: [
                           const TextSpan(text: 'I agree to the '),
-                          _linkSpan('Terms of Service', '/terms'),
+                          _linkSpan('Terms of Use', '/terms'),
                           const TextSpan(text: ' and '),
                           _linkSpan('Privacy Policy', '/privacy'),
                           const TextSpan(text: '.'),
@@ -228,8 +228,13 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   _consentTile(
                     value: _privacyAccepted,
                     onChanged: (val) => setState(() => _privacyAccepted = val),
+                    // Not a biometric release: enrollment is optional and 18+,
+                    // so the checkbox everyone must tick only acknowledges how
+                    // attendance can be recorded. Consent to facial processing
+                    // is given at the enrollment step itself. (The app has no
+                    // Bluetooth check-in, so it is not mentioned.)
                     title: const Text(
-                      'I consent to biometric and/or Bluetooth technology being used to record my church attendance.',
+                      'I understand my attendance may be recorded when I tap the NFC tag at the entrance, or by facial recognition if I am 18 or older and choose to enroll.',
                       style: _consentTextStyle,
                     ),
                   ),

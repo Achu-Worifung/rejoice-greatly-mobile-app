@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 import '../theme/church_colors.dart';
 import '../services/auth_service.dart';
+import '../services/biometric_consent.dart';
 import '../services/church_api.dart';
 import '../widgets/church_buttons.dart';
 import '../main.dart' show navigatorKey;
@@ -30,6 +32,35 @@ class _UserPrepPageState extends State<UserPrepPage> {
   }
 
   bool _skipping = false;
+
+  /// The Biometric Information Notice is the written notice shown at the moment
+  /// of collection; this tick is the member's release. Enrollment cannot start
+  /// until it is given. See `docs/BIOMETRIC_NOTICE_AND_CONSENT.md`.
+  bool _consented = false;
+
+  /// Owned by the State so it is disposed with the page rather than leaked on
+  /// every rebuild of the consent row.
+  late final TapGestureRecognizer _noticeTap;
+
+  @override
+  void initState() {
+    super.initState();
+    _noticeTap = TapGestureRecognizer()
+      ..onTap = () => Navigator.pushNamed(context, '/biometric-notice');
+  }
+
+  @override
+  void dispose() {
+    _noticeTap.dispose();
+    super.dispose();
+  }
+
+  Future<void> _agreeAndContinue() async {
+    if (!_consented || _skipping) return;
+    await BiometricConsent.record();
+    if (!mounted) return;
+    Navigator.pushNamed(context, '/complete-signup');
+  }
 
   /// Lets a member decline facial recognition for now. Signup is finished
   /// on-device (they can add a photo later from their profile) and they go
@@ -73,9 +104,10 @@ class _UserPrepPageState extends State<UserPrepPage> {
               ),
               const SizedBox(height: 12),
               const Text(
-                "You can explore the app right away. Without a face photo you "
-                "won't be able to check in automatically — you can add one "
-                "anytime from your profile.",
+                "You can explore the app right away. Without a face photo the "
+                "cameras won't check you in — you can still tap the NFC tag at "
+                "the entrance or check in with a greeter, and you can set up "
+                "your face anytime from your profile.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: ChurchColors.muted,
@@ -172,7 +204,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
               const SizedBox(height: 12),
 
               const Text(
-                "To take attendance with your face, we need to register your facial data. Don\'t worry, it\'s quick and secure!",
+                "To take attendance with your face, we need to register your facial data. Don't worry, it's quick and secure!",
                 style: TextStyle(
                   fontSize: 15,
                   color: ChurchColors.muted,
@@ -240,27 +272,28 @@ class _UserPrepPageState extends State<UserPrepPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              _buildConsentTick(),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _skipping
-                      ? null
-                      : () {
-                          Navigator.pushNamed(context, '/complete-signup');
-                        },
+                  onPressed:
+                      (_skipping || !_consented) ? null : _agreeAndContinue,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ChurchColors.button,
                     foregroundColor: ChurchColors.buttonText,
-                    disabledBackgroundColor: ChurchColors.button,
-                    disabledForegroundColor: ChurchColors.buttonText,
+                    disabledBackgroundColor:
+                        ChurchColors.button.withValues(alpha: 0.35),
+                    disabledForegroundColor:
+                        ChurchColors.buttonText.withValues(alpha: 0.8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 0,
                   ),
                   child: const Text(
-                    "I Understand, Continue",
+                    "I Agree, Continue",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -279,6 +312,69 @@ class _UserPrepPageState extends State<UserPrepPage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// The written release. Tapping the row toggles it; tapping the Notice name
+  /// opens the full text, which the member can read before agreeing.
+  Widget _buildConsentTick() {
+    return InkWell(
+      onTap: _skipping ? null : () => setState(() => _consented = !_consented),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: _consented,
+                onChanged: _skipping
+                    ? null
+                    : (val) => setState(() => _consented = val ?? false),
+                activeColor: ChurchColors.button,
+                side: const BorderSide(color: ChurchColors.muted, width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: ChurchColors.muted,
+                    height: 1.45,
+                  ),
+                  children: [
+                    const TextSpan(text: 'I have read the '),
+                    TextSpan(
+                      text: 'Biometric Information Notice',
+                      style: const TextStyle(
+                        color: ChurchColors.accent,
+                        fontWeight: FontWeight.w700,
+                        decoration: TextDecoration.underline,
+                      ),
+                      recognizer: _noticeTap,
+                    ),
+                    const TextSpan(
+                      text: ', and I consent to my facial data being used to '
+                          'record my attendance. I am 18 or older, and I can '
+                          'withdraw this at any time.',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

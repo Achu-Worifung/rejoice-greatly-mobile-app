@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'pages/login_page.dart';
 import 'pages/email_login_page.dart';
 import 'pages/email_signup_page.dart';
+import 'pages/biometric_notice_page.dart';
 import 'pages/privacy_page.dart';
 import 'pages/terms_page.dart';
 import 'pages/dashboard.dart';
@@ -19,6 +20,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String privacy = '/privacy';
   static const String terms = '/terms';
+  static const String biometricNotice = '/biometric-notice';
   static const String admin = '/admin';
   static const String completeSignup = '/complete-signup';
   static const String dashboard = '/dashboard';
@@ -36,6 +38,7 @@ class AppRoutes {
       emailSignup: (context) => const EmailSignupPage(),
       privacy: (context) => const PrivacyPage(),
       terms: (context) => const TermsPage(),
+      biometricNotice: (context) => const BiometricNoticePage(),
       admin: (context) => const admin_page.AdminDashboard(),
       completeSignup: (context) => const CompleteSignup(),
       dashboard: (context) => const Dashboard(),

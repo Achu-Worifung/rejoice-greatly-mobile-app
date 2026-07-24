@@ -669,13 +669,25 @@ class _MePageState extends State<MePage> {
                 ],
                 const SizedBox(height: 28),
                 const DashboardLabelText(label: 'Account'),
-                if (hasProfile)
-                  _ActionTile(
-                    icon: Icons.photo_camera_outlined,
-                    title: 'Change profile photo',
-                    subtitle: 'Update the photo shown on your profile.',
-                    onTap: _changeProfilePhoto,
-                  ),
+                _ActionTile(
+                  icon: Icons.description_outlined,
+                  title: 'Terms of Use',
+                  subtitle: 'Review the terms you agreed to when you joined.',
+                  onTap: () => Navigator.pushNamed(context, '/terms'),
+                ),
+                _ActionTile(
+                  icon: Icons.lock_outline_rounded,
+                  title: 'Privacy Policy',
+                  subtitle: 'How we handle your information and photos.',
+                  onTap: () => Navigator.pushNamed(context, '/privacy'),
+                ),
+                _ActionTile(
+                  icon: Icons.face_retouching_natural_outlined,
+                  title: 'Biometric Notice & Consent',
+                  subtitle: 'What face check-in collects, and how to withdraw.',
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/biometric-notice'),
+                ),
                 _ActionTile(
                   icon: Icons.delete_outline_rounded,
                   title: 'Delete my account',
