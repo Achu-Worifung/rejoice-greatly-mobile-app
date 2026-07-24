@@ -10,11 +10,15 @@ import '../widgets/church_buttons.dart';
 /// First onboarding step: the member confirms their date of birth so we can set
 /// up the right experience.
 ///
+/// The date is always saved to the church record first
+/// ([ChurchApi.saveDateOfBirth]) — the age decision is the server's, and the
+/// rest of the app reads it back off the account.
+///
 /// - **18 and older** continue the normal flow to the facial-recognition intro
 ///   ([UserPrepPage] → `/complete-signup`).
-/// - **Under 18** skip the face check-in entirely: signup is marked complete
-///   on-device (see [ChurchApi.markSignupCompleteLocally]) and they go straight
-///   to the dashboard.
+/// - **Under 18** skip the face check-in entirely: the server marks their
+///   signup complete on the spot (no photo is ever collected for them) and they
+///   go straight to the dashboard.
 class DobPage extends StatefulWidget {
   const DobPage({super.key});
 
@@ -25,10 +29,26 @@ class DobPage extends StatefulWidget {
 class _DobPageState extends State<DobPage> {
   DateTime? _dob;
   bool _working = false;
+  String? _error;
 
   /// Members this age or older go through facial-recognition setup; younger
   /// members skip it and head straight to the dashboard.
   static const int _adultAge = 18;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillSavedDob();
+  }
+
+  /// A member who reached this gate before (and stopped at the face intro) has
+  /// already told us their birthday — don't make them find it again.
+  Future<void> _prefillSavedDob() async {
+    final saved = await ChurchApi.cachedDateOfBirth();
+    if (saved != null && mounted && _dob == null) {
+      setState(() => _dob = saved);
+    }
+  }
 
   /// Sign-in wipes the navigation stack before showing this page, so the only
   /// way "back" from the onboarding root is to sign out.
@@ -61,7 +81,12 @@ class _DobPageState extends State<DobPage> {
         child: child!,
       ),
     );
-    if (picked != null && mounted) setState(() => _dob = picked);
+    if (picked != null && mounted) {
+      setState(() {
+        _dob = picked;
+        _error = null;
+      });
+    }
   }
 
   int _ageOn(DateTime dob, DateTime now) {
@@ -77,14 +102,41 @@ class _DobPageState extends State<DobPage> {
     final dob = _dob;
     if (dob == null || _working) return;
 
-    if (_ageOn(dob, DateTime.now()) >= _adultAge) {
+    setState(() {
+      _working = true;
+      _error = null;
+    });
+
+    // The birthday belongs on the church record, not just on this device — it
+    // is also what marks an under-18 account complete, so it must land before
+    // we route anywhere.
+    Map<String, dynamic> account;
+    try {
+      account = await ChurchApi.saveDateOfBirth(dob);
+    } catch (e) {
+      debugPrint('DobPage: saveDateOfBirth failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _working = false;
+        _error = "We couldn't save your date of birth. Check your connection "
+            'and try again.';
+      });
+      return;
+    }
+
+    final isMinor = ChurchApi.isMinorAccount(account) ||
+        _ageOn(dob, DateTime.now()) < _adultAge;
+
+    if (!isMinor) {
       // Normal workflow: on to the facial-recognition intro.
+      if (!mounted) return;
+      setState(() => _working = false);
       Navigator.pushNamed(context, '/user-prep');
       return;
     }
 
-    // Under 18: skip facial recognition and finish onboarding here.
-    setState(() => _working = true);
+    // Under 18: no face, no photo — the server already marked signup complete,
+    // so mirror that on-device in case the account response was partial.
     try {
       await ChurchApi.markSignupCompleteLocally();
     } catch (e) {
@@ -184,6 +236,17 @@ class _DobPageState extends State<DobPage> {
                   ),
                 ),
               ),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  _error!,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFFC62828),
+                    height: 1.4,
+                  ),
+                ),
+              ],
               const Spacer(),
               ChurchPrimaryButton(
                 label: 'Continue',

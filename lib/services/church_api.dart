@@ -122,6 +122,20 @@ class ChurchApi {
   static bool isSignupComplete(Map<String, dynamic>? account) =>
       UserSessionStore.isSignupComplete(account);
 
+  /// Whether this member is under 18. Minors never enrol a face: they check in
+  /// with an NFC tag, cannot upload a photo, and wear an initials avatar.
+  static bool isMinorAccount(Map<String, dynamic>? account) =>
+      UserSessionStore.isMinor(account);
+
+  /// Whether the member may set a profile photo. Minors may not — no photo of
+  /// an under-18 member is collected (the backend refuses the upload too).
+  static bool canUploadPhoto(Map<String, dynamic>? account) {
+    if (account != null && account.containsKey('canUploadPhoto')) {
+      return UserSessionStore.asBool(account['canUploadPhoto']);
+    }
+    return !isMinorAccount(account);
+  }
+
   static bool hasMemberProfile(Map<String, dynamic>? profile) {
     if (profile == null) return false;
     if (profile.containsKey('hasProfile') &&
@@ -129,11 +143,13 @@ class ChurchApi {
       return true;
     }
     // A stale/clobbered `hasProfile: false` must not hide a finished profile,
-    // so fall back to deriving it from the fields that define one.
+    // so fall back to deriving it from the fields that define one. A minor has
+    // no photo to define it with — for them finishing the age gate is the whole
+    // of onboarding, so signup being complete is enough.
+    if (!isSignupComplete(profile)) return false;
+    if (isMinorAccount(profile)) return true;
     final img = profile['imgURL'];
-    return isSignupComplete(profile) &&
-        img is String &&
-        img.trim().isNotEmpty;
+    return img is String && img.trim().isNotEmpty;
   }
 
   static Future<void> persistAccountFromServer(
@@ -150,6 +166,24 @@ class ChurchApi {
   /// starts. The member can still add a photo later from their profile.
   static Future<void> markSignupCompleteLocally() =>
       persistAccountFromServer(const {'signupComplete': true});
+
+  /// `POST /member/date-of-birth` — records the date of birth collected at the
+  /// onboarding gate and returns the refreshed profile.
+  ///
+  /// For a member under 18 the server also marks signup complete: they never
+  /// enrol a face, so there is no photo commit later to do it. The response
+  /// (`minor`, `signupComplete`, `hasProfile`, `canUploadPhoto`) is cached, so
+  /// the rest of the app can branch on it without another round trip.
+  static Future<Map<String, dynamic>> saveDateOfBirth(DateTime dob) async {
+    final iso = DateFormat('yyyy-MM-dd').format(dob);
+    final map = await _postMember('date-of-birth', {'dateOfBirth': iso});
+    await _mergeIntoCachedAccount(map);
+    return map;
+  }
+
+  /// The date of birth already on file, or null before the gate is passed.
+  static Future<DateTime?> cachedDateOfBirth() =>
+      UserSessionStore.readDateOfBirth();
 
   static Future<SessionRestoreResult> restoreUserSession() async {
     final user = await waitForSignedInUser(

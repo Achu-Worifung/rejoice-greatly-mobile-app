@@ -21,6 +21,9 @@ enum PictureUploadError {
   noFaceDetected,
   notAuthenticated,
   accountMissing,
+  /// The account may not have a profile photo at all — members under 18 are
+  /// identified by their NFC tag and no photo of them is collected.
+  notAllowed,
   network,
   unknown,
 }
@@ -305,6 +308,13 @@ class ProfilePictureUpload {
         return const PictureUploadException(
           PictureUploadError.network,
           'Your upload link expired. Please try again.',
+        );
+      case 'MINOR_PHOTO_NOT_ALLOWED':
+        // A 403, but the session is fine — the account simply has no photo to
+        // set. Matched here so it does not read as "sign in again".
+        return const PictureUploadException(
+          PictureUploadError.notAllowed,
+          'Members under 18 check in with their NFC tag, so there is no photo to set.',
         );
       case 'NOT_UPLOAD_OWNER':
         // Also a 403, but the session is fine — it is the grant that is wrong.

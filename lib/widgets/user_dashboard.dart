@@ -13,6 +13,7 @@ import '../theme/church_colors.dart';
 import 'church_app_bar.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/church_buttons.dart';
+import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 
 
@@ -39,6 +40,7 @@ class _DashboardEventsLoad {
 class _DashboardPageState extends State<DashboardPage> {
   late Future<String> _greetingFuture;
   String? _avatarUrl;
+  String? _memberName;
   late Future<Map<String, dynamic>> _verseFuture;
   late Future<List<dynamic>> _sermonFuture;
   late Future<_DashboardEventsLoad> _eventsFuture;
@@ -59,6 +61,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final cachedUrl = await ChurchApi.resolveProfileImageUrl(account: cached);
       setState(() {
         _avatarUrl = cachedUrl;
+        _memberName = cached['name'] as String? ?? _memberName;
         _greetingFuture = _getGreeting();
       });
     }
@@ -68,6 +71,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final url = await ChurchApi.resolveProfileImageUrl(account: result.profile);
     setState(() {
       _avatarUrl = url;
+      _memberName = result.profile?['name'] as String? ?? _memberName;
       _greetingFuture = _getGreeting();
     });
   }
@@ -152,32 +156,14 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'Good evening, $name!';
   }
 
-  Widget _avatarPlaceholder() {
-    return Container(
-      height: 40,
-      width: 40,
-      decoration: BoxDecoration(
-        color: ChurchColors.card,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Icon(Icons.person, color: ChurchColors.accent),
-    );
-  }
-
+  /// Falls back to the member's initials — the only avatar under-18 members
+  /// have, since no photo of them is collected.
   Widget _buildAvatar() {
-    final url = _avatarUrl;
-    if (url == null || url.isEmpty) {
-      return _avatarPlaceholder();
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Image.network(
-        url,
-        height: 40,
-        width: 40,
-        fit: BoxFit.cover,
-        errorBuilder: (BuildContext c, Object e, StackTrace? s) => _avatarPlaceholder(),
-      ),
+    return MemberAvatar(
+      name: _memberName ?? '',
+      imageUrl: _avatarUrl,
+      size: 40,
+      radius: 20,
     );
   }
 

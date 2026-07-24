@@ -15,6 +15,8 @@ class UserSessionStore {
   static const String imgUrlKey = 'imgURL';
   static const String authProviderKey = 'authProvider';
   static const String signupCompleteKey = 'signupComplete';
+  static const String dateOfBirthKey = 'dateOfBirth';
+  static const String minorKey = 'minor';
   static const String isAdminKey = 'isAdmin';
   static const String mePageCachedAtKey = 'me_page_cached_at';
 
@@ -81,6 +83,10 @@ class UserSessionStore {
       if (str(raw['name']) != null) 'name': str(raw['name']),
       if (str(raw['email']) != null) 'email': str(raw['email']),
       if (str(raw['imgURL']) != null) 'imgURL': str(raw['imgURL']),
+      if (str(raw['dateOfBirth']) != null) 'dateOfBirth': str(raw['dateOfBirth']),
+      if (raw.containsKey('minor')) 'minor': asBool(raw['minor']),
+      if (raw.containsKey('canUploadPhoto'))
+        'canUploadPhoto': asBool(raw['canUploadPhoto']),
       if (raw.containsKey('hasProfile')) 'hasProfile': asBool(raw['hasProfile']),
       if (raw.containsKey('admin') || raw.containsKey('isAdmin'))
         'admin': asBool(raw['admin'] ?? raw['isAdmin']),
@@ -151,6 +157,12 @@ class UserSessionStore {
     if (merged.containsKey(signupCompleteKey)) {
       await p.setBool(signupCompleteKey, isSignupComplete(merged));
     }
+    if (merged[dateOfBirthKey] != null) {
+      await p.setString(dateOfBirthKey, '${merged[dateOfBirthKey]}');
+    }
+    if (merged.containsKey(minorKey)) {
+      await p.setBool(minorKey, asBool(merged[minorKey]));
+    }
     for (final key in const [
       'currentStreak',
       'longestStreak',
@@ -204,6 +216,9 @@ class UserSessionStore {
           : (user?.displayName?.isNotEmpty == true ? user!.displayName! : 'Member'),
       'email': (email != null && email.isNotEmpty) ? email : (user?.email ?? ''),
       if (p.getString(imgUrlKey) != null) 'imgURL': p.getString(imgUrlKey),
+      if (p.getString(dateOfBirthKey) != null)
+        'dateOfBirth': p.getString(dateOfBirthKey),
+      'minor': p.getBool(minorKey) ?? false,
       'signupComplete': p.getBool(signupCompleteKey) ?? false,
       'admin': p.getBool(isAdminKey) ?? false,
       'currentStreak': p.getInt('currentStreak') ?? 0,
@@ -232,6 +247,29 @@ class UserSessionStore {
     return isSignupComplete(account);
   }
 
+  /// True when the member is under 18 — they skip face enrolment, never upload
+  /// a photo, and wear an initials avatar instead.
+  static bool isMinor(Map<String, dynamic>? account) {
+    if (account != null && account.containsKey(minorKey)) {
+      return asBool(account[minorKey]);
+    }
+    return false;
+  }
+
+  static Future<bool> readIsMinor() async {
+    final p = await _p();
+    if (p.getBool(minorKey) ?? false) return true;
+    return isMinor(await loadAccount());
+  }
+
+  /// The stored date of birth (`yyyy-MM-dd`), or null before the gate is passed.
+  static Future<DateTime?> readDateOfBirth() async {
+    final account = await loadAccount();
+    final raw = account?[dateOfBirthKey] ?? (await _p()).getString(dateOfBirthKey);
+    if (raw is! String || raw.trim().isEmpty) return null;
+    return DateTime.tryParse(raw.trim());
+  }
+
   static Future<void> saveMePageCachedAt(DateTime time) async {
     final p = await _p();
     await p.setString(mePageCachedAtKey, time.millisecondsSinceEpoch.toString());
@@ -247,6 +285,13 @@ class UserSessionStore {
   }
 
   static Future<String?> readProfileImageUrl({Map<String, dynamic>? account}) async {
+    // Under-18 members have no profile photo by design — not even the one their
+    // Google/Apple account carries. Their avatar is always their initials.
+    final minor = account != null && account.containsKey(minorKey)
+        ? asBool(account[minorKey])
+        : await readIsMinor();
+    if (minor) return null;
+
     final img = account?['imgURL'];
     if (img is String && img.trim().isNotEmpty) return img.trim();
 
@@ -272,6 +317,8 @@ class UserSessionStore {
     await p.remove(imgUrlKey);
     await p.remove(authProviderKey);
     await p.remove(signupCompleteKey);
+    await p.remove(dateOfBirthKey);
+    await p.remove(minorKey);
     await p.remove(isAdminKey);
     await p.remove('currentStreak');
     await p.remove('longestStreak');

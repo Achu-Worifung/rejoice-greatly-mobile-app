@@ -14,6 +14,7 @@ import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/member_avatar.dart';
 import '../widgets/nfc_checkin_card.dart';
 import '../widgets/skeletons.dart';
 
@@ -173,6 +174,17 @@ class _MePageState extends State<MePage> {
   /// frame runs through the same [ProfilePictureUpload] contract, so the
   /// backend still validates the face and publishes a fresh `imgURL`.
   Future<void> _changeProfilePhoto() async {
+    // Belt and braces with the hidden affordance: no photo of an under-18
+    // member is collected, and the backend refuses the upload as well.
+    final account = await ChurchApi.getCachedAccountJson();
+    if (!ChurchApi.canUploadPhoto(account)) {
+      if (!mounted) return;
+      _showMessage(
+        'Members under 18 check in with their NFC tag, so there is no photo to set.',
+      );
+      return;
+    }
+
     final source = await _chooseImageSource();
     if (source == null || !mounted) return;
 
@@ -544,6 +556,11 @@ class _MePageState extends State<MePage> {
           final hasProfile = result?.hasProfile ?? false;
           final stats = result?.stats;
           final profileSynced = result?.profileSynced ?? false;
+          // Under-18 members have no photo to change — they are identified by
+          // their NFC tag and wear their initials.
+          final canUploadPhoto = ChurchApi.canUploadPhoto(profile);
+          final hasDateOfBirth =
+              (profile['dateOfBirth'] as String?)?.trim().isNotEmpty ?? false;
 
           return RefreshIndicator(
             color: ChurchColors.button,
@@ -560,7 +577,8 @@ class _MePageState extends State<MePage> {
                   email: email,
                   churchLine: churchSubtitle,
                   account: profile,
-                  onEditPhoto: hasProfile ? _changeProfilePhoto : null,
+                  onEditPhoto:
+                      hasProfile && canUploadPhoto ? _changeProfilePhoto : null,
                 ),
                 if (!profileSynced && syncError != null) ...[
                   const SizedBox(height: 12),
@@ -610,6 +628,20 @@ class _MePageState extends State<MePage> {
                           onPressed: () =>
                               Navigator.pushNamed(context, '/complete-signup'),
                         ),
+                        // Members who joined before the date-of-birth gate have
+                        // no age on file, so an under-18 member would be stuck
+                        // being asked for a photo they must never send. This is
+                        // their way out of it.
+                        if (!hasDateOfBirth) ...[
+                          const SizedBox(height: 10),
+                          ChurchSecondaryButton(
+                            label: 'Under 18? Tell us your birthday',
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              '/date-of-birth',
+                            ).then((_) => _reload(forceRefresh: true)),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -800,20 +832,7 @@ class _ProfileHeader extends StatelessWidget {
   }
 
   Widget _buildAvatar(String? url) {
-    final image = ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: SizedBox(
-        width: 72,
-        height: 72,
-        child: url != null && url.isNotEmpty
-            ? Image.network(
-                url,
-                fit: BoxFit.cover,
-                errorBuilder: (c, e, s) => _placeholder(),
-              )
-            : _placeholder(),
-      ),
-    );
+    final image = MemberAvatar(name: name, imageUrl: url, size: 72, radius: 20);
 
     if (onEditPhoto == null) return image;
 
@@ -842,13 +861,6 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  static Widget _placeholder() {
-    return Container(
-      color: ChurchColors.button.withValues(alpha: 0.1),
-      child: const Icon(Icons.person, size: 40, color: ChurchColors.accent),
     );
   }
 }
