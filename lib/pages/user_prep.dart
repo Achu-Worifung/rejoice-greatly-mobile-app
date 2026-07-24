@@ -139,8 +139,10 @@ class _UserPrepPageState extends State<UserPrepPage> {
       debugPrint('UserPrepPage: markSignupCompleteLocally failed: $e');
     }
     if (!mounted) return;
-    navigatorKey.currentState
-        ?.pushNamedAndRemoveUntil('/dashboard', (route) => false);
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/dashboard',
+      (route) => false,
+    );
   }
 
   final List<Map<String, dynamic>> _slides = [
@@ -174,145 +176,224 @@ class _UserPrepPageState extends State<UserPrepPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ChurchColors.background,
+      // Scrollable rather than a bare Column: the eligibility notice and the
+      // consent release make the bottom bar tall, and on a short screen the
+      // slides must give way instead of overflowing. (A Spacer can't be used
+      // here — the carousel reports no intrinsic height, so the column must be
+      // free to size itself.)
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
 
-              IconButton(
-                onPressed: _goBack,
-                padding: EdgeInsets.zero,
-                alignment: Alignment.centerLeft,
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: ChurchColors.bodyText,
+                IconButton(
+                  onPressed: _goBack,
+                  padding: EdgeInsets.zero,
+                  alignment: Alignment.centerLeft,
+                  icon: const Icon(
+                    Icons.arrow_back,
+                    color: ChurchColors.bodyText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-              const Text(
-                "Set Up Facial Recognition",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: ChurchColors.bodyText,
+                const Text(
+                  "Set Up Facial Recognition",
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: ChurchColors.bodyText,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              const Text(
-                "To take attendance with your face, we need to register your facial data. Don't worry, it's quick and secure!",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: ChurchColors.muted,
-                  height: 1.5,
+                const Text(
+                  "To take attendance with your face, we need to register your facial data. Don't worry, it's quick and secure!",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: ChurchColors.muted,
+                    height: 1.5,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 25),
+                const SizedBox(height: 25),
 
-              CarouselSlider(
-                options: CarouselOptions(
-                  height: 280,
-                  // This is the equivalent to onScrollIndexChanged
-                  onPageChanged: (index, reason) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                  },
-                  viewportFraction:
-                      0.82, // Controls how much of the side items are visible
-                  enlargeCenterPage: true, // Optional: makes the middle one pop
+                CarouselSlider(
+                  options: CarouselOptions(
+                    height: 280,
+                    // This is the equivalent to onScrollIndexChanged
+                    onPageChanged: (index, reason) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    viewportFraction:
+                        0.82, // Controls how much of the side items are visible
+                    enlargeCenterPage:
+                        true, // Optional: makes the middle one pop
+                  ),
+                  items: _slides.map((slide) => _buildSlide(slide)).toList(),
                 ),
-                items: _slides.map((slide) => _buildSlide(slide)).toList(),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Dot indicators
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(_slides.length, (index) {
-                  final isActive = index == _currentIndex;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: isActive ? 24 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? ChurchColors.button
-                          : ChurchColors.divider,
-                      borderRadius: BorderRadius.circular(4),
+                // Dot indicators
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_slides.length, (index) {
+                    final isActive = index == _currentIndex;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: isActive ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? ChurchColors.button
+                            : ChurchColors.divider,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    );
+                  }),
+                ),
+
+                const SizedBox(height: 24),
+
+                Center(
+                  child: Text(
+                    "${_currentIndex + 1} of ${_slides.length}",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: ChurchColors.muted,
                     ),
-                  );
-                }),
-              ),
-
-              const Spacer(),
-
-              Center(
-                child: Text(
-                  "${_currentIndex + 1} of ${_slides.length}",
-                  style: const TextStyle(fontSize: 13, color: ChurchColors.muted),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-            ],
+                const SizedBox(height: 12),
+              ],
+            ),
           ),
         ),
       ),
 
+      // The bar carries the eligibility notice and the written release, so it
+      // is text-heavy and grows with the member's font-size setting. Capped and
+      // scrollable so it can never push itself off a small screen — the release
+      // and the button must always be reachable.
       bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildConsentTick(),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed:
-                      (_skipping || !_consented) ? null : _agreeAndContinue,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ChurchColors.button,
-                    foregroundColor: ChurchColors.buttonText,
-                    disabledBackgroundColor:
-                        ChurchColors.button.withValues(alpha: 0.35),
-                    disabledForegroundColor:
-                        ChurchColors.buttonText.withValues(alpha: 0.8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * 0.62,
+          ),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildEligibilityNotice(),
+                  const SizedBox(height: 14),
+                  _buildConsentTick(),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: (_skipping || !_consented)
+                          ? null
+                          : _agreeAndContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ChurchColors.button,
+                        foregroundColor: ChurchColors.buttonText,
+                        disabledBackgroundColor: ChurchColors.button.withValues(
+                          alpha: 0.35,
+                        ),
+                        disabledForegroundColor: ChurchColors.buttonText
+                            .withValues(alpha: 0.8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "I Agree, Continue",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                    elevation: 0,
                   ),
-                  child: const Text(
-                    "I Agree, Continue",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: _skipping ? null : _skipFacialScan,
+                    child: Text(
+                      "No thanks, maybe later",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: ChurchColors.muted,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(height: 6),
-              TextButton(
-                onPressed: _skipping ? null : _skipFacialScan,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Eligibility, stated plainly on the last screen before the camera opens.
+  ///
+  /// The app already blocks under-18 members at the date-of-birth gate, but
+  /// the other conditions — participating location, jurisdiction, church
+  /// authorisation — are ones only the member can answer, so they are put in
+  /// front of them here rather than buried in the Notice. Mirrors Section 2 of
+  /// `docs/BIOMETRIC_NOTICE_AND_CONSENT.md`.
+  Widget _buildEligibilityNotice() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: ChurchColors.cardDecoration(shadow: const []),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.place_outlined, size: 18, color: ChurchColors.accent),
+              SizedBox(width: 8),
+              Expanded(
                 child: Text(
-                  "No thanks, maybe later",
+                  'Facial recognition eligibility',
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: ChurchColors.muted,
+                    fontWeight: FontWeight.w800,
+                    color: ChurchColors.bodyText,
                   ),
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          const Text(
+            'Facial recognition is available only to eligible members attending '
+            'participating church locations. If you are under 18, are outside a '
+            'participating church, or are in a jurisdiction where this feature '
+            'is unavailable (such as certain U.S. states), please do not '
+            'continue with facial enrollment — you can keep using NFC or '
+            'another available check-in method.',
+            style: TextStyle(
+              fontSize: 13,
+              color: ChurchColors.muted,
+              height: 1.45,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -366,9 +447,12 @@ class _UserPrepPageState extends State<UserPrepPage> {
                       recognizer: _noticeTap,
                     ),
                     const TextSpan(
-                      text: ', and I consent to my facial data being used to '
-                          'record my attendance. I am 18 or older, and I can '
-                          'withdraw this at any time.',
+                      text:
+                          ', and I consent to my facial data being used to '
+                          'record my attendance. I am 18 or older, I attend a '
+                          'participating church location, I am eligible as '
+                          'described above, and I can withdraw this at any '
+                          'time.',
                     ),
                   ],
                 ),

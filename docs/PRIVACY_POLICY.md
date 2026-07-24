@@ -114,6 +114,33 @@ stated purpose, never sell it, and destroy it once that purpose ends.
 Enrollment is voluntary, it is not required to use the App, and it is not required
 to attend anything.
 
+**Eligibility for facial recognition.** Facial recognition is an optional
+authentication feature available only to eligible users who attend participating
+church locations where the feature has been deployed. To protect user privacy and
+comply with applicable laws, facial recognition enrollment is **not** available to:
+
+- Individuals under 18 years of age.
+- Users who do not attend a participating church location.
+- Users located in jurisdictions where we have chosen not to offer facial
+  recognition due to legal, regulatory, or operational considerations.
+- Users whose accounts are not authorized for facial recognition by the
+  participating church.
+
+Users who are not eligible will authenticate using another supported method, such
+as an NFC security tag or other authentication methods made available by the App.
+
+**We do not knowingly collect** facial verification photographs, biometric
+templates, or other facial recognition enrollment data from users who are not
+eligible for facial recognition. If such information is inadvertently submitted, we
+will take reasonable steps to delete it in accordance with our data retention
+policies and applicable law.
+
+**Where it is meant to be used.** At this time, facial recognition is intended
+solely for use on the grounds of participating church locations during authorized
+church activities. The feature is not designed or intended for general-purpose
+identity verification outside of those participating church locations, and we do
+not operate it as such a service.
+
 **Purpose.** Facial verification data is processed **exclusively** to verify your
 identity and record your attendance at church services. We do not use it for any
 other purpose.

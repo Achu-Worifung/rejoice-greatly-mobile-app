@@ -111,6 +111,37 @@ class TermsPage extends StatelessWidget {
             'enroll. If you do not enroll, nothing in it applies to you.',
             lead: true,
           ),
+          const LegalParagraph(
+            'Eligibility. Facial recognition is an optional authentication '
+            'feature available only to eligible users who attend participating '
+            'church locations where the feature has been deployed. To protect '
+            'user privacy and comply with applicable laws, facial recognition '
+            'enrollment is not available to:',
+          ),
+          const LegalBullets([
+            'Individuals under 18 years of age.',
+            'Users who do not attend a participating church location.',
+            'Users located in jurisdictions where we have chosen not to offer '
+                'facial recognition due to legal, regulatory, or operational '
+                'considerations.',
+            'Users whose accounts are not authorized for facial recognition by '
+                'the participating church.',
+          ]),
+          const LegalParagraph(
+            'If you are not eligible, do not enroll. You will authenticate using '
+            'another supported method, such as an NFC security tag, and nothing '
+            'else in the app is affected. By enrolling, you represent that you '
+            'meet the eligibility requirements above.',
+          ),
+          const LegalCallout(
+            icon: Icons.place_outlined,
+            title: 'For use at participating church locations only',
+            text: 'Facial recognition is intended solely for use on the grounds '
+                'of participating church locations during authorized church '
+                'activities. It is not designed or intended for general-purpose '
+                'identity verification outside of those locations, and it is not '
+                'offered as an identity-verification service to anyone.',
+          ),
           LegalParagraph(
             'By completing the facial enrollment step, you give explicit, '
             'informed consent for $church to:',
@@ -266,6 +297,23 @@ class TermsPage extends StatelessWidget {
             'correctly, or that reminders will always be delivered. The Church '
             'is not liable for system outages, network failures, or technical '
             'errors that result in missed or incorrect attendance logging.',
+          ),
+          const LegalCallout(
+            icon: Icons.report_gmailerrorred_outlined,
+            title: 'Scope of the identification features',
+            text: "The app's facial recognition and NFC check-in exist for one "
+                'purpose: recording attendance at participating church '
+                'locations during authorized church activities. They are not '
+                'identity-verification, security-screening, access-control, or '
+                'background-check services, and we make no warranty that they '
+                'are fit for any such use. The Church is not responsible for '
+                'any use of the app, or reliance on its attendance records or '
+                'identification results, outside that purpose or away from '
+                'participating church locations — including use for identity '
+                'verification, employment, licensing, safety screening, or any '
+                'legal or evidentiary purpose. Attendance records are a '
+                'convenience for church administration, not a certified record '
+                "of anyone's presence, identity, or whereabouts.",
           ),
         ]),
         LegalSection('Limitation of liability', [

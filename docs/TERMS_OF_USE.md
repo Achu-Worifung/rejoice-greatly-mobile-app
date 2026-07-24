@@ -88,6 +88,36 @@ contact the Church and we will correct your record.
 This section applies **only if you are 18 or older and choose to enroll**. If you
 do not enroll, nothing in this section applies to you.
 
+**Eligibility.** Facial recognition is an optional authentication feature available
+only to eligible users who attend participating church locations where the feature
+has been deployed. To protect user privacy and comply with applicable laws, facial
+recognition enrollment is **not** available to:
+
+- Individuals under 18 years of age.
+- Users who do not attend a participating church location.
+- Users located in jurisdictions where we have chosen not to offer facial
+  recognition due to legal, regulatory, or operational considerations.
+- Users whose accounts are not authorized for facial recognition by the
+  participating church.
+
+If you are not eligible, **do not enroll.** You will authenticate using another
+supported method, such as an NFC security tag or another method made available by
+the App, and nothing else in the App is affected. By enrolling, you represent that
+you meet the eligibility requirements above.
+
+We do not knowingly collect facial verification photographs, biometric templates,
+or other facial recognition enrollment data from users who are not eligible for
+facial recognition. If such information is inadvertently submitted, we will take
+reasonable steps to delete it in accordance with our data retention policies and
+applicable law. If you believe ineligible data has been collected, contact us using
+Section 16.
+
+**Scope.** At this time, facial recognition is intended solely for use on the
+grounds of participating church locations during authorized church activities. The
+feature is **not** designed or intended for general-purpose identity verification
+outside of those participating church locations, and it is not offered as an
+identity-verification service to anyone.
+
 By completing the facial enrollment step, you give explicit, informed consent for
 the Church to:
 
@@ -211,6 +241,19 @@ the App will be uninterrupted, error-free, or secure, that attendance will alway
 be recorded correctly, or that reminders will always be delivered. The Church is
 not liable for system outages, network failures, or technical errors that result
 in missed or incorrect attendance logging.
+
+**Scope of the identification features.** The App's facial recognition and NFC
+check-in features exist for one purpose: recording attendance at participating
+church locations during authorized church activities (Sections 4 and 5). They are
+**not** identity-verification, security-screening, access-control, or background-
+check services, they are not represented as fit for any such use, and we make no
+warranty that they are. The Church is not responsible for any use of the App, or
+reliance on its attendance records or identification results, outside that purpose
+or away from participating church locations — including any use by you or by a
+third party for identity verification, employment, licensing, safety screening, or
+any legal or evidentiary purpose. Attendance records are a convenience for church
+administration and are not a certified record of any person's presence, identity,
+or whereabouts.
 
 ## 13. Limitation of Liability
 

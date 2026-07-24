@@ -61,6 +61,49 @@ class BiometricNoticePage extends StatelessWidget {
                 'the attendance cameras and have no biometric record.',
           ),
         ]),
+        LegalSection('Eligibility for facial recognition', [
+          const LegalParagraph(
+            'Facial recognition is an optional authentication feature that is '
+            'available only to eligible users who attend participating church '
+            'locations where the feature has been deployed.',
+            lead: true,
+          ),
+          const LegalParagraph(
+            'To protect user privacy and comply with applicable laws, facial '
+            'recognition enrollment is not available to:',
+          ),
+          const LegalBullets([
+            'Individuals under 18 years of age.',
+            'Users who do not attend a participating church location.',
+            'Users located in jurisdictions where we have chosen not to offer '
+                'facial recognition due to legal, regulatory, or operational '
+                'considerations.',
+            'Users whose accounts are not authorized for facial recognition by '
+                'the participating church.',
+          ]),
+          const LegalParagraph(
+            'Users who are not eligible for facial recognition will authenticate '
+            'using another supported method, such as an NFC security tag or '
+            'other authentication methods made available by the App.',
+          ),
+          const LegalParagraph(
+            'We do not knowingly collect facial verification photographs, '
+            'biometric templates, or other facial recognition enrollment data '
+            'from users who are not eligible for facial recognition. If such '
+            'information is inadvertently submitted, we will take reasonable '
+            'steps to delete it in accordance with our data retention policies '
+            'and applicable law.',
+          ),
+          const LegalCallout(
+            icon: Icons.place_outlined,
+            title: 'For use at participating church locations only',
+            text: 'At this time, facial recognition is intended solely for use '
+                'on the grounds of participating church locations during '
+                'authorized church activities. The feature is not designed or '
+                'intended for general-purpose identity verification outside of '
+                'those participating church locations.',
+          ),
+        ]),
         LegalSection('What we collect', [
           const LegalParagraph(
             'If you voluntarily enroll, we collect:',
@@ -221,11 +264,15 @@ class BiometricNoticePage extends StatelessWidget {
             'You understand you may withdraw this consent at any time and have '
                 'your facial data deleted.',
             'You confirm that you are at least 18 years of age.',
+            'You confirm that you meet the eligibility requirements above — you '
+                'attend a participating church location, you are enrolling for '
+                'attendance at that location, and you are not located in a '
+                'jurisdiction where we do not offer this feature.',
           ]),
           const LegalParagraph(
-            'If you do not agree, do not enable facial recognition. Tap the NFC '
-            'tag at the entrance or check in with a greeter instead — you are '
-            'just as welcome either way.',
+            'If you do not agree, or you are not eligible, do not enable facial '
+            'recognition. Tap the NFC tag at the entrance or check in with a '
+            'greeter instead — you are just as welcome either way.',
           ),
         ]),
         LegalSection('Contact', [

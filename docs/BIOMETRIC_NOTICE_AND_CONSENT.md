@@ -45,7 +45,38 @@ is not a requirement to attend anything.
 18, members who use NFC or a greeter, visitors, guests, and people who do not use
 the app are not identified by the attendance cameras and have no biometric record.
 
-## 2. Information We Collect
+## 2. Eligibility for Facial Recognition
+
+Facial recognition is an optional authentication feature that is available only to
+eligible users who attend participating church locations where the feature has been
+deployed.
+
+To protect user privacy and comply with applicable laws, facial recognition
+enrollment is **not** available to:
+
+- Individuals under 18 years of age.
+- Users who do not attend a participating church location.
+- Users located in jurisdictions where we have chosen not to offer facial
+  recognition due to legal, regulatory, or operational considerations.
+- Users whose accounts are not authorized for facial recognition by the
+  participating church.
+
+Users who are not eligible for facial recognition will authenticate using another
+supported method, such as an NFC security tag or other authentication methods made
+available by the App.
+
+We do not knowingly collect facial verification photographs, biometric templates,
+or other facial recognition enrollment data from users who are not eligible for
+facial recognition. If such information is inadvertently submitted, we will take
+reasonable steps to delete it in accordance with our data retention policies and
+applicable law.
+
+At this time, facial recognition is intended solely for use on the grounds of
+participating church locations during authorized church activities. The feature is
+not designed or intended for general-purpose identity verification outside of those
+participating church locations.
+
+## 3. Information We Collect
 
 If you voluntarily enroll, we collect:
 
@@ -65,7 +96,7 @@ memory and **does not save headshots from the cameras to disk.**
 
 Members under 18 are not asked to enroll and are not asked for facial photographs.
 
-## 3. Why We Collect It
+## 4. Why We Collect It
 
 Your facial verification information is used **solely** to:
 
@@ -77,7 +108,7 @@ It is **not** used for advertising, marketing, profiling, unrelated analytics, o
 any purpose beyond attendance. It is not used to unlock your account, and it is
 not shared with other members.
 
-## 4. How Your Photographs Are Handled
+## 5. How Your Photographs Are Handled
 
 - **Encrypted on your phone.** Each enrollment photo is encrypted on your device
   (AES-256-GCM) before it is uploaded, and travels over an encrypted connection to
@@ -92,7 +123,7 @@ not shared with other members.
 - **Kept private.** Stored images live in private storage that is never publicly
   accessible.
 
-## 5. Storage and Protection
+## 6. Storage and Protection
 
 We protect facial verification information with:
 
@@ -108,13 +139,13 @@ can reach biometric data and attendance records, and only to operate attendance.
 No security system can guarantee absolute protection, but we maintain commercially
 reasonable administrative, technical, and organizational safeguards.
 
-## 6. Alternatives, and Changing Your Mind
+## 7. Alternatives, and Changing Your Mind
 
 You may stop using face check-in at any time and switch to tapping the NFC tag at
 the entrance or checking in with a greeter. Neither requires you to give up
 anything else in the app, and neither involves biometric data.
 
-## 7. Retention and Deletion
+## 8. Retention and Deletion
 
 We keep facial verification information only as long as it is needed to recognize
 you at church.
@@ -125,7 +156,7 @@ and the attendance cameras no longer match you. You do not have to wait for any
 retention period to run out — ask us and we delete it, unless a longer period is
 required by law.
 
-## 8. Sharing
+## 9. Sharing
 
 We do **not** sell, lease, trade, or otherwise profit from your facial verification
 information.
@@ -141,7 +172,7 @@ The attendance cameras and recognition software run on equipment operated by the
 Church. We do not share your biometric data with any party for that party's own
 purposes.
 
-## 9. Your Choices
+## 10. Your Choices
 
 You have the right to:
 
@@ -156,7 +187,7 @@ account**, which sends your request to the church team, or contact us below.
 Withdrawing consent disables face check-in for you; every other way of checking in
 stays open.
 
-## 10. Consent
+## 11. Consent
 
 By selecting **"I Agree"** and continuing with facial enrollment, you acknowledge
 that:
@@ -173,9 +204,14 @@ that:
 - You understand you may withdraw this consent at any time and have your facial
   data deleted.
 - You confirm that **you are at least 18 years of age.**
+- You confirm that **you meet the eligibility requirements in Section 2** — you
+  attend a participating church location, you are enrolling for attendance at that
+  location, and you are not located in a jurisdiction where we do not offer this
+  feature.
 
-If you do not agree, do not enable facial recognition. Tap the NFC tag at the
-entrance or check in with a greeter instead — you are just as welcome either way.
+If you do not agree, or you are not eligible, do not enable facial recognition. Tap
+the NFC tag at the entrance or check in with a greeter instead — you are just as
+welcome either way.
 
 ## Contact
 
