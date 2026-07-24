@@ -350,7 +350,10 @@ class AuthService {
   }
 
   void _navigateAfterAuth(bool signupComplete) {
-    final route = signupComplete ? '/dashboard' : '/user-prep';
+    // Not-yet-complete members start onboarding at the date-of-birth gate,
+    // which routes 18+ into the facial-recognition flow and under-18s straight
+    // to the dashboard.
+    final route = signupComplete ? '/dashboard' : '/date-of-birth';
     navigatorKey.currentState?.pushNamedAndRemoveUntil(route, (r) => false);
   }
 }

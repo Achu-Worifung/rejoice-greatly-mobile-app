@@ -7,6 +7,7 @@
 			<string>https</string>
 			<string>http</string>
 			<string>maps</string>
+			<string>mailto</string>
 		</array>
 		<key>UIBackgroundModes</key>
 		<array>
@@ -16,6 +17,8 @@
 		<string>Rejoice Greatly uses NFC to check you in when you tap the tag at the venue.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>To capture photos and videos, please grant camera access.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>To choose a profile photo from your library, please grant photo access.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>To record audio with video, please grant microphone access.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>

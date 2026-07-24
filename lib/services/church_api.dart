@@ -142,6 +142,15 @@ class ChurchApi {
   }) =>
       UserSessionStore.saveAccount(account, provider: provider);
 
+  /// Marks onboarding finished on-device without a facial scan — used when an
+  /// age-gated minor or a member who chose "no thanks" skips face setup.
+  ///
+  /// The backend only records `signupComplete` after a photo commit, so this
+  /// flag lives on-device; [restoreUserSession] keeps it sticky across cold
+  /// starts. The member can still add a photo later from their profile.
+  static Future<void> markSignupCompleteLocally() =>
+      persistAccountFromServer(const {'signupComplete': true});
+
   static Future<SessionRestoreResult> restoreUserSession() async {
     final user = await waitForSignedInUser(
       timeout: const Duration(seconds: 5),
@@ -152,7 +161,9 @@ class ChurchApi {
 
     final cached = await getCachedAccountJson();
     final local = cached ?? await accountFromLocalPrefs(user);
-    final signupComplete = await UserSessionStore.readSignupComplete();
+    // Captured before the sync below, which may overwrite the on-device flag
+    // with the server's copy.
+    final locallyComplete = await UserSessionStore.readSignupComplete();
 
     try {
       final auth = await syncAuthAccount();
@@ -160,9 +171,20 @@ class ChurchApi {
       final provider = prefs.getString(UserSessionStore.authProviderKey) ??
           inferAuthProvider(user);
       await persistAccountFromServer(auth, provider: provider);
+
+      // A member who finished onboarding without a facial scan (age-gated
+      // minor, or an explicit "no thanks") is only marked complete on-device —
+      // the backend records signupComplete after a photo commit. Keep that
+      // local decision sticky so a cold start doesn't re-onboard them.
+      final complete = isSignupComplete(auth) || locallyComplete;
+      if (complete && !isSignupComplete(auth)) {
+        await persistAccountFromServer(const {'signupComplete': true},
+            provider: provider);
+      }
+
       return SessionRestoreResult(
         loggedIn: true,
-        signupComplete: isSignupComplete(auth),
+        signupComplete: complete,
         account: auth,
         syncedFromServer: true,
       );
@@ -172,7 +194,7 @@ class ChurchApi {
 
     return SessionRestoreResult(
       loggedIn: true,
-      signupComplete: signupComplete,
+      signupComplete: locallyComplete,
       account: local,
       syncedFromServer: false,
     );

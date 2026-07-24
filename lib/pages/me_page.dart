@@ -1,11 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart' show navigatorKey;
 import '../services/auth_service.dart';
 import '../services/church_api.dart';
+import '../services/profile_picture_upload.dart';
 import '../theme/church_colors.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
@@ -162,6 +166,271 @@ class _MePageState extends State<MePage> {
     navigatorKey.currentState?.pushNamedAndRemoveUntil('/', (route) => false);
   }
 
+  // --- Change profile photo -------------------------------------------------
+
+  /// Replaces the profile photo from a single picked image (camera or library),
+  /// rather than the multi-angle enrolment sweep used at signup. The picked
+  /// frame runs through the same [ProfilePictureUpload] contract, so the
+  /// backend still validates the face and publishes a fresh `imgURL`.
+  Future<void> _changeProfilePhoto() async {
+    final source = await _chooseImageSource();
+    if (source == null || !mounted) return;
+
+    XFile? file;
+    try {
+      file = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        imageQuality: 88,
+        preferredCameraDevice: CameraDevice.front,
+      );
+    } catch (e) {
+      debugPrint('MePage: pickImage failed: $e');
+      _showMessage(
+        source == ImageSource.camera
+            ? "Couldn't open the camera. Check the app's camera permission and try again."
+            : "Couldn't open your photos. Check the app's photo permission and try again.",
+        isError: true,
+      );
+      return;
+    }
+    if (file == null || !mounted) return;
+
+    _showBlockingProgress('Updating your photo…');
+    try {
+      final bytes = await file.readAsBytes();
+      final newUrl = await ProfilePictureUpload.upload(bytes);
+      final cached = await ChurchApi.getCachedAccountJson();
+      await ChurchApi.persistAccountFromServer({
+        if (cached != null) ...cached,
+        'imgURL': newUrl,
+      });
+      if (!mounted) return;
+      _dismissBlockingProgress();
+      _reload();
+      _showMessage('Your profile photo has been updated.');
+    } on PictureUploadException catch (e) {
+      if (!mounted) return;
+      _dismissBlockingProgress();
+      _showMessage(e.message, isError: true);
+    } catch (e) {
+      debugPrint('MePage: profile photo update failed: $e');
+      if (!mounted) return;
+      _dismissBlockingProgress();
+      _showMessage('Could not update your photo. Please try again.', isError: true);
+    }
+  }
+
+  Future<ImageSource?> _chooseImageSource() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => SafeArea(
+        child: Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: ChurchColors.cardDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Change profile photo',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                  color: ChurchColors.bodyText,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 28),
+                child: Text(
+                  'Use a clear, well-lit photo of your face so you can still be '
+                  'recognised at check-in.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _sourceTile(ctx, Icons.camera_alt_outlined, 'Take a photo', ImageSource.camera),
+              _sourceTile(ctx, Icons.photo_library_outlined, 'Choose from library', ImageSource.gallery),
+              _sourceTile(ctx, Icons.close_rounded, 'Cancel', null),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sourceTile(BuildContext ctx, IconData icon, String label, ImageSource? value) {
+    final isCancel = value == null;
+    return ListTile(
+      leading: Icon(icon, color: isCancel ? ChurchColors.muted : ChurchColors.accent),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: isCancel ? ChurchColors.muted : ChurchColors.bodyText,
+        ),
+      ),
+      onTap: () => Navigator.pop(ctx, value),
+    );
+  }
+
+  // --- Delete account (handled by the church team) --------------------------
+
+  /// Account and facial-data deletion is done by the church team, not
+  /// self-service — this mirrors the policy already shown at signup
+  /// (`user_prep.dart`). We simply help the member reach them with the details
+  /// pre-filled.
+  Future<void> _requestAccountDeletion(Map<String, dynamic> profile) async {
+    final proceed = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          decoration: ChurchColors.cardDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: _danger.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_forever_rounded, color: _danger, size: 28),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Delete your account',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: ChurchColors.bodyText,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'To keep your facial recognition data safe, account deletion is '
+                'handled personally by the church team. Tap below to send them a '
+                "request — we'll fill in your details for you.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: ChurchColors.muted, height: 1.45, fontSize: 14),
+              ),
+              const SizedBox(height: 24),
+              ChurchDangerButton(
+                label: 'Email the church',
+                icon: Icons.mail_outline_rounded,
+                onPressed: () => Navigator.pop(ctx, true),
+              ),
+              const SizedBox(height: 10),
+              ChurchSecondaryButton(
+                label: 'Not now',
+                onPressed: () => Navigator.pop(ctx, false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (proceed != true || !mounted) return;
+    await _sendDeletionEmail(profile);
+  }
+
+  Future<void> _sendDeletionEmail(Map<String, dynamic> profile) async {
+    final configured = dotenv.env['CHURCH_ADMIN_EMAIL']?.trim();
+    final adminEmail =
+        (configured != null && configured.isNotEmpty) ? configured : 'hello@rejoicegreatly.org';
+    final churchName = dotenv.env['CHURCH_NAME'] ?? 'Rejoice Greatly';
+    final name = (profile['name'] as String?)?.trim() ?? '';
+    final email = (profile['email'] as String?)?.trim() ?? '';
+
+    const subject = 'Account deletion request';
+    final body = 'Hello $churchName team,\n\n'
+        'I would like to permanently delete my $churchName app account and all '
+        'associated data, including my facial recognition data.\n\n'
+        'Name: ${name.isEmpty ? '(not set)' : name}\n'
+        'Account email: ${email.isEmpty ? '(not set)' : email}\n\n'
+        'Thank you.';
+
+    final uri = Uri.parse(
+      'mailto:$adminEmail'
+      '?subject=${Uri.encodeComponent(subject)}'
+      '&body=${Uri.encodeComponent(body)}',
+    );
+
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) throw 'launchUrl returned false';
+    } catch (e) {
+      debugPrint('MePage: could not open mail client: $e');
+      await Clipboard.setData(ClipboardData(text: adminEmail));
+      if (!mounted) return;
+      _showMessage(
+        'No email app found. We copied $adminEmail to your clipboard so you '
+        'can reach the church.',
+        isError: true,
+      );
+    }
+  }
+
+  // --- Small shared UI helpers ----------------------------------------------
+
+  void _showBlockingProgress(String message) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+          decoration: ChurchColors.cardDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: ChurchColors.button),
+              const SizedBox(height: 18),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: ChurchColors.bodyText,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _dismissBlockingProgress() {
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? _danger : ChurchColors.button,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   String _syncStatusText(MePageLoadResult? result) {
     if (result == null) return '';
     if (result.statsSynced) return 'Stats are loaded from your church attendance records.';
@@ -291,6 +560,7 @@ class _MePageState extends State<MePage> {
                   email: email,
                   churchLine: churchSubtitle,
                   account: profile,
+                  onEditPhoto: hasProfile ? _changeProfilePhoto : null,
                 ),
                 if (!profileSynced && syncError != null) ...[
                   const SizedBox(height: 12),
@@ -397,6 +667,22 @@ class _MePageState extends State<MePage> {
                     activities: _parseActivities(result?.activities ?? []),
                   ),
                 ],
+                const SizedBox(height: 28),
+                const DashboardLabelText(label: 'Account'),
+                if (hasProfile)
+                  _ActionTile(
+                    icon: Icons.photo_camera_outlined,
+                    title: 'Change profile photo',
+                    subtitle: 'Update the photo shown on your profile.',
+                    onTap: _changeProfilePhoto,
+                  ),
+                _ActionTile(
+                  icon: Icons.delete_outline_rounded,
+                  title: 'Delete my account',
+                  subtitle: 'Ask the church team to remove your account and data.',
+                  danger: true,
+                  onTap: () => _requestAccountDeletion(profile),
+                ),
                 const SizedBox(height: 36),
                 const Divider(color: ChurchColors.divider, height: 1),
                 const SizedBox(height: 20),
@@ -432,12 +718,18 @@ class _ProfileHeader extends StatelessWidget {
     required this.email,
     required this.churchLine,
     this.account,
+    this.onEditPhoto,
   });
 
   final String name;
   final String email;
   final String churchLine;
   final Map<String, dynamic>? account;
+
+  /// When non-null, the avatar becomes tappable and shows a camera badge so the
+  /// member can replace their profile photo. Null hides the affordance (e.g.
+  /// before the profile has been completed).
+  final VoidCallback? onEditPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -451,20 +743,7 @@ class _ProfileHeader extends StatelessWidget {
           decoration: ChurchColors.cardDecoration(),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: SizedBox(
-                  width: 72,
-                  height: 72,
-                  child: url != null && url.isNotEmpty
-                      ? Image.network(
-                          url,
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => _placeholder(),
-                        )
-                      : _placeholder(),
-                ),
-              ),
+              _buildAvatar(url),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -508,10 +787,136 @@ class _ProfileHeader extends StatelessWidget {
     );
   }
 
+  Widget _buildAvatar(String? url) {
+    final image = ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        width: 72,
+        height: 72,
+        child: url != null && url.isNotEmpty
+            ? Image.network(
+                url,
+                fit: BoxFit.cover,
+                errorBuilder: (c, e, s) => _placeholder(),
+              )
+            : _placeholder(),
+      ),
+    );
+
+    if (onEditPhoto == null) return image;
+
+    return GestureDetector(
+      onTap: onEditPhoto,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          image,
+          Positioned(
+            right: -3,
+            bottom: -3,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: ChurchColors.button,
+                shape: BoxShape.circle,
+                border: Border.all(color: ChurchColors.card, width: 2),
+              ),
+              child: const Icon(
+                Icons.photo_camera_rounded,
+                size: 14,
+                color: ChurchColors.buttonText,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget _placeholder() {
     return Container(
       color: ChurchColors.button.withValues(alpha: 0.1),
       child: const Icon(Icons.person, size: 40, color: ChurchColors.accent),
+    );
+  }
+}
+
+/// A tappable card row for a profile-management action (change photo, delete).
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.danger = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool danger;
+
+  static const Color _danger = Color(0xFFC62828);
+
+  @override
+  Widget build(BuildContext context) {
+    final color = danger ? _danger : ChurchColors.accent;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: ChurchColors.cardDecoration(shadow: const []),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: ChurchColors.borderRadiusCard,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: danger ? _danger : ChurchColors.bodyText,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: ChurchColors.muted,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: ChurchColors.muted.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
