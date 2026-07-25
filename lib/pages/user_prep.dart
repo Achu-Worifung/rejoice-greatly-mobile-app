@@ -148,27 +148,27 @@ class _UserPrepPageState extends State<UserPrepPage> {
   final List<Map<String, dynamic>> _slides = [
     {
       'icon': Icons.lock_outline,
-      'title': 'Your Data is Secure',
+      'title': 'Encrypted End to End',
       'description':
-          'Your facial data is encrypted and stored securely. It is never shared with third parties or used outside of attendance tracking.',
+          'Each photo is encrypted on your phone (AES-256-GCM) before it is uploaded, and stays encrypted in transit and at rest. Only ciphertext ever leaves your device.',
     },
     {
-      'icon': Icons.timer_outlined,
-      'title': 'Takes Less Than 30 Seconds',
+      'icon': Icons.how_to_reg_outlined,
+      'title': 'Only for Attendance',
       'description':
-          'The registration process is quick and simple. Just look at the camera and we\'ll handle the rest.',
+          'Your face is used for one thing: marking you present. It is never your password, never signs you in, and is never used for ads or profiling.',
     },
     {
       'icon': Icons.visibility_off_outlined,
-      'title': 'Privacy First',
+      'title': 'Kept Private',
       'description':
-          'Only your church administrators can access attendance records. Your facial data is never visible to other members.',
+          'Only your church administrators can see attendance records. Your facial data is never sold, traded, or visible to other members.',
     },
     {
       'icon': Icons.delete_outline,
       'title': 'You\'re in Control',
       'description':
-          'You can request to have your facial data deleted at any time by contacting your church administrator.',
+          'Enrollment is voluntary. Withdraw your consent anytime and your enrollment photos and face data are permanently deleted.',
     },
   ];
 
@@ -294,8 +294,24 @@ class _UserPrepPageState extends State<UserPrepPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildEligibilityNotice(),
-                  const SizedBox(height: 14),
+                  // The eligibility notice is guidance to read *before* agreeing;
+                  // once the member has ticked the release it has served its
+                  // purpose, so it collapses away and leaves the two clear
+                  // choices — continue with facial, or not now — uncluttered.
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeInOut,
+                    alignment: Alignment.topCenter,
+                    child: _consented
+                        ? const SizedBox(width: double.infinity)
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildEligibilityNotice(),
+                              const SizedBox(height: 14),
+                            ],
+                          ),
+                  ),
                   _buildConsentTick(),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -319,7 +335,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                         elevation: 0,
                       ),
                       child: const Text(
-                        "I Agree, Continue",
+                        "Continue with facial recognition",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -331,7 +347,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                   TextButton(
                     onPressed: _skipping ? null : _skipFacialScan,
                     child: Text(
-                      "No thanks, maybe later",
+                      "Not now",
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

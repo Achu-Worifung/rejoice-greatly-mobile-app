@@ -645,6 +645,33 @@ class _MePageState extends State<MePage> {
                       ],
                     ),
                   ),
+                  // Finishing face setup is optional — an eligible (18+) member
+                  // who hasn't enrolled can still mark themselves present by
+                  // tapping the NFC tag, without being pushed through the camera
+                  // flow first. Minors are identified by their tag too, but they
+                  // have no photo step to skip, so this alternative is only
+                  // surfaced for members who *could* upload a photo.
+                  if (canUploadPhoto) ...[
+                    const SizedBox(height: 20),
+                    const DashboardLabelText(label: 'Or check in with your tag'),
+                    NfcCheckInCard(
+                      onCheckedIn: () => _reload(forceRefresh: true),
+                    ),
+                    // Tag check-ins accrue attendance just like face check-in,
+                    // so show the same streak/attendance stats here — a member
+                    // who never enrolls their face still has a record worth
+                    // seeing. Missing stats stay quiet rather than nagging.
+                    if (stats != null) ...[
+                      const SizedBox(height: 16),
+                      _StatGrid(
+                        currentStreak: _i(stats['currentStreak']),
+                        longestStreak: _i(stats['longestStreak']),
+                        totalAttendance: _i(stats['totalAttendance']),
+                        totalAbsences: _i(stats['totalAbsences']),
+                        absenceStreak: _i(stats['absenceStreak']),
+                      ),
+                    ],
+                  ],
                 ] else ...[
                   if (syncError != null) ...[
                     const SizedBox(height: 12),

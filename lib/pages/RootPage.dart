@@ -66,9 +66,18 @@ class _RootPageState extends State<RootPage> {
             if (session.signupComplete) {
               return const Dashboard();
             }
-            // Same onboarding entry as a fresh sign-in: the date-of-birth gate,
-            // which then routes into the facial-recognition intro or straight
-            // to the dashboard depending on age.
+            // Onboarding isn't finished — but only send them back to the
+            // date-of-birth gate if we don't already have their birthday. An
+            // adult who answered the age gate and then deferred face setup
+            // ("Not now") has already passed this step; sending them here on
+            // every refresh is the bug. Let them into the app instead — the
+            // "finish signup" prompt (and NFC check-in) lives in My Profile.
+            if (ChurchApi.accountHasDateOfBirth(session.account)) {
+              return const Dashboard();
+            }
+            // Fresh sign-in with no birthday yet: the date-of-birth gate, which
+            // then routes into the facial-recognition intro or straight to the
+            // dashboard depending on age.
             return const DobPage();
           },
         );

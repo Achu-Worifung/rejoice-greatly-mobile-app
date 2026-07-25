@@ -127,6 +127,15 @@ class ChurchApi {
   static bool isMinorAccount(Map<String, dynamic>? account) =>
       UserSessionStore.isMinor(account);
 
+  /// Whether a date of birth is already on the account. Once it is, the age
+  /// gate has been answered — a member who provided it and then deferred face
+  /// setup should not be re-onboarded through the birthday screen on every cold
+  /// start.
+  static bool accountHasDateOfBirth(Map<String, dynamic>? account) {
+    final dob = account?['dateOfBirth'];
+    return dob is String && dob.trim().isNotEmpty;
+  }
+
   /// Whether the member may set a profile photo. Minors may not — no photo of
   /// an under-18 member is collected (the backend refuses the upload too).
   static bool canUploadPhoto(Map<String, dynamic>? account) {
@@ -423,7 +432,9 @@ class ChurchApi {
           return MePageLoadResult(
             profile: cached,
             hasProfile: hasProfile,
-            stats: hasProfile ? _statsFromAccountMap(cached) : null,
+            // Stats show for NFC-only members too, so they are read from cache
+            // regardless of whether the photo step is finished.
+            stats: _statsFromAccountMap(cached),
             activities: _activitiesFromAccount(cached),
             cachedAt: cachedAt,
           );
@@ -447,15 +458,10 @@ class ChurchApi {
       final profile = await fetchMemberProfile();
       final hasProfile = hasMemberProfile(profile);
 
-      if (!hasProfile) {
-        await UserSessionStore.saveMePageCachedAt(DateTime.now());
-        return MePageLoadResult(
-          profile: profile,
-          hasProfile: false,
-          profileSynced: true,
-        );
-      }
-
+      // Stats and attendance are fetched even when the profile is unfinished:
+      // an eligible member who checks in with the NFC tag (rather than enrolling
+      // their face) still accrues a record, and the My Profile page shows it to
+      // them alongside the "finish signup" prompt.
       Map<String, dynamic>? stats;
       List<Map<String, dynamic>> activities = [];
       var statsSynced = false;
@@ -483,7 +489,7 @@ class ChurchApi {
       await UserSessionStore.saveMePageCachedAt(DateTime.now());
       return MePageLoadResult(
         profile: profile,
-        hasProfile: true,
+        hasProfile: hasProfile,
         stats: stats,
         activities: activities,
         profileSynced: true,
