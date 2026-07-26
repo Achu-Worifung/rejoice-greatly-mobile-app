@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Create .env from GitHub Secrets
         env:
@@ -218,7 +218,7 @@ jobs:
             --apiIssuer "$ASC_ISSUER_ID"
 
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: flutter-app-ipa
           path: ${{ steps.ipa.outputs.ipa_path }}
