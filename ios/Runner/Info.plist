@@ -21,6 +21,8 @@
 		<string>To choose a profile photo from your library, please grant photo access.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>To record audio with video, please grant microphone access.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Rejoice Greatly may use your location while you use the app so optional notification features can work. Location is not required for NFC check-in or core church features, and you can deny access.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>NSAppTransportSecurity</key>

@@ -2,31 +2,230 @@ name: Build Flutter IPA
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
   workflow_dispatch:
 
 jobs:
   build-ios:
     runs-on: macos-latest
+    timeout-minutes: 90
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create .env from GitHub Secrets
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          CAFE_WEB_URL: ${{ secrets.CAFE_WEB_URL }}
+          CHURCH_NAME: ${{ secrets.CHURCH_NAME }}
+          CHURCH_SUBTITLE: ${{ secrets.CHURCH_SUBTITLE }}
+          CHURCH_ADDRESS: ${{ secrets.CHURCH_ADDRESS }}
+          CHURCH_SERVICE_TIMES: ${{ secrets.CHURCH_SERVICE_TIMES }}
+          ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
+          LEGAL_ENTITY_NAME: ${{ secrets.LEGAL_ENTITY_NAME }}
+          APP_NAME: ${{ secrets.APP_NAME }}
+          PRIVACY_CONTACT_EMAIL: ${{ secrets.PRIVACY_CONTACT_EMAIL }}
+          SUPPORT_CONTACT_EMAIL: ${{ secrets.SUPPORT_CONTACT_EMAIL }}
+          MAILING_ADDRESS: ${{ secrets.MAILING_ADDRESS }}
+          GOVERNING_STATE: ${{ secrets.GOVERNING_STATE }}
+          LEGAL_EFFECTIVE_DATE: ${{ secrets.LEGAL_EFFECTIVE_DATE }}
+        run: |
+          set -euo pipefail
+          required=(
+            BASE_URL
+            CAFE_WEB_URL
+            CHURCH_NAME
+            CHURCH_SUBTITLE
+            CHURCH_ADDRESS
+            CHURCH_SERVICE_TIMES
+            ONESIGNAL_APP_ID
+          )
+          for key in "${required[@]}"; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required secret: $key"
+              exit 1
+            fi
+          done
+
+          cat > .env <<EOF
+          BASE_URL=${BASE_URL}
+          CAFE_WEB_URL=${CAFE_WEB_URL}
+          CHURCH_NAME=${CHURCH_NAME}
+          CHURCH_SUBTITLE=${CHURCH_SUBTITLE}
+          CHURCH_ADDRESS=${CHURCH_ADDRESS}
+          CHURCH_SERVICE_TIMES=${CHURCH_SERVICE_TIMES}
+          ONESIGNAL_APP_ID=${ONESIGNAL_APP_ID}
+          LEGAL_ENTITY_NAME=${LEGAL_ENTITY_NAME}
+          APP_NAME=${APP_NAME}
+          PRIVACY_CONTACT_EMAIL=${PRIVACY_CONTACT_EMAIL}
+          SUPPORT_CONTACT_EMAIL=${SUPPORT_CONTACT_EMAIL}
+          MAILING_ADDRESS=${MAILING_ADDRESS}
+          GOVERNING_STATE=${GOVERNING_STATE}
+          LEGAL_EFFECTIVE_DATE=${LEGAL_EFFECTIVE_DATE}
+          EOF
+
+          # Strip the leading spaces that heredoc indentation can leave
+          sed -i '' 's/^[[:space:]]*//' .env
+          echo "Wrote .env with $(wc -l < .env | tr -d ' ') keys (values not printed)."
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.6'   # Change to your Flutter version
+          flutter-version: '3.44.2'
           channel: 'stable'
+          cache: true
 
-      - name: Install dependencies
+      - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Build IPA (no signing)
-        run: flutter build ipa --no-codesign
+      - name: Install Apple certificate and provisioning profile
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for key in BUILD_CERTIFICATE_BASE64 P12_PASSWORD BUILD_PROVISION_PROFILE_BASE64 KEYCHAIN_PASSWORD; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required signing secret: $key"
+              echo "Export your Distribution .p12 + App Store profile (Phase 4 Option B) and add them as GitHub Secrets."
+              exit 1
+            fi
+          done
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          PP_PATH="$RUNNER_TEMP/build_pp.mobileprovision"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          PP_UUID=$(security cms -D -i "$PP_PATH" | plutil -extract UUID raw -)
+          PP_NAME=$(security cms -D -i "$PP_PATH" | plutil -extract Name raw -)
+          cp "$PP_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$PP_UUID.mobileprovision"
+
+          echo "PROVISIONING_PROFILE_SPECIFIER=$PP_NAME" >> "$GITHUB_ENV"
+          echo "Installed profile: $PP_NAME ($PP_UUID)"
+
+      - name: Create ExportOptions.plist
+        run: |
+          set -euo pipefail
+          cat > ios/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>V58ABFLJLV</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.rejoicegreatly.app</key>
+              <string>${PROVISIONING_PROFILE_SPECIFIER}</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+          # Remove leading spaces from indented heredoc
+          sed -i '' 's/^[[:space:]]*//' ios/ExportOptions.plist
+
+      - name: Configure Release signing for CI
+        run: |
+          set -euo pipefail
+          {
+            echo "CODE_SIGN_STYLE=Manual"
+            echo "CODE_SIGN_IDENTITY=Apple Distribution"
+            echo "DEVELOPMENT_TEAM=V58ABFLJLV"
+            echo "PROVISIONING_PROFILE_SPECIFIER=${PROVISIONING_PROFILE_SPECIFIER}"
+          } >> ios/Flutter/Release.xcconfig
+
+      - name: Install CocoaPods
+        working-directory: ios
+        env:
+          LANG: en_US.UTF-8
+          LC_ALL: en_US.UTF-8
+        run: pod install --repo-update
+
+      - name: Build IPA
+        run: |
+          set -euo pipefail
+          # Offset avoids colliding with local TestFlight uploads (builds 1, 2, 3…)
+          BUILD_NUMBER=$(( ${{ github.run_number }} + 100 ))
+          echo "Using build number: $BUILD_NUMBER"
+          flutter build ipa \
+            --release \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist=ios/ExportOptions.plist
+
+      - name: Locate IPA
+        id: ipa
+        run: |
+          set -euo pipefail
+          IPA_PATH="$(find build/ios/ipa -maxdepth 2 -name '*.ipa' -print -quit)"
+          if [ -z "$IPA_PATH" ]; then
+            echo "No .ipa found under build/ios/ipa" >&2
+            ls -la build/ios || true
+            exit 1
+          fi
+          echo "ipa_path=$IPA_PATH" >> "$GITHUB_OUTPUT"
+          ls -la "$IPA_PATH"
+
+      - name: Stage App Store Connect API key
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_PRIVATE_KEY" ]; then
+            echo "Missing APP_STORE_CONNECT_API_KEY_ID or APP_STORE_CONNECT_API_KEY"
+            exit 1
+          fi
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          mkdir -p "$KEY_DIR"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: Upload to TestFlight
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          IPA_PATH: ${{ steps.ipa.outputs.ipa_path }}
+        run: |
+          set -euo pipefail
+          if [ -z "$ASC_ISSUER_ID" ]; then
+            echo "Missing APP_STORE_CONNECT_ISSUER_ID"
+            exit 1
+          fi
+          xcrun altool --upload-app \
+            --file "$IPA_PATH" \
+            --type ios \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: flutter-app-ipa
-          path: build/ios/ipa/*.ipa
+          path: ${{ steps.ipa.outputs.ipa_path }}
+
+      - name: Cleanup signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" || true
+          rm -rf "$HOME/.appstoreconnect/private_keys" || true
+          rm -f "$RUNNER_TEMP/build_certificate.p12" "$RUNNER_TEMP/build_pp.mobileprovision" || true
