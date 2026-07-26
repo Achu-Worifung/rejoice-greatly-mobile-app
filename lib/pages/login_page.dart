@@ -125,12 +125,6 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
-                      size: 15,
-                      color: cream.withValues(alpha: 0.75),
-                    ),
-                    const SizedBox(width: 6),
                     Flexible(
                       child: Text(
                         'Automatic attendance, powered by secure facial recognition.',
