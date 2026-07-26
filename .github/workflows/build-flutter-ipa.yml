@@ -202,6 +202,9 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
 
+          # Keep a copy that always gets printed into the job summary on failure
+          wc -c build-ipa.log || true
+
           if [ "$status" -ne 0 ]; then
             {
               echo "## Build IPA failed"
@@ -209,11 +212,19 @@ jobs:
               echo "Exit code: \`$status\`"
               echo ""
               echo '```'
-              tail -n 300 build-ipa.log
+              # Prefer the most relevant lines if the log is huge
+              if grep -nE "error:|ERROR|Provisioning|CodeSign|codesign|entitlement|No profiles|exportArchive|Failed|❌" build-ipa.log >/tmp/ipa-errors.txt 2>/dev/null; then
+                tail -n 80 /tmp/ipa-errors.txt
+                echo ""
+                echo "---- tail ----"
+              fi
+              tail -n 200 build-ipa.log
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
-            echo "---- last 120 lines of build-ipa.log ----"
-            tail -n 120 build-ipa.log
+            echo "---- matching error lines ----"
+            grep -nE "error:|ERROR|Provisioning|CodeSign|codesign|entitlement|No profiles|exportArchive|Failed|❌" build-ipa.log || true
+            echo "---- last 200 lines of build-ipa.log ----"
+            tail -n 200 build-ipa.log
             exit "$status"
           fi
 
