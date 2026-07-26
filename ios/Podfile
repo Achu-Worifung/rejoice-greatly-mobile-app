@@ -26,10 +26,16 @@ end
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
 # Opt-in helper so Google ML Kit can run on Apple Silicon iOS 26+ simulators.
-require File.expand_path(
-  '.symlinks/plugins/google_mlkit_commons/ios/scripts/apple_silicon_simulator',
+# Guarded so CI still works if `.symlinks` is not present yet.
+mlkit_helper = File.expand_path(
+  '.symlinks/plugins/google_mlkit_commons/ios/scripts/apple_silicon_simulator.rb',
   __dir__,
 )
+if File.exist?(mlkit_helper)
+  require mlkit_helper
+else
+  def mlkit_apple_silicon_simulator_patch(_installer); end
+end
 
 flutter_ios_podfile_setup
 

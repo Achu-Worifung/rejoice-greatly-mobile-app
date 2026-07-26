@@ -159,7 +159,18 @@ jobs:
         env:
           LANG: en_US.UTF-8
           LC_ALL: en_US.UTF-8
-        run: pod install --repo-update
+        run: |
+          set -euo pipefail
+          echo "pod=$(command -v pod)"
+          pod --version
+          echo "Generated.xcconfig exists? $(test -f Flutter/Generated.xcconfig && echo yes || echo no)"
+          echo "Plugin symlinks:"
+          ls -la .symlinks/plugins 2>&1 | head -50 || true
+          echo "ML Kit helper:"
+          ls -la .symlinks/plugins/google_mlkit_commons/ios/scripts 2>&1 || true
+          # Drop stale lock so Flutter plugins from pub get win over a mismatched Podfile.lock
+          rm -f Podfile.lock
+          pod install --repo-update
 
       - name: Build IPA
         run: |
