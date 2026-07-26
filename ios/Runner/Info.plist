@@ -10,10 +10,11 @@
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<!-- Google Sign-In OAuth callback: must match REVERSED_CLIENT_ID
-					     in GoogleService-Info.plist. Without this, the GoogleSignIn
-					     SDK throws an uncaught NSException and crashes the app when
-					     the Google button is tapped. -->
-					<string>com.googleusercontent.apps.360444353139-oiredrcemmgf6teanaktlq5c30ibfhv5</string>
+					     in GoogleService-Info.plist (moodchangingcafe iOS app).
+					     Without this, the GoogleSignIn SDK throws an uncaught
+					     NSException and crashes the app when the Google button is
+					     tapped. -->
+					<string>com.googleusercontent.apps.1053433403648-id0o692vjp8v3kp3a4p9mdda1gsohjhk</string>
 				</array>
 			</dict>
 		</array>
