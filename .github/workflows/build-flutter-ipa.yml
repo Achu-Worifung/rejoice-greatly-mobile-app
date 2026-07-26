@@ -147,12 +147,21 @@ jobs:
       - name: Configure Release signing for CI
         run: |
           set -euo pipefail
+          # Ensure team is present even if pbxproj lagged behind local Xcode
+          if ! grep -q "DEVELOPMENT_TEAM = V58ABFLJLV" ios/Runner.xcodeproj/project.pbxproj; then
+            sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = com.rejoicegreatly.app;/DEVELOPMENT_TEAM = V58ABFLJLV;\n\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.rejoicegreatly.app;/g' ios/Runner.xcodeproj/project.pbxproj
+          fi
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
           {
             echo "CODE_SIGN_STYLE=Manual"
             echo "CODE_SIGN_IDENTITY=Apple Distribution"
             echo "DEVELOPMENT_TEAM=V58ABFLJLV"
             echo "PROVISIONING_PROFILE_SPECIFIER=${PROVISIONING_PROFILE_SPECIFIER}"
           } >> ios/Flutter/Release.xcconfig
+          echo "Release.xcconfig signing section:"
+          tail -5 ios/Flutter/Release.xcconfig
+          echo "ExportOptions.plist:"
+          cat ios/ExportOptions.plist
 
       - name: Install CocoaPods
         working-directory: ios
@@ -173,15 +182,47 @@ jobs:
           pod install --repo-update
 
       - name: Build IPA
+        id: build_ipa
         run: |
           set -euo pipefail
           # Offset avoids colliding with local TestFlight uploads (builds 1, 2, 3…)
           BUILD_NUMBER=$(( ${{ github.run_number }} + 100 ))
           echo "Using build number: $BUILD_NUMBER"
+          echo "Available signing identities:"
+          security find-identity -v -p codesigning || true
+          echo "Installed provisioning profiles:"
+          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles" || true
+
+          set +e
           flutter build ipa \
             --release \
             --build-number="$BUILD_NUMBER" \
-            --export-options-plist=ios/ExportOptions.plist
+            --export-options-plist=ios/ExportOptions.plist \
+            2>&1 | tee build-ipa.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "## Build IPA failed"
+              echo ""
+              echo "Exit code: \`$status\`"
+              echo ""
+              echo '```'
+              tail -n 300 build-ipa.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "---- last 120 lines of build-ipa.log ----"
+            tail -n 120 build-ipa.log
+            exit "$status"
+          fi
+
+      - name: Upload build log on failure
+        if: failure() && hashFiles('build-ipa.log') != ''
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-ipa-log
+          path: build-ipa.log
 
       - name: Locate IPA
         id: ipa
