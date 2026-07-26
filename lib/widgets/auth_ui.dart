@@ -137,7 +137,8 @@ class ChurchSocialButton extends StatelessWidget {
         elevation = 0;
 
   final String label;
-  final IconData icon;
+  /// Material [IconData] or Font Awesome [FaIconData] (when [isFa] is true).
+  final Object icon;
   final VoidCallback? onPressed;
   final bool isFa;
   final bool loading;
@@ -184,8 +185,8 @@ class ChurchSocialButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   isFa
-                      ? FaIcon(icon, size: iconSize, color: fg)
-                      : Icon(icon, size: iconSize, color: fg),
+                      ? FaIcon(icon as FaIconData, size: iconSize, color: fg)
+                      : Icon(icon as IconData, size: iconSize, color: fg),
                   const SizedBox(width: 10),
                   Flexible(
                     child: Text(
