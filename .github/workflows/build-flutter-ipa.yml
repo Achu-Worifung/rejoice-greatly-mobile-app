@@ -190,6 +190,13 @@ jobs:
           echo "Using build number: $BUILD_NUMBER"
           echo "Available signing identities:"
           security find-identity -v -p codesigning || true
+          if ! security find-identity -v -p codesigning | grep -q "Apple Distribution"; then
+            echo "::error::CI keychain has no Apple Distribution certificate."
+            echo "You exported an Apple Development cert (or the wrong .p12)."
+            echo "Export 'Apple Distribution: …' from Keychain Access, re-base64 it,"
+            echo "and update GitHub secrets BUILD_CERTIFICATE_BASE64 + P12_PASSWORD."
+            exit 1
+          fi
           echo "Installed provisioning profiles:"
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles" || true
 
