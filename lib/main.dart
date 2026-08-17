@@ -8,6 +8,7 @@ import 'theme/page_transitions.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
+import 'services/nfc_deep_link_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 
 void main() async {
@@ -36,6 +37,11 @@ void main() async {
     NotificationService().initialize();
 
     runApp(const MyApp());
+
+    // Cold-start NFC tag taps arrive as an app link — the plugin re-sends
+    // the initial link once Dart subscribes, so this one listener covers
+    // both cold start and the app already being open.
+    NfcDeepLinkService.startListening();
   } catch (e, st) {
     if (kDebugMode) {
       debugPrint('App startup failed: $e\n$st');

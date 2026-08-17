@@ -142,6 +142,25 @@ class NfcCheckinService {
       );
     }
 
+    return _submitCheckin(tagId);
+  }
+
+  /// Submits a check-in for a tag id the caller already has — used by
+  /// [checkIn] after an in-app NFC read, and directly by the NFC deep-link
+  /// flow (`NfcAutoCheckinPage`), where the OS already handed the app the
+  /// tag id from the tapped link, so no on-device NFC session is needed.
+  static Future<NfcCheckinResult> checkInWithTagId(String tagId) {
+    final trimmed = tagId.trim();
+    if (trimmed.isEmpty) {
+      return Future.value(NfcCheckinResult.failure(
+        NfcCheckinErrorKind.unreadableTag,
+        'That check-in link is missing its tag id.',
+      ));
+    }
+    return _submitCheckin(trimmed);
+  }
+
+  static Future<NfcCheckinResult> _submitCheckin(String tagId) async {
     try {
       final data = await ChurchApi.nfcCheckin(tagId);
       final alreadyPresent = data['alreadyPresent'] == true;
@@ -172,9 +191,18 @@ class NfcCheckinService {
     }
   }
 
-  /// Admin utility: writes [tagId] onto a blank/writable tag as an NDEF Text
-  /// record so it can be used for check-in. Throws on failure (used by the
-  /// provisioning UI, which reports the error itself).
+  /// The host our check-in links resolve through (Android App/NDEF dispatch
+  /// and iOS Universal Links both verify against this domain — see the admin
+  /// app's `/.well-known` files).
+  static const String _checkinLinkHost = 'rejoice-greatly-admin.vercel.app';
+
+  /// Admin utility: writes [tagId] onto a blank/writable tag so it can be
+  /// used for check-in. Writes two NDEF records — a URI record first (so
+  /// Android's NDEF dispatch and iOS Universal Links can auto-open the app
+  /// straight from a tap, even when it's closed) and a Well-Known Text
+  /// record second (read by [_extractTagId] for the existing in-app manual
+  /// "Check in with NFC" flow, so both paths work off one tag). Throws on
+  /// failure (used by the provisioning UI, which reports the error itself).
   static Future<void> writeTag(String tagId) async {
     final trimmed = tagId.trim();
     if (trimmed.isEmpty) {
@@ -183,6 +211,8 @@ class NfcCheckinService {
     if (!await isAvailable()) {
       throw const _TagException(NfcCheckinErrorKind.unavailable);
     }
+
+    final checkinUri = Uri.https(_checkinLinkHost, '/nfc-checkin/$trimmed');
 
     final completer = Completer<void>();
     await NfcManager.instance.startSession(
@@ -194,7 +224,10 @@ class NfcCheckinService {
           if (ndef == null || !ndef.isWritable) {
             throw const _TagException(NfcCheckinErrorKind.unreadableTag);
           }
-          final message = NdefMessage([NdefRecord.createText(trimmed)]);
+          final message = NdefMessage([
+            NdefRecord.createUri(checkinUri),
+            NdefRecord.createText(trimmed),
+          ]);
           await ndef.write(message);
           await NfcManager.instance.stopSession(alertMessage: 'Tag written.');
           if (!completer.isCompleted) completer.complete();
@@ -310,6 +343,13 @@ class NfcCheckinService {
         return NfcCheckinResult.failure(
           NfcCheckinErrorKind.server,
           _serverOr(e, 'That tag couldn’t be read. Please try again.'),
+        );
+      case 403:
+        // Outside the configured check-in time window (see NfcService on
+        // the backend) — the server's message states the window.
+        return NfcCheckinResult.failure(
+          NfcCheckinErrorKind.server,
+          _serverOr(e, 'NFC check-in isn’t available right now.'),
         );
       default:
         return NfcCheckinResult.failure(
