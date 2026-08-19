@@ -15,7 +15,6 @@ import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/member_avatar.dart';
-import '../widgets/nfc_checkin_card.dart';
 import '../widgets/skeletons.dart';
 
 class MePage extends StatefulWidget {
@@ -646,31 +645,22 @@ class _MePageState extends State<MePage> {
                     ),
                   ),
                   // Finishing face setup is optional — an eligible (18+) member
-                  // who hasn't enrolled can still mark themselves present by
-                  // tapping the NFC tag, without being pushed through the camera
-                  // flow first. Minors are identified by their tag too, but they
-                  // have no photo step to skip, so this alternative is only
+                  // who hasn't enrolled still accrues attendance by tapping
+                  // their NFC tag at the door, without opening the app first.
+                  // Minors are identified by their tag too, but they have no
+                  // photo step to skip, so this stats preview is only
                   // surfaced for members who *could* upload a photo.
-                  if (canUploadPhoto) ...[
+                  if (canUploadPhoto && stats != null) ...[
                     const SizedBox(height: 20),
-                    const DashboardLabelText(label: 'Or check in with your tag'),
-                    NfcCheckInCard(
-                      onCheckedIn: () => _reload(forceRefresh: true),
+                    const DashboardLabelText(label: 'Attendance'),
+                    const SizedBox(height: 16),
+                    _StatGrid(
+                      currentStreak: _i(stats['currentStreak']),
+                      longestStreak: _i(stats['longestStreak']),
+                      totalAttendance: _i(stats['totalAttendance']),
+                      totalAbsences: _i(stats['totalAbsences']),
+                      absenceStreak: _i(stats['absenceStreak']),
                     ),
-                    // Tag check-ins accrue attendance just like face check-in,
-                    // so show the same streak/attendance stats here — a member
-                    // who never enrolls their face still has a record worth
-                    // seeing. Missing stats stay quiet rather than nagging.
-                    if (stats != null) ...[
-                      const SizedBox(height: 16),
-                      _StatGrid(
-                        currentStreak: _i(stats['currentStreak']),
-                        longestStreak: _i(stats['longestStreak']),
-                        totalAttendance: _i(stats['totalAttendance']),
-                        totalAbsences: _i(stats['totalAbsences']),
-                        absenceStreak: _i(stats['absenceStreak']),
-                      ),
-                    ],
                   ],
                 ] else ...[
                   if (syncError != null) ...[
@@ -691,9 +681,6 @@ class _MePageState extends State<MePage> {
                   ],
                   const SizedBox(height: 24),
                   const DashboardLabelText(label: 'Attendance'),
-                  NfcCheckInCard(
-                    onCheckedIn: () => _reload(forceRefresh: true),
-                  ),
                   const SizedBox(height: 16),
                   if (stats != null)
                     _StatGrid(

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
@@ -113,42 +112,10 @@ class NfcCheckinService {
     }
   }
 
-  /// Runs the full check-in: verify NFC, read the tag id, POST it, and map the
-  /// outcome to a [NfcCheckinResult].
-  static Future<NfcCheckinResult> checkIn() async {
-    if (!await isAvailable()) {
-      return NfcCheckinResult.failure(
-        NfcCheckinErrorKind.unavailable,
-        'NFC isn’t available on this device. Turn it on in Settings, or '
-        'ask a volunteer to check you in.',
-      );
-    }
-
-    final String tagId;
-    try {
-      tagId = await _readTagId();
-    } on _TagException catch (e) {
-      return NfcCheckinResult.failure(e.kind, _messageForTagError(e.kind));
-    } on TimeoutException {
-      return NfcCheckinResult.failure(
-        NfcCheckinErrorKind.noTag,
-        'No tag detected. Hold your phone flat against the tag and try again.',
-      );
-    } catch (e) {
-      debugPrint('NfcCheckinService read failed: $e');
-      return NfcCheckinResult.failure(
-        NfcCheckinErrorKind.unreadableTag,
-        'We couldn’t read that tag. Please try again.',
-      );
-    }
-
-    return _submitCheckin(tagId);
-  }
-
-  /// Submits a check-in for a tag id the caller already has — used by
-  /// [checkIn] after an in-app NFC read, and directly by the NFC deep-link
-  /// flow (`NfcAutoCheckinPage`), where the OS already handed the app the
-  /// tag id from the tapped link, so no on-device NFC session is needed.
+  /// Submits a check-in for a tag id the caller already has. Used by the NFC
+  /// deep-link flow (`NfcAutoCheckinPage`), where the OS already handed the
+  /// app the tag id from the tapped link, so no on-device NFC session is
+  /// needed — the physical tap itself is the read.
   static Future<NfcCheckinResult> checkInWithTagId(String tagId) {
     final trimmed = tagId.trim();
     if (trimmed.isEmpty) {
@@ -245,84 +212,7 @@ class NfcCheckinService {
     });
   }
 
-  // ── Tag reading ────────────────────────────────────────────────────────────
-
-  static Future<String> _readTagId() async {
-    final completer = Completer<String>();
-    await NfcManager.instance.startSession(
-      pollingOptions: _pollingOptions,
-      alertMessage: 'Hold your phone near the check-in tag.',
-      onDiscovered: (NfcTag tag) async {
-        try {
-          final tagId = _extractTagId(tag);
-          await NfcManager.instance.stopSession();
-          if (!completer.isCompleted) completer.complete(tagId);
-        } catch (e) {
-          await NfcManager.instance
-              .stopSession(errorMessage: 'Could not read this tag.');
-          if (!completer.isCompleted) completer.completeError(e);
-        }
-      },
-    );
-
-    return completer.future.timeout(_sessionTimeout, onTimeout: () {
-      NfcManager.instance.stopSession();
-      throw TimeoutException('No tag detected');
-    });
-  }
-
-  /// Pulls the tag id out of the first NDEF Text record on the tag.
-  static String _extractTagId(NfcTag tag) {
-    final ndef = Ndef.from(tag);
-    if (ndef == null) {
-      throw const _TagException(NfcCheckinErrorKind.unreadableTag);
-    }
-    final message = ndef.cachedMessage;
-    if (message == null || message.records.isEmpty) {
-      throw const _TagException(NfcCheckinErrorKind.unreadableTag);
-    }
-    for (final record in message.records) {
-      final text = _decodeTextRecord(record);
-      if (text != null && text.trim().isNotEmpty) return text.trim();
-    }
-    throw const _TagException(NfcCheckinErrorKind.unreadableTag);
-  }
-
-  /// Decodes a Well-Known Text ('T') record to its text payload, or null if the
-  /// record isn't a Text record. Layout: `payload[0]` low 6 bits hold the
-  /// language-code length; the value is the utf8 of the bytes after it.
-  ///
-  /// A Text record is identified by its type being the single byte 'T' (0x54) —
-  /// which is what [NdefRecord.createText] (used to provision our tags) writes.
-  static String? _decodeTextRecord(NdefRecord record) {
-    if (record.type.length != 1 || record.type.first != 0x54) return null;
-
-    final payload = record.payload;
-    if (payload.isEmpty) return null;
-    final languageCodeLength = payload.first & 0x3F; // low 6 bits
-    final start = 1 + languageCodeLength;
-    if (start > payload.length) return null;
-    try {
-      return utf8.decode(payload.sublist(start));
-    } catch (_) {
-      return null;
-    }
-  }
-
   // ── Error copy ───────────────────────────────────────────────────────────────
-
-  static String _messageForTagError(NfcCheckinErrorKind kind) {
-    switch (kind) {
-      case NfcCheckinErrorKind.unavailable:
-        return 'NFC isn’t available on this device.';
-      case NfcCheckinErrorKind.unreadableTag:
-        return 'This tag couldn’t be read. Please ask a volunteer for help.';
-      case NfcCheckinErrorKind.noTag:
-        return 'No tag detected. Hold your phone flat against the tag and try again.';
-      default:
-        return 'Something went wrong reading the tag. Please try again.';
-    }
-  }
 
   static NfcCheckinResult _resultForApiError(ChurchApiException e) {
     switch (e.statusCode) {
