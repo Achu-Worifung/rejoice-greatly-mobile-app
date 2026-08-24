@@ -54,6 +54,21 @@ class VideoHandler {
       );
 
       await _controller!.initialize();
+
+      // Pin the capture orientation to portrait. The signup selfie flow is a
+      // fixed portrait posture, and the ML Kit rotation we compute below is only
+      // correct while the device orientation the plugin reports matches what the
+      // buffer actually contains. If the phone rotates mid-capture, that value
+      // desyncs (and on iOS it is ignored entirely), the face arrives sideways,
+      // and detection silently fails. Locking capture to portraitUp keeps the
+      // reported orientation — and therefore the rotation fed to ML Kit — stable
+      // regardless of how the handset is tilted. Best-effort: some devices throw.
+      try {
+        await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      } catch (e) {
+        print('lockCaptureOrientation failed: $e');
+      }
+
       _isCameraReady = true;
       _isFrontCamera = front;
     } catch (e) {
@@ -136,12 +151,21 @@ class VideoHandler {
 
   /// Rotation ML Kit must apply, compensating for device orientation and for
   /// the front lens mirroring on Android.
+  ///
+  /// The orientation used is the locked capture orientation when one is set
+  /// (it always is here — see [initCamera]). Locking the *capture* orientation
+  /// does not necessarily stop the plugin's sensor listener from updating
+  /// [CameraValue.deviceOrientation] as the handset tilts, so relying on the
+  /// live device orientation would still desync ML Kit's rotation from the
+  /// (portrait-locked) buffer when the phone is rotated. Preferring the locked
+  /// orientation keeps the two in step.
   int? _rotationDegrees(CameraController controller) {
     final sensorOrientation = controller.description.sensorOrientation;
     if (Platform.isIOS) return sensorOrientation;
 
-    final deviceRotation =
-        _orientationDegrees[controller.value.deviceOrientation];
+    final effectiveOrientation = controller.value.lockedCaptureOrientation ??
+        controller.value.deviceOrientation;
+    final deviceRotation = _orientationDegrees[effectiveOrientation];
     if (deviceRotation == null) return null;
 
     return controller.description.lensDirection == CameraLensDirection.front

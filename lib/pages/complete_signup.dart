@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/church_api.dart';
 import '../services/profile_picture_upload.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -197,6 +198,12 @@ class _CompleteSignupState extends State<CompleteSignup> {
   @override
   void initState() {
     super.initState();
+    // Keep the whole capture screen portrait. Face detection feeds ML Kit a
+    // rotation that assumes a portrait-held phone (the capture is locked to
+    // portrait in the handler); letting the UI rotate would flip the preview
+    // out from under that assumption and the model would stop finding the face.
+    // Restored to the app default in dispose().
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     _handler = VideoHandler();
     _ensurePostgresAccount();
     // Detection can only start once the camera reports ready.
@@ -691,6 +698,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
     _handler.stopFrameStream();
     _handler.dispose();
     _faceDetector.close();
+    // Release the portrait lock this screen imposed so the rest of the app
+    // keeps whatever orientations the platform manifests allow.
+    SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();
   }
 
