@@ -3,9 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>1053433403648-id0o692vjp8v3kp3a4p9mdda1gsohjhk.apps.googleusercontent.com</string>
+	<string>1053433403648-ulf2tlah2on7397bt6o51dq9mj154n77.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.1053433403648-id0o692vjp8v3kp3a4p9mdda1gsohjhk</string>
+	<string>com.googleusercontent.apps.1053433403648-ulf2tlah2on7397bt6o51dq9mj154n77</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>1053433403648-mh496i6ajlced32io7r19m6qgjg5ipr8.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDXRja7FQfgaar5IRsdbparRTs9xTJjECQ</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.churchApp</string>
+	<string>com.rejoicegreatly.app</string>
 	<key>PROJECT_ID</key>
 	<string>moodchangingcafe</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,7 +31,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1053433403648:ios:4281beec4c2e913c96fbe5</string>
+	<string>1:1053433403648:ios:a4215b6a8d70e0b196fbe5</string>
 	<key>DATABASE_URL</key>
 	<string>https://moodchangingcafe-default-rtdb.firebaseio.com</string>
 </dict>

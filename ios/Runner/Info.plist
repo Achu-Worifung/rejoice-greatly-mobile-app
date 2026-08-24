@@ -14,7 +14,7 @@
 					     Without this, the GoogleSignIn SDK throws an uncaught
 					     NSException and crashes the app when the Google button is
 					     tapped. -->
-					<string>com.googleusercontent.apps.1053433403648-id0o692vjp8v3kp3a4p9mdda1gsohjhk</string>
+					<string>com.googleusercontent.apps.1053433403648-ulf2tlah2on7397bt6o51dq9mj154n77</string>
 				</array>
 			</dict>
 		</array>

@@ -49,6 +49,50 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053433403648:android:aa8e2b0a839f0ca496fbe5",
+        "android_client_info": {
+          "package_name": "com.rejoicegreatly.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1053433403648-551h1pke97ibbe5ebk03ocg519ta7n44.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rejoicegreatly.app",
+            "certificate_hash": "8b6c7c3ac1d1e61a1748016004fc7993d620b947"
+          }
+        },
+        {
+          "client_id": "1053433403648-6h8u89n0ts8ijrmv13qm5dj57j6v7pgd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyrT00jKue3A31bW5g90Lz_Ffq1grIYYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1053433403648-6h8u89n0ts8ijrmv13qm5dj57j6v7pgd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1053433403648-al7lk10bh9dh0jjj8dnt6l0l83i2k7bt.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "rejoice-greatly"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

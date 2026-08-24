@@ -53,7 +53,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAyrT00jKue3A31bW5g90Lz_Ffq1grIYYU',
-    appId: '1:1053433403648:android:000cbe011b70be3796fbe5',
+    appId: '1:1053433403648:android:aa8e2b0a839f0ca496fbe5',
     messagingSenderId: '1053433403648',
     projectId: 'moodchangingcafe',
     databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',
@@ -62,13 +62,13 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDXRja7FQfgaar5IRsdbparRTs9xTJjECQ',
-    appId: '1:1053433403648:ios:4281beec4c2e913c96fbe5',
+    appId: '1:1053433403648:ios:a4215b6a8d70e0b196fbe5',
     messagingSenderId: '1053433403648',
     projectId: 'moodchangingcafe',
     databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',
     storageBucket: 'moodchangingcafe.firebasestorage.app',
-    iosClientId: '1053433403648-id0o692vjp8v3kp3a4p9mdda1gsohjhk.apps.googleusercontent.com',
-    iosBundleId: 'com.example.churchApp',
+    iosClientId: '1053433403648-ulf2tlah2on7397bt6o51dq9mj154n77.apps.googleusercontent.com',
+    iosBundleId: 'com.rejoicegreatly.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
