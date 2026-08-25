@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../services/auth_service.dart';
 import '../services/cafe_sso_service.dart';
+import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import '../util/webview_web_platform.dart';
 import '../widgets/church_app_bar.dart';
@@ -132,6 +134,14 @@ class _CafeState extends State<Cafe> {
       await CafeSsoService.applyToWebView(controller, customToken: customToken);
       _syncedUid = user.uid;
       await CafeSsoService.writeLastCafeUid(user.uid);
+    } on SessionInvalidException catch (e) {
+      // The account was deleted/disabled server-side: no cafe token will ever
+      // be issued, so the member can't order. Wipe the cafe WebView session and
+      // sign the app out — signing out routes back to login, and the auth-state
+      // listener above then clears the cafe session for the (now null) user.
+      debugPrint('Cafe tab: account no longer valid ($e) — signing out');
+      await CafeSsoService.wipeSession(controller);
+      await AuthService().logout();
     } catch (e, st) {
       debugPrint('Cafe tab SSO failed: $e\n$st');
     } finally {

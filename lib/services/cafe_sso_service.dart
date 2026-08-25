@@ -67,18 +67,16 @@ class CafeSsoService {
     return Uri.parse('$base/');
   }
 
+  /// Mints a Firebase custom token so the cafe WebView can sign in as the same
+  /// member. Throws [SessionInvalidException] when the account has been
+  /// deleted/disabled (so the cafe — and the app — can sign the member out
+  /// rather than let a removed account keep ordering).
   static Future<String?> fetchCustomToken() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
 
-    String? idToken;
-    try {
-      idToken = await user.getIdToken(true);
-    } catch (e) {
-      debugPrint('CafeSso: getIdToken failed: $e');
-      idToken = await user.getIdToken();
-    }
-    if (idToken == null || idToken.isEmpty) return null;
+    // Surfaces a SessionInvalidException when Firebase reports the account gone.
+    final idToken = await ChurchApi.forceFreshIdToken(user);
 
     final uri = Uri.parse('${ChurchApi.baseUrl}/auth/custom-token');
     final r = await http
@@ -89,6 +87,9 @@ class CafeSsoService {
         )
         .timeout(const Duration(seconds: 30));
 
+    if (r.statusCode == 401 || r.statusCode == 403 || r.statusCode == 404) {
+      throw SessionInvalidException('auth/custom-token:${r.statusCode}');
+    }
     if (r.statusCode != 200) {
       throw Exception('auth/custom-token failed: ${r.statusCode} ${r.body}');
     }
