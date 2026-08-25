@@ -31,6 +31,24 @@ class ChurchApiException implements Exception {
       'ChurchApiException($statusCode, errorCode: $errorCode, message: $serverMessage)';
 }
 
+/// Thrown when the signed-in account can no longer authenticate because it has
+/// been deleted or disabled server-side — e.g. the church team actioned an
+/// account-deletion request and removed the member's Firebase user.
+///
+/// Distinct from a transient network failure: callers should sign the member
+/// out (routing them to login) rather than fall back to cached data, since the
+/// account no longer exists.
+class SessionInvalidException implements Exception {
+  const SessionInvalidException(this.reason);
+
+  /// A short machine-readable cause, e.g. `firebase:user-not-found` or
+  /// `auth/firebase:404`, for logs.
+  final String reason;
+
+  @override
+  String toString() => 'SessionInvalidException($reason)';
+}
+
 /// Result of restoring session on cold start.
 class SessionRestoreResult {
   const SessionRestoreResult({
@@ -38,12 +56,18 @@ class SessionRestoreResult {
     this.signupComplete = false,
     this.account,
     this.syncedFromServer = false,
+    this.sessionInvalid = false,
   });
 
   final bool loggedIn;
   final bool signupComplete;
   final Map<String, dynamic>? account;
   final bool syncedFromServer;
+
+  /// True when the restore failed because the account was deleted/disabled
+  /// (a [SessionInvalidException]), as opposed to being offline. The caller
+  /// should complete a full sign-out.
+  final bool sessionInvalid;
 }
 
 /// Church profile from `POST /member/profile` (not auth).
@@ -231,7 +255,13 @@ class ChurchApi {
         account: auth,
         syncedFromServer: true,
       );
+    } on SessionInvalidException catch (e) {
+      // The account was deleted/disabled server-side. Don't fall back to the
+      // cached session — report it so the caller completes a full sign-out.
+      debugPrint('ChurchApi restoreUserSession: account no longer valid ($e)');
+      return const SessionRestoreResult(loggedIn: false, sessionInvalid: true);
     } catch (e, st) {
+      // Transient (offline, server error): keep the member signed in on cache.
       debugPrint('ChurchApi restoreUserSession auth sync failed: $e\n$st');
     }
 
@@ -541,7 +571,31 @@ class ChurchApi {
     };
     if (name != null) body['name'] = name;
 
-    final map = await postJson('/auth/firebase', body);
+    // Not routed through [postJson] so a "no such account" status can be told
+    // apart from a transient failure and surfaced as a [SessionInvalidException].
+    final uri = Uri.parse('$baseUrl/auth/firebase');
+    final r = await http
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(body),
+        )
+        .timeout(_httpTimeout);
+
+    debugPrint('ChurchApi: POST /auth/firebase -> ${r.statusCode}');
+    if (r.statusCode == 401 || r.statusCode == 403 || r.statusCode == 404) {
+      throw SessionInvalidException('auth/firebase:${r.statusCode}');
+    }
+    if (r.statusCode != 200) {
+      throw Exception('/auth/firebase failed: ${r.statusCode} ${r.body}');
+    }
+
+    final Map<String, dynamic> map;
+    try {
+      map = unwrapApiMap(r.body);
+    } on FormatException {
+      throw Exception('/auth/firebase returned an invalid response');
+    }
     await _mergeIntoCachedAccount(map);
     return map;
   }
@@ -649,6 +703,45 @@ class ChurchApi {
     }
   }
 
+  /// Firebase auth error codes that mean the account can no longer
+  /// authenticate — it was deleted or disabled, or its sessions were revoked
+  /// (which Firebase also does when a user is deleted). These map to a
+  /// [SessionInvalidException] so the caller signs the member out instead of
+  /// retrying or serving stale cache. `network-request-failed` and the like
+  /// are deliberately excluded — those are transient.
+  static const Set<String> accountGoneAuthCodes = {
+    'user-disabled',
+    'user-not-found',
+    'user-token-expired',
+    'user-token-revoked',
+    'invalid-user-token',
+    'user-mismatch',
+  };
+
+  /// Forces a fresh Firebase ID token, translating a "this account is gone"
+  /// [FirebaseAuthException] into a [SessionInvalidException]. A non-terminal
+  /// failure (e.g. offline) is retried once without the force-refresh so a
+  /// still-valid cached token can be used.
+  static Future<String> forceFreshIdToken(User user) async {
+    try {
+      final token = await user.getIdToken(true);
+      if (token == null || token.isEmpty) {
+        throw StateError('Could not obtain Firebase id token');
+      }
+      return token;
+    } on FirebaseAuthException catch (e) {
+      if (accountGoneAuthCodes.contains(e.code)) {
+        throw SessionInvalidException('firebase:${e.code}');
+      }
+      debugPrint('ChurchApi: getIdToken(true) failed (${e.code}), retrying');
+      final token = await user.getIdToken();
+      if (token == null || token.isEmpty) {
+        throw StateError('Could not obtain Firebase id token');
+      }
+      return token;
+    }
+  }
+
   /// Public so sibling services (e.g. [ProfilePictureUpload]) can reuse the
   /// reload-and-retry behaviour rather than reimplementing it.
   static Future<({User user, String token})> requireIdToken() async {
@@ -659,21 +752,18 @@ class ChurchApi {
 
     try {
       await user.reload();
+    } on FirebaseAuthException catch (e) {
+      // A reload that reports the user is gone is itself a deletion signal.
+      if (accountGoneAuthCodes.contains(e.code)) {
+        throw SessionInvalidException('firebase:${e.code}');
+      }
+      debugPrint('ChurchApi: user.reload() failed (continuing): $e');
     } catch (e) {
       debugPrint('ChurchApi: user.reload() failed (continuing): $e');
     }
 
     final active = FirebaseAuth.instance.currentUser ?? user;
-    String? token;
-    try {
-      token = await active.getIdToken(true);
-    } catch (e) {
-      debugPrint('ChurchApi: getIdToken(true) failed, retrying: $e');
-      token = await active.getIdToken();
-    }
-    if (token == null || token.isEmpty) {
-      throw StateError('Could not obtain Firebase id token');
-    }
+    final token = await forceFreshIdToken(active);
     return (user: active, token: token);
   }
 

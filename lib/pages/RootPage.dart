@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:church_app/pages/login_page.dart';
 import 'package:church_app/pages/date_of_birth_page.dart';
 import 'package:church_app/pages/dashboard.dart';
+import 'package:church_app/services/auth_service.dart';
 import 'package:church_app/services/church_api.dart';
 import 'package:church_app/widgets/branded_loader.dart';
 
@@ -17,6 +18,7 @@ class RootPage extends StatefulWidget {
 class _RootPageState extends State<RootPage> {
   Future<SessionRestoreResult>? _sessionFuture;
   String? _restoredUid;
+  bool _signingOutInvalid = false;
 
   // The same "Warm Welcome" surface the splash settles into, so a slow auth /
   // session-restore keeps the user in one continuous moment instead of a bare
@@ -35,6 +37,7 @@ class _RootPageState extends State<RootPage> {
         if (!authSnapshot.hasData) {
           _sessionFuture = null;
           _restoredUid = null;
+          _signingOutInvalid = false;
           return const LoginPage();
         }
 
@@ -60,6 +63,16 @@ class _RootPageState extends State<RootPage> {
 
             final session = sessionSnapshot.data;
             if (session == null || !session.loggedIn) {
+              // The account was deleted/disabled server-side. Complete a full
+              // sign-out (clears the on-device cache and push registration) so
+              // nothing from the removed account lingers; the auth stream then
+              // rebuilds this widget straight to login.
+              if (session?.sessionInvalid == true && !_signingOutInvalid) {
+                _signingOutInvalid = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  AuthService().logout();
+                });
+              }
               return const LoginPage();
             }
 
