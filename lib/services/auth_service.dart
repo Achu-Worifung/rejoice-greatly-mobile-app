@@ -7,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../firebase_options.dart';
 import '../notifications/notification_service.dart';
 import 'church_api.dart';
 import 'user_session_store.dart';
@@ -29,8 +30,15 @@ class AuthService {
   // Mobile only — web uses Firebase signInWithPopup (see signInWithGoogle).
   static GoogleSignIn? _mobileGoogleSignIn;
 
+  /// Web OAuth client (type 3) from Firebase/Google Cloud. Required on iOS so
+  /// Google returns an ID token Firebase Auth will accept.
+  static const _googleServerClientId =
+      '1053433403648-6h8u89n0ts8ijrmv13qm5dj57j6v7pgd.apps.googleusercontent.com';
+
   static GoogleSignIn get _googleSignIn => _mobileGoogleSignIn ??= GoogleSignIn(
         scopes: const ['email', 'profile'],
+        clientId: DefaultFirebaseOptions.ios.iosClientId,
+        serverClientId: _googleServerClientId,
       );
 
   static bool _googleSignInInProgress = false;
@@ -138,6 +146,10 @@ class AuthService {
         if (googleUser == null) return 'Cancelled';
         final GoogleSignInAuthentication googleAuth =
             await googleUser.authentication;
+        if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
+          return 'Google sign-in did not return an ID token. Check that the '
+              'iOS OAuth client is for com.rejoicegreatly.app.';
+        }
 
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
@@ -168,6 +180,8 @@ class AuthService {
     _appleSignInInProgress = true;
     try {
       String? name;
+      debugPrint('AuthService: Apple sign-in started '
+          '(platform=${defaultTargetPlatform.name}, web=$kIsWeb)');
 
       if (kIsWeb) {
         final provider = OAuthProvider('apple.com')
@@ -188,17 +202,34 @@ class AuthService {
         name = _auth.currentUser?.displayName;
       }
 
+      debugPrint('AuthService: Apple Firebase auth OK, syncing backend…');
       final sync = await _syncWithBackend('Apple', name);
-      if (!sync.ok) return sync.error;
+      if (!sync.ok) {
+        debugPrint('AuthService: Apple backend sync failed: ${sync.error}');
+        return sync.error;
+      }
       _navigateAfterAuth(sync.signupComplete);
       return null;
     } on SignInWithAppleAuthorizationException catch (e) {
+      debugPrint(
+        'AuthService: Apple authorization failed '
+        '(code=${e.code}, message=${e.message})',
+      );
       if (e.code == AuthorizationErrorCode.canceled) {
         return 'Cancelled';
       }
-      return e.message;
+      return e.message.isNotEmpty
+          ? e.message
+          : 'Apple sign-in failed (${e.code.name}).';
     } on FirebaseAuthException catch (e) {
+      debugPrint(
+        'AuthService: Apple FirebaseAuthException '
+        '(code=${e.code}, message=${e.message})',
+      );
       return _authErrorMessage(e);
+    } catch (e, st) {
+      debugPrint('AuthService: Apple unexpected error: $e\n$st');
+      return 'Apple sign-in failed: $e';
     } finally {
       _appleSignInInProgress = false;
     }
@@ -208,6 +239,7 @@ class AuthService {
   /// only provides it on the first authorization, so it is persisted then).
   Future<String?> _signInWithAppleNative() async {
     final isAvailable = await SignInWithApple.isAvailable();
+    debugPrint('AuthService: SignInWithApple.isAvailable=$isAvailable');
     if (!isAvailable) {
       // Old iOS (<13): fall back to the Firebase-managed web flow.
       final provider = OAuthProvider('apple.com')
@@ -220,6 +252,7 @@ class AuthService {
     final rawNonce = _generateNonce();
     final nonce = _sha256ofString(rawNonce);
 
+    debugPrint('AuthService: requesting Apple ID credential…');
     final appleCredential = await SignInWithApple.getAppleIDCredential(
       scopes: [
         AppleIDAuthorizationScopes.email,
@@ -229,6 +262,12 @@ class AuthService {
     );
 
     final idToken = appleCredential.identityToken;
+    debugPrint(
+      'AuthService: Apple credential received '
+      '(hasIdToken=${idToken != null && idToken.isNotEmpty}, '
+      'userIdentifier=${appleCredential.userIdentifier}, '
+      'email=${appleCredential.email})',
+    );
     if (idToken == null || idToken.isEmpty) {
       throw FirebaseAuthException(
         code: 'missing-identity-token',
@@ -239,8 +278,10 @@ class AuthService {
     final oauthCredential = OAuthProvider('apple.com').credential(
       idToken: idToken,
       rawNonce: rawNonce,
+      accessToken: appleCredential.authorizationCode,
     );
 
+    debugPrint('AuthService: exchanging Apple credential with Firebase…');
     final userCredential = await _auth.signInWithCredential(oauthCredential);
 
     final fullName =

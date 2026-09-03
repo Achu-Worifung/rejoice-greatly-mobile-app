@@ -23,7 +23,11 @@ class _LoginPageState extends State<LoginPage> {
   String? _busy;
 
   void _showError(String msg) {
-    if (msg == 'Cancelled') return;
+    // Keep a quiet cancel, but log it so "nothing happened" is diagnosable.
+    if (msg == 'Cancelled') {
+      debugPrint('LoginPage: sign-in cancelled by user');
+      return;
+    }
     // Fall back to the root navigator's context when this widget has been
     // unmounted (e.g. Firebase auth state fired before the backend sync
     // finished, causing RootPage to replace LoginPage mid-flight).
@@ -39,9 +43,13 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _busy = provider);
     try {
       final msg = await run();
-      if (msg != null) _showError(msg);
-    } catch (e) {
-      _showError('Sign-in failed. Please try again.');
+      if (msg != null) {
+        debugPrint('LoginPage: $provider sign-in returned: $msg');
+        _showError(msg);
+      }
+    } catch (e, st) {
+      debugPrint('LoginPage: $provider sign-in threw: $e\n$st');
+      _showError('Sign-in failed: $e');
     } finally {
       if (mounted) setState(() => _busy = null);
     }

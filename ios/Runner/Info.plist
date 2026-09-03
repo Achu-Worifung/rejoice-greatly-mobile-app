@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>GIDClientID</key>
+		<string>1053433403648-ulf2tlah2on7397bt6o51dq9mj154n77.apps.googleusercontent.com</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
@@ -9,11 +11,7 @@
 				<string>Editor</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<!-- Google Sign-In OAuth callback: must match REVERSED_CLIENT_ID
-					     in GoogleService-Info.plist (moodchangingcafe iOS app).
-					     Without this, the GoogleSignIn SDK throws an uncaught
-					     NSException and crashes the app when the Google button is
-					     tapped. -->
+					<!-- Must match REVERSED_CLIENT_ID in GoogleService-Info.plist -->
 					<string>com.googleusercontent.apps.1053433403648-ulf2tlah2on7397bt6o51dq9mj154n77</string>
 				</array>
 			</dict>
