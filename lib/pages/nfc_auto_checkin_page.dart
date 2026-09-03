@@ -45,7 +45,7 @@ class _NfcAutoCheckinPageState extends State<NfcAutoCheckinPage> {
         message: 'Sign in, then tap the tag again to mark yourself present.',
         tone: AttendanceBannerTone.info,
       );
-      Navigator.of(context).pop();
+      _dismiss();
       return;
     }
 
@@ -68,7 +68,15 @@ class _NfcAutoCheckinPageState extends State<NfcAutoCheckinPage> {
         tone: AttendanceBannerTone.error,
       );
     }
-    Navigator.of(context).pop();
+    _dismiss();
+  }
+
+  /// Step aside now the banner is up. Guarded: on a cold start the link can
+  /// arrive before anything else is on the stack, and popping the only route
+  /// would leave the member staring at a blank window instead of the app.
+  void _dismiss() {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) navigator.pop();
   }
 
   @override
