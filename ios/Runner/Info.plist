@@ -27,6 +27,13 @@
 		<array>
 			<string>remote-notification</string>
 		</array>
+		<!-- The engine's built-in deep linking would also try to route an
+		     incoming Universal Link through MaterialApp's named routes. Our
+		     check-in links are handled by NfcDeepLinkService (app_links)
+		     instead, so leave the engine out of it — this is also the setup
+		     app_links requires from Flutter 3.24 on. -->
+		<key>FlutterDeepLinkingEnabled</key>
+		<false/>
 		<key>NFCReaderUsageDescription</key>
 		<string>Rejoice Greatly uses NFC to check you in when you tap the tag at the venue.</string>
 		<key>NSCameraUsageDescription</key>

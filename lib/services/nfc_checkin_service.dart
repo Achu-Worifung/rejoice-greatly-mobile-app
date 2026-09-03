@@ -161,7 +161,12 @@ class NfcCheckinService {
   /// The host our check-in links resolve through (Android App/NDEF dispatch
   /// and iOS Universal Links both verify against this domain — see the admin
   /// app's `/.well-known` files).
-  static const String _checkinLinkHost = 'rejoice-greatly-admin.vercel.app';
+  ///
+  /// Also read by `NfcDeepLinkService`, which only acts on links from this
+  /// host, and mirrored in `ios/Runner/AppDelegate.swift` (which claims these
+  /// links so iOS doesn't also open them in Safari) and in the Android
+  /// manifest's `NDEF_DISCOVERED` intent filter. Keep all four in step.
+  static const String checkinLinkHost = 'rejoice-greatly-admin.vercel.app';
 
   /// Admin utility: writes [tagId] onto a blank/writable tag so it can be
   /// used for check-in. Writes two NDEF records — a URI record first (so
@@ -179,7 +184,7 @@ class NfcCheckinService {
       throw const _TagException(NfcCheckinErrorKind.unavailable);
     }
 
-    final checkinUri = Uri.https(_checkinLinkHost, '/nfc-checkin/$trimmed');
+    final checkinUri = Uri.https(checkinLinkHost, '/nfc-checkin/$trimmed');
 
     final completer = Completer<void>();
     await NfcManager.instance.startSession(
@@ -235,8 +240,9 @@ class NfcCheckinService {
           _serverOr(e, 'That tag couldn’t be read. Please try again.'),
         );
       case 403:
-        // Outside the configured check-in time window (see NfcService on
-        // the backend) — the server's message states the window.
+        // Not a service day, or outside the service-hours window (see
+        // NfcService on the backend) — the server's message names the days
+        // or hours check-in is open, so show it rather than our fallback.
         return NfcCheckinResult.failure(
           NfcCheckinErrorKind.server,
           _serverOr(e, 'NFC check-in isn’t available right now.'),
