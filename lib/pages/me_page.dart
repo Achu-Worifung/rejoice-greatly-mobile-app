@@ -290,13 +290,15 @@ class _MePageState extends State<MePage> {
     );
   }
 
-  // --- Delete account (handled by the church team) --------------------------
+  // --- Delete account (reviewed by the church team) --------------------------
 
-  /// Account and facial-data deletion is done by the church team, not
-  /// self-service — this mirrors the policy already shown at signup
-  /// (`user_prep.dart`). We simply help the member reach them with the details
-  /// pre-filled.
-  Future<void> _requestAccountDeletion(Map<String, dynamic> profile) async {
+  /// Account and facial-data deletion is reviewed by the church team, not
+  /// instant self-service — this mirrors the policy already shown at signup
+  /// (`user_prep.dart`). We send the member to the site's "delete my account"
+  /// page, where they sign in with this same account to prove it's them, then
+  /// choose what to delete; an admin reviews and acts on the request in
+  /// Members management.
+  Future<void> _requestAccountDeletion() async {
     final proceed = await showDialog<bool>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.4),
@@ -331,15 +333,15 @@ class _MePageState extends State<MePage> {
               const SizedBox(height: 12),
               const Text(
                 'To keep your facial recognition data safe, account deletion is '
-                'handled personally by the church team. Tap below to send them a '
-                "request — we'll fill in your details for you.",
+                "reviewed personally by the church team. We'll take you to our "
+                'website, where you sign in and tell us what to delete.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: ChurchColors.muted, height: 1.45, fontSize: 14),
               ),
               const SizedBox(height: 24),
               ChurchDangerButton(
-                label: 'Email the church',
-                icon: Icons.mail_outline_rounded,
+                label: 'Continue on our website',
+                icon: Icons.open_in_new_rounded,
                 onPressed: () => Navigator.pop(ctx, true),
               ),
               const SizedBox(height: 10),
@@ -353,41 +355,27 @@ class _MePageState extends State<MePage> {
       ),
     );
     if (proceed != true || !mounted) return;
-    await _sendDeletionEmail(profile);
+    await _openDeletionSite();
   }
 
-  Future<void> _sendDeletionEmail(Map<String, dynamic> profile) async {
-    final configured = dotenv.env['CHURCH_ADMIN_EMAIL']?.trim();
-    final adminEmail =
-        (configured != null && configured.isNotEmpty) ? configured : 'hello@rejoicegreatly.org';
-    final churchName = dotenv.env['CHURCH_NAME'] ?? 'Rejoice Greatly';
-    final name = (profile['name'] as String?)?.trim() ?? '';
-    final email = (profile['email'] as String?)?.trim() ?? '';
+  Future<void> _openDeletionSite() async {
+    final configured = dotenv.env['ACCOUNT_DELETION_URL']?.trim();
+    final url = (configured != null && configured.isNotEmpty)
+        ? configured
+        : 'https://admin.rejoicegreatly.org/delete-account';
 
-    const subject = 'Account deletion request';
-    final body = 'Hello $churchName team,\n\n'
-        'I would like to permanently delete my $churchName app account and all '
-        'associated data, including my facial recognition data.\n\n'
-        'Name: ${name.isEmpty ? '(not set)' : name}\n'
-        'Account email: ${email.isEmpty ? '(not set)' : email}\n\n'
-        'Thank you.';
-
-    final uri = Uri.parse(
-      'mailto:$adminEmail'
-      '?subject=${Uri.encodeComponent(subject)}'
-      '&body=${Uri.encodeComponent(body)}',
-    );
-
+    final uri = Uri.tryParse(url);
     try {
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched =
+          uri != null && await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!launched) throw 'launchUrl returned false';
     } catch (e) {
-      debugPrint('MePage: could not open mail client: $e');
-      await Clipboard.setData(ClipboardData(text: adminEmail));
+      debugPrint('MePage: could not open deletion site: $e');
+      await Clipboard.setData(ClipboardData(text: url));
       if (!mounted) return;
       _showMessage(
-        'No email app found. We copied $adminEmail to your clipboard so you '
-        'can reach the church.',
+        "Couldn't open the link. We copied it to your clipboard so you can "
+        'paste it into a browser: $url',
         isError: true,
       );
     }
@@ -739,7 +727,7 @@ class _MePageState extends State<MePage> {
                   title: 'Delete my account',
                   subtitle: 'Ask the church team to remove your account and data.',
                   danger: true,
-                  onTap: () => _requestAccountDeletion(profile),
+                  onTap: () => _requestAccountDeletion(),
                 ),
                 const SizedBox(height: 36),
                 const Divider(color: ChurchColors.divider, height: 1),
