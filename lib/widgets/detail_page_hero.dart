@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
 
-/// Hero image (natural height, max half screen) + back affordance for detail screens.
+/// Hero image (natural height, capped) + back affordance for detail screens.
+///
+/// The cap is set so a portrait poster (≈3:4, the common event/sermon shape)
+/// still spans the full screen width with no side letterboxing; only images
+/// taller than that fall back to a centred, width-shrunk fit.
 class DetailPageHeroHeader extends StatelessWidget {
   const DetailPageHeroHeader({
     super.key,
@@ -17,7 +21,7 @@ class DetailPageHeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.5;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.64;
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Stack(
