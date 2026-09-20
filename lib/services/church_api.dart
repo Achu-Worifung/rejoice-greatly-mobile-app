@@ -133,6 +133,7 @@ class MePageLoadResult {
   final bool statsSynced;
   final bool attendanceSynced;
   final String? error;
+
   /// Non-null when the result was served from the local cache rather than the
   /// server. Indicates when the data was last fetched from the server.
   final DateTime? cachedAt;
@@ -141,7 +142,18 @@ class MePageLoadResult {
 class ChurchApi {
   ChurchApi._();
 
-  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'http://192.168.0.166:8080';
+  /// Backend origin from `.env`. Debug builds fall back to a LAN dev server so
+  /// `flutter run` works without a `.env`; release builds must be configured
+  /// (CI writes `.env` from secrets) and fail loudly rather than silently
+  /// talking to a machine on someone's home network.
+  static String get baseUrl {
+    final configured = dotenv.env['BASE_URL'];
+    if (configured != null && configured.isNotEmpty) return configured;
+    if (kDebugMode) return 'http://192.168.0.166:8080';
+    throw StateError(
+      'BASE_URL is not set. Release builds require it in the bundled .env.',
+    );
+  }
 
   static bool isSignupComplete(Map<String, dynamic>? account) =>
       UserSessionStore.isSignupComplete(account);
@@ -188,8 +200,7 @@ class ChurchApi {
   static Future<void> persistAccountFromServer(
     Map<String, dynamic> account, {
     String? provider,
-  }) =>
-      UserSessionStore.saveAccount(account, provider: provider);
+  }) => UserSessionStore.saveAccount(account, provider: provider);
 
   /// Marks onboarding finished on-device without a facial scan — used when an
   /// age-gated minor or a member who chose "no thanks" skips face setup.
@@ -219,9 +230,7 @@ class ChurchApi {
       UserSessionStore.readDateOfBirth();
 
   static Future<SessionRestoreResult> restoreUserSession() async {
-    final user = await waitForSignedInUser(
-      timeout: const Duration(seconds: 5),
-    );
+    final user = await waitForSignedInUser(timeout: const Duration(seconds: 5));
     if (user == null) {
       return const SessionRestoreResult(loggedIn: false);
     }
@@ -235,7 +244,8 @@ class ChurchApi {
     try {
       final auth = await syncAuthAccount();
       final prefs = await SharedPreferences.getInstance();
-      final provider = prefs.getString(UserSessionStore.authProviderKey) ??
+      final provider =
+          prefs.getString(UserSessionStore.authProviderKey) ??
           inferAuthProvider(user);
       await persistAccountFromServer(auth, provider: provider);
 
@@ -245,8 +255,9 @@ class ChurchApi {
       // local decision sticky so a cold start doesn't re-onboard them.
       final complete = isSignupComplete(auth) || locallyComplete;
       if (complete && !isSignupComplete(auth)) {
-        await persistAccountFromServer(const {'signupComplete': true},
-            provider: provider);
+        await persistAccountFromServer(const {
+          'signupComplete': true,
+        }, provider: provider);
       }
 
       return SessionRestoreResult(
@@ -283,8 +294,9 @@ class ChurchApi {
     return null;
   }
 
-  static Future<String?> resolveProfileImageUrl({Map<String, dynamic>? account}) =>
-      UserSessionStore.readProfileImageUrl(account: account);
+  static Future<String?> resolveProfileImageUrl({
+    Map<String, dynamic>? account,
+  }) => UserSessionStore.readProfileImageUrl(account: account);
 
   static Future<Map<String, dynamic>?> getCachedAccountJson() =>
       UserSessionStore.loadAccount();
@@ -308,7 +320,8 @@ class ChurchApi {
   static Future<Map<String, dynamic>> syncAuthAccount() async {
     final tokenBundle = await requireIdToken();
     final prefs = await SharedPreferences.getInstance();
-    final provider = prefs.getString(UserSessionStore.authProviderKey) ??
+    final provider =
+        prefs.getString(UserSessionStore.authProviderKey) ??
         inferAuthProvider(tokenBundle.user);
 
     debugPrint('ChurchApi: POST /auth/firebase (provider=$provider)');
@@ -334,7 +347,8 @@ class ChurchApi {
   }
 
   /// `POST /member/attendance/history` — check-in dates.
-  static Future<List<Map<String, dynamic>>> fetchMemberAttendanceHistory() async {
+  static Future<List<Map<String, dynamic>>>
+  fetchMemberAttendanceHistory() async {
     final map = await _postMember('attendance/history', const {});
     await _mergeIntoCachedAccount(map);
     final raw = map['recentAttendance'];
@@ -447,7 +461,9 @@ class ChurchApi {
   /// [_mePageCacheDuration] old, skipping all network calls. Sundays always
   /// refresh from the server (see [_memberCacheIsFresh]).
   /// Pass [forceRefresh] to bypass the cache (e.g. pull-to-refresh).
-  static Future<MePageLoadResult> loadMePage({bool forceRefresh = false}) async {
+  static Future<MePageLoadResult> loadMePage({
+    bool forceRefresh = false,
+  }) async {
     final user = await waitForSignedInUser();
     if (user == null) {
       return const MePageLoadResult(error: 'Not signed in');
@@ -565,10 +581,7 @@ class ChurchApi {
     String provider = 'email',
     String? name,
   }) async {
-    final body = <String, dynamic>{
-      'idToken': idToken,
-      'provider': provider,
-    };
+    final body = <String, dynamic>{'idToken': idToken, 'provider': provider};
     if (name != null) body['name'] = name;
 
     // Not routed through [postJson] so a "no such account" status can be told
@@ -600,7 +613,9 @@ class ChurchApi {
     return map;
   }
 
-  static Future<void> _mergeIntoCachedAccount(Map<String, dynamic> incoming) async {
+  static Future<void> _mergeIntoCachedAccount(
+    Map<String, dynamic> incoming,
+  ) async {
     final cached = await getCachedAccountJson();
     final merged = <String, dynamic>{
       if (cached != null) ...cached,
@@ -616,10 +631,7 @@ class ChurchApi {
     Map<String, dynamic> extra,
   ) async {
     final tokenBundle = await requireIdToken();
-    final body = <String, dynamic>{
-      'idToken': tokenBundle.token,
-      ...extra,
-    };
+    final body = <String, dynamic>{'idToken': tokenBundle.token, ...extra};
     return postJson('/member/$path', body);
   }
 
@@ -640,10 +652,7 @@ class ChurchApi {
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'idToken': tokenBundle.token,
-            'tagId': tagId,
-          }),
+          body: json.encode({'idToken': tokenBundle.token, 'tagId': tagId}),
         )
         .timeout(_httpTimeout);
 
@@ -783,7 +792,9 @@ class ChurchApi {
     return int.tryParse('$v') ?? 0;
   }
 
-  static Map<String, dynamic> statsToAttendanceSheetData(Map<String, dynamic> stats) {
+  static Map<String, dynamic> statsToAttendanceSheetData(
+    Map<String, dynamic> stats,
+  ) {
     return {
       'attendanceStreak': {
         'streakLabel': 'Current streak',
@@ -799,8 +810,9 @@ class ChurchApi {
   }
 
   @Deprecated('Use statsToAttendanceSheetData')
-  static Map<String, dynamic> accountToAttendanceSheetData(Map<String, dynamic> a) =>
-      statsToAttendanceSheetData(a);
+  static Map<String, dynamic> accountToAttendanceSheetData(
+    Map<String, dynamic> a,
+  ) => statsToAttendanceSheetData(a);
 
   static void invalidateHomeCache() {
     _verseCache = null;
@@ -843,8 +855,9 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getTop4Events() async {
-    final r =
-        await http.get(Uri.parse('$baseUrl/events/top4')).timeout(_httpTimeout);
+    final r = await http
+        .get(Uri.parse('$baseUrl/events/top4'))
+        .timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('events/top4 failed: ${r.statusCode}');
     }
@@ -883,6 +896,7 @@ class ChurchApi {
         if (x is! Map) return '';
         return x['date'] as String? ?? '';
       }
+
       return dateOf(a).compareTo(dateOf(b));
     });
     return list.length <= 4 ? list : list.sublist(0, 4);
@@ -908,8 +922,9 @@ class ChurchApi {
         DateTime.now().difference(cachedAt) < _homeCacheDuration) {
       return _sermonsCache!;
     }
-    final r =
-        await http.get(Uri.parse('$baseUrl/sermons')).timeout(_httpTimeout);
+    final r = await http
+        .get(Uri.parse('$baseUrl/sermons'))
+        .timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('sermons failed: ${r.statusCode}');
     }
@@ -920,8 +935,9 @@ class ChurchApi {
   }
 
   static Future<Map<String, dynamic>> getSermonById(Object id) async {
-    final r =
-        await http.get(Uri.parse('$baseUrl/sermons/$id')).timeout(_httpTimeout);
+    final r = await http
+        .get(Uri.parse('$baseUrl/sermons/$id'))
+        .timeout(_httpTimeout);
     if (r.statusCode != 200) {
       throw Exception('sermons/$id failed: ${r.statusCode}');
     }

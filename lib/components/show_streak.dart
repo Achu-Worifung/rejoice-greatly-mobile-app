@@ -76,7 +76,9 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(ChurchRadius.lg)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(ChurchRadius.lg),
+          ),
         ),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
@@ -84,7 +86,10 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
             SizedBox(height: 8),
             CircularProgressIndicator(color: ChurchColors.button),
             SizedBox(height: 20),
-            Text('Loading your stats…', style: TextStyle(color: ChurchColors.muted)),
+            Text(
+              'Loading your stats…',
+              style: TextStyle(color: ChurchColors.muted),
+            ),
           ],
         ),
       );
@@ -96,15 +101,14 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(ChurchRadius.lg)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(ChurchRadius.lg),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Complete your profile',
-              style: ChurchType.headline,
-            ),
+            const Text('Complete your profile', style: ChurchType.headline),
             const SizedBox(height: 8),
             const Text(
               'Finish signup with a profile photo before attendance stats are available.',
@@ -131,15 +135,14 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(ChurchRadius.lg)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(ChurchRadius.lg),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Could not load stats',
-              style: ChurchType.headline,
-            ),
+            const Text('Could not load stats', style: ChurchType.headline),
             const SizedBox(height: 8),
             Text(
               _error!,
@@ -160,19 +163,12 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
       );
     }
 
-    return AttendanceSheet(
-      data: _sheetData!,
-      bannerMessage: _error,
-    );
+    return AttendanceSheet(data: _sheetData!, bannerMessage: _error);
   }
 }
 
 class AttendanceSheet extends StatelessWidget {
-  const AttendanceSheet({
-    super.key,
-    required this.data,
-    this.bannerMessage,
-  });
+  const AttendanceSheet({super.key, required this.data, this.bannerMessage});
 
   final Map<String, dynamic> data;
   final String? bannerMessage;
@@ -193,8 +189,6 @@ class AttendanceSheet extends StatelessWidget {
     final current = n('currentStreak');
     final total = n('totalAttendance');
     final best = n('bestStreak');
-    final absences = n('absences');
-    final absenceStreak = n('absenceStreak');
 
     return Container(
       width: double.infinity,
@@ -229,7 +223,8 @@ class AttendanceSheet extends StatelessWidget {
             children: [
               Expanded(
                 child: _RegisterStat(
-                  label: attendance['streakLabel'] as String? ?? 'Current streak',
+                  label:
+                      attendance['streakLabel'] as String? ?? 'Current streak',
                   value: '$current',
                   accent: true,
                 ),
@@ -237,7 +232,9 @@ class AttendanceSheet extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: _RegisterStat(
-                  label: attendance['totalLabel'] as String? ?? 'Total attendances',
+                  label:
+                      attendance['totalLabel'] as String? ??
+                      'Total attendances',
                   value: '$total',
                 ),
               ),
@@ -260,40 +257,6 @@ class AttendanceSheet extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
               ),
               child: const Text('Close'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _miniStat(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      decoration: BoxDecoration(
-        color: ChurchColors.background,
-        borderRadius: ChurchRadius.mdAll,
-        border: Border.all(color: ChurchColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: ChurchColors.muted,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: ChurchColors.bodyText,
             ),
           ),
         ],

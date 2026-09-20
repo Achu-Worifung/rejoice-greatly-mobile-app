@@ -53,9 +53,8 @@ jobs:
       - name: Create placeholder .env
         run: cp .env.example .env
 
-      # Only compile errors block. The codebase currently carries ~80 infos and
-      # 11 unused_* warnings; tighten to --fatal-warnings once those are cleaned up.
-      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      # Errors and warnings block; infos (deprecations, style) are reported only.
+      - run: flutter analyze --no-fatal-infos
 
       - run: flutter test
 

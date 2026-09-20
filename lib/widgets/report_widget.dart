@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../theme/church_type.dart';
 
 class ReportsWidget extends StatelessWidget {
@@ -67,11 +66,7 @@ class ReportsWidget extends StatelessWidget {
                     label: 'Total Members',
                     value: '245',
                   ),
-                  _StatItem(
-                    icon: Icons.person,
-                    label: 'Present',
-                    value: '198',
-                  ),
+                  _StatItem(icon: Icons.person, label: 'Present', value: '198'),
                   _StatItem(
                     icon: Icons.person_off,
                     label: 'Absent',
@@ -132,10 +127,7 @@ class ReportsWidget extends StatelessWidget {
                 children: [
                   const Text(
                     'Attendance Rate',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 12),
                   Stack(
@@ -236,10 +228,7 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
       ],
     );

@@ -16,11 +16,6 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
 
-  static const TextStyle optionStyle = TextStyle(
-    fontSize: 30,
-    fontWeight: FontWeight.bold,
-  );
-
   // If your widgets are not const, remove `const` from the list.
   final List<Widget> _widgetOptions = const <Widget>[
     OverviewWidget(),
@@ -33,10 +28,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     setState(() {
       _selectedIndex = index;
     });
-  }
-
-  Future<void> _getData() async {
-    // Fetch data if needed
   }
 
   @override
