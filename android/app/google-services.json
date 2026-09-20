@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1053433403648-gsadtkkp0isl76k78kkbcgfrsomtk7sg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.RejoiceGreatly.app",
+            "certificate_hash": "8b6c7c3ac1d1e61a1748016004fc7993d620b947"
+          }
+        },
+        {
           "client_id": "1053433403648-nm8fqlhrlcuhupuv69ro133oo8dh596d.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
