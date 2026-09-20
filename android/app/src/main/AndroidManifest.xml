@@ -1,7 +1,13 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.NFC"/>
+    <!-- Sermon audio keeps playing with the screen off / app backgrounded,
+         served by audio_service's foreground media service (just_audio_background). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-feature android:name="android.hardware.camera"/>
     <!-- NFC is used for tag check-in but is not required to install the app. -->
     <uses-feature android:name="android.hardware.nfc" android:required="false"/>
@@ -53,6 +59,27 @@
                     android:pathPrefix="/nfc-checkin"/>
             </intent-filter>
         </activity>
+        <!-- Playback host for background sermon audio: owns the media session
+             the notification shade, lock screen, headset buttons and Android
+             Auto talk to. MainActivity extends AudioServiceActivity so a tap
+             on the notification returns to the running app. -->
+        <service
+            android:name="com.ryanheise.audioservice.AudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService"/>
+            </intent-filter>
+        </service>
+        <receiver
+            android:name="com.ryanheise.audioservice.MediaButtonReceiver"
+            android:exported="true"
+            tools:ignore="Instantiatable">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON"/>
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

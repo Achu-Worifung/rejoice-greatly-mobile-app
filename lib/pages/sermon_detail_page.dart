@@ -7,7 +7,6 @@ import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/detail_page_hero.dart';
 import '../widgets/dashboard_label_title.dart';
-import '../widgets/sermon_playing_waveform.dart';
 
 /// Full-screen sermon (no bottom nav shell); opened via [Navigator.push].
 class SermonDetailPage extends StatefulWidget {
@@ -156,31 +155,11 @@ class _AudioPlayButton extends StatelessWidget {
               ),
             );
           }
-          if (playing) {
-            return const SizedBox(
-              width: 40,
-              height: 28,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: SermonPlayingWaveform(
-                  size: 22,
-                  barCount: 3,
-                  isPlaying: true,
-                  foregroundColor: ChurchColors.buttonText,
-                ),
-              ),
-            );
-          }
-          if (paused) {
-            return const Icon(
-              Icons.pause_rounded,
-              size: 28,
-              color: ChurchColors.buttonText,
-            );
-          }
-          return const Icon(
-            Icons.play_arrow_rounded,
+          // The icon states the action the tap performs, matching the label
+          // beside it: a 9px microphone glyph here only read as a smudge, and
+          // a pause icon under a "Resume" label read as the wrong action.
+          return Icon(
+            playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
             size: 28,
             color: ChurchColors.buttonText,
           );
