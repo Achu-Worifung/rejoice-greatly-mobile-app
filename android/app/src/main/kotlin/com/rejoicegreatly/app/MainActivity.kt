@@ -1,5 +1,8 @@
 package com.rejoicegreatly.app
 
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+// AudioServiceActivity (a FlutterActivity subclass) shares its Flutter engine
+// with the background audio service, so sermon playback survives the activity
+// being backgrounded and a tap on the media notification comes back here.
+class MainActivity : AudioServiceActivity()

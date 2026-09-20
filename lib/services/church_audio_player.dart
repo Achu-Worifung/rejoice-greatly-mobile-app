@@ -2,10 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
 import 'church_api.dart';
 
 /// One shared sermon audio player: starting a new sermon stops the previous.
+///
+/// Playback runs through `just_audio_background`, so a sermon keeps playing
+/// with the app backgrounded or the screen locked, and the OS shows transport
+/// controls (notification shade / lock screen / Control Center). Those system
+/// controls talk straight to [_player], so every piece of UI state here is
+/// derived from the player rather than from what the last in-app tap did —
+/// otherwise a pause from the lock screen would leave the app showing "Pause".
 class ChurchAudioPlayer extends ChangeNotifier {
   ChurchAudioPlayer._internal() {
     _playerStateSub = _player.playerStateStream.listen(_onPlayerState);
@@ -19,7 +27,6 @@ class ChurchAudioPlayer extends ChangeNotifier {
   String? _activeKey;
   String? _loadingKey;
 
-  bool _showPauseIcon = false;
   bool _handlingPlaybackEnded = false;
 
   StreamSubscription<PlayerState>? _playerStateSub;
@@ -43,10 +50,14 @@ class ChurchAudioPlayer extends ChangeNotifier {
     return _activeKey == key;
   }
 
-  bool isPlayingFor(Map<String, dynamic> m) => isAudioFocus(m) && _showPauseIcon;
+  bool isPlayingFor(Map<String, dynamic> m) {
+    if (!isAudioFocus(m)) return false;
+    if (!_player.playing) return false;
+    return _player.processingState != ProcessingState.completed;
+  }
 
   bool isPausedFor(Map<String, dynamic> m) {
-    if (!isAudioFocus(m) || _showPauseIcon) return false;
+    if (!isAudioFocus(m) || _player.playing) return false;
     switch (_player.processingState) {
       case ProcessingState.ready:
       case ProcessingState.completed:
@@ -62,7 +73,7 @@ class ChurchAudioPlayer extends ChangeNotifier {
     final key = sermonKey(m);
     if (key == null) return false;
     if (_loadingKey != null && _loadingKey == key) return true;
-    if (!isAudioFocus(m) || _showPauseIcon) return false;
+    if (!isAudioFocus(m) || !_player.playing) return false;
     final p = _player.processingState;
     return p == ProcessingState.loading || p == ProcessingState.buffering;
   }
@@ -82,6 +93,29 @@ class ChurchAudioPlayer extends ChangeNotifier {
     }
   }
 
+  /// What the lock screen and notification show for this sermon.
+  MediaItem _mediaItem(Map<String, dynamic> m, String key) {
+    final title = (m['title'] as String?)?.trim();
+    final speaker = (m['speaker'] as String?)?.trim();
+    final category = (m['category'] as String?)?.trim();
+    return MediaItem(
+      id: key,
+      title: title == null || title.isEmpty ? 'Sermon' : title,
+      artist: speaker == null || speaker.isEmpty ? null : speaker,
+      album: category == null || category.isEmpty ? 'Rejoice Greatly' : category,
+      artUri: _artUri(m['imageUrl']),
+    );
+  }
+
+  Uri? _artUri(Object? raw) {
+    if (raw is! String) return null;
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) return null;
+    return uri;
+  }
+
   Future<bool> toggle(Map<String, dynamic> m) async {
     final key = sermonKey(m);
     if (key == null) return false;
@@ -91,26 +125,22 @@ class ChurchAudioPlayer extends ChangeNotifier {
 
     // Same sermon — just pause or resume
     if (_activeKey == key) {
-      if (_showPauseIcon) {
-        _setShowPauseIcon(false);
-        notifyListeners();
+      if (_player.playing) {
         await _player.pause();
       } else {
         final ps = _player.processingState;
         if (ps == ProcessingState.completed || _isNearEnd) {
           await _player.seek(Duration.zero);
         }
-        _setShowPauseIcon(true);
-        notifyListeners();
         await _player.play();
       }
+      notifyListeners();
       return true;
     }
 
     // New sermon — load and play
     _loadingKey = key;
     _activeKey = null;
-    _setShowPauseIcon(false);
     notifyListeners();
 
     await _player.stop();
@@ -123,11 +153,14 @@ class ChurchAudioPlayer extends ChangeNotifier {
         return false;
       }
 
-      await _player.setUrl(url);
+      // The MediaItem tag is what `just_audio_background` publishes to the
+      // OS, so the notification names the sermon instead of the app.
+      await _player.setAudioSource(
+        AudioSource.uri(Uri.parse(url), tag: _mediaItem(m, key)),
+      );
 
       _activeKey = key;
       _loadingKey = null;
-      _setShowPauseIcon(true);
       notifyListeners();
 
       await _player.play();
@@ -136,7 +169,6 @@ class ChurchAudioPlayer extends ChangeNotifier {
       debugPrint('ChurchAudioPlayer.toggle: $e\n$st');
       _activeKey = null;
       _loadingKey = null;
-      _setShowPauseIcon(false);
       await _player.stop();
       notifyListeners();
       return false;
@@ -145,13 +177,8 @@ class ChurchAudioPlayer extends ChangeNotifier {
 
   Future<void> stop() async {
     _activeKey = null;
-    _setShowPauseIcon(false);
     notifyListeners();
     await _player.stop();
-  }
-
-  void _setShowPauseIcon(bool value) {
-    _showPauseIcon = value;
   }
 
   bool get _isNearEnd {
@@ -163,16 +190,18 @@ class ChurchAudioPlayer extends ChangeNotifier {
     return position >= duration - Duration(milliseconds: slackMs);
   }
 
-  // Streams ONLY handle natural playback completion — nothing else
+  // Playback can now be driven from outside the app (lock screen, headset
+  // buttons, Control Center), so every state change has to reach the UI.
   void _onPlayerState(PlayerState state) {
-    if (!_showPauseIcon) return; // we're not playing, ignore all stream noise
     if (state.processingState == ProcessingState.completed) {
       _handlePlaybackEnded();
+      return;
     }
+    notifyListeners();
   }
 
   void _onPosition(Duration position) {
-    if (!_showPauseIcon) return;
+    if (!_player.playing) return;
     final duration = _player.duration;
     if (duration == null || duration <= Duration.zero) return;
     final slackMs = duration.inMilliseconds < 800 ? 50 : 400;
@@ -186,18 +215,17 @@ class ChurchAudioPlayer extends ChangeNotifier {
     if (_handlingPlaybackEnded) return;
     _handlingPlaybackEnded = true;
 
-    _setShowPauseIcon(false);
     _activeKey = null;
     notifyListeners();
 
     try {
-      if (_player.playing) await _player.pause();
-      final duration = _player.duration;
-      if (duration != null && duration > Duration.zero) {
-        await _player.seek(Duration.zero);
-      }
+      // stop() (rather than pause + seek) also tears down the media session,
+      // so a finished sermon doesn't leave a stale control tile on the lock
+      // screen after the app has gone back to "Listen to sermon".
+      await _player.stop();
     } finally {
       _handlingPlaybackEnded = false;
+      notifyListeners();
     }
   }
 

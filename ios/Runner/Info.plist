@@ -25,6 +25,11 @@
 		</array>
 		<key>UIBackgroundModes</key>
 		<array>
+			<!-- Sermon audio keeps playing with the app backgrounded or the
+			     screen locked, and the Now Playing controls stay live. Without
+			     this, iOS suspends playback the moment the app leaves the
+			     foreground. -->
+			<string>audio</string>
 			<string>remote-notification</string>
 		</array>
 		<!-- The engine's built-in deep linking would also try to route an
