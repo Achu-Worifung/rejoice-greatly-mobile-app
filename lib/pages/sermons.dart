@@ -8,6 +8,7 @@ import 'sermon_detail_page.dart';
 import '../services/church_api.dart';
 import '../services/church_audio_player.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_tab_page_header.dart';
 import '../widgets/church_buttons.dart';
@@ -144,7 +145,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
         automaticallyImplyLeading: false,
-        toolbarHeight: ChurchTabPageHeader.height,
+        toolbarHeight: ChurchTabPageHeader.heightOf(context),
         centerTitle: true,
         title: ChurchTabPageHeader(
           title: 'Sermons',
@@ -154,19 +155,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: ChurchColors.button,
-          indicatorWeight: 3,
-          labelColor: ChurchColors.accent,
-          unselectedLabelColor: ChurchColors.muted,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 14,
-            letterSpacing: 0.2,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
+          indicatorWeight: 2,
           tabs: const [
             Tab(text: 'All'),
             Tab(text: 'Saved'),
@@ -290,21 +279,21 @@ class _SermonRow extends StatelessWidget {
 
     return Material(
       color: ChurchColors.card,
-      borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+      borderRadius: ChurchRadius.lgAll,
       child: InkWell(
         onTap: onOpen,
-        borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+        borderRadius: ChurchRadius.lgAll,
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
-            border: Border.all(color: ChurchColors.divider.withValues(alpha: 0.45)),
+            borderRadius: ChurchRadius.lgAll,
+            border: Border.all(color: ChurchColors.divider),
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: ChurchRadius.mdAll,
                   child: SizedBox(
                     width: 76,
                     height: 76,
@@ -326,12 +315,7 @@ class _SermonRow extends StatelessWidget {
                         data['title'] as String? ?? 'Sermon',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: ChurchColors.bodyText,
-                          height: 1.2,
-                        ),
+                        style: ChurchType.title,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -339,11 +323,7 @@ class _SermonRow extends StatelessWidget {
                           if ((data['speaker'] as String?)?.isNotEmpty == true) data['speaker'],
                           dateLine,
                         ].whereType<String>().join(' · '),
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: ChurchColors.muted,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: ChurchType.dataSmall,
                       ),
                     ],
                   ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/sermon_play_icon.dart';
 
 class LatestSermonCard extends StatelessWidget {
@@ -30,13 +31,13 @@ class LatestSermonCard extends StatelessWidget {
               color: Colors.transparent,
               child: InkWell(
                 onTap: onTapCard,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     children: [
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: ChurchRadius.mdAll,
                         child: SizedBox(
                           width: 72,
                           height: 72,
@@ -61,20 +62,12 @@ class LatestSermonCard extends StatelessWidget {
                               data['title'] as String? ?? 'Sermon',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: ChurchColors.bodyText,
-                                height: 1.25,
-                              ),
+                              style: ChurchType.title,
                             ),
                             const SizedBox(height: 6),
                             Text(
                               _formatDate(data['datePreached'] ?? data['date']),
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: ChurchColors.muted,
-                              ),
+                              style: ChurchType.dataSmall,
                             ),
                           ],
                         ),

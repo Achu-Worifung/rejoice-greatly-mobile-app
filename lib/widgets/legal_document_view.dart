@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import 'church_app_bar.dart';
 
 /// Shared renderer for the Terms of Use and Privacy Policy screens.
@@ -46,12 +47,7 @@ class LegalDocumentView extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: ChurchColors.bodyText,
-                height: 1.25,
-              ),
+              style: ChurchType.display,
             ),
             const SizedBox(height: 8),
             Text(
@@ -98,7 +94,7 @@ class _SectionHeading extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: ChurchColors.button.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: ChurchRadius.mdAll,
           ),
           child: Text(
             '$number',
@@ -115,12 +111,7 @@ class _SectionHeading extends StatelessWidget {
             padding: const EdgeInsets.only(top: 2),
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: ChurchColors.bodyText,
-                height: 1.3,
-              ),
+              style: ChurchType.headline,
             ),
           ),
         ),

@@ -1,24 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 
-/// Shared app bar look: white bar, no elevation, brown icons, consistent title weight.
+/// Shared app bar look: white bar, no elevation, brown icons, serif title.
 class ChurchAppBar {
   ChurchAppBar._();
 
-  static const TextStyle titleStyle = TextStyle(
-    fontSize: 17,
-    fontWeight: FontWeight.w700,
-    letterSpacing: -0.2,
-    color: ChurchColors.bodyText,
-  );
+  static const TextStyle titleStyle = ChurchType.headline;
 
-  static const TextStyle kickerStyle = TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w800,
-    letterSpacing: 1.2,
-    color: ChurchColors.accent,
-  );
+  /// The mono micro-label above or beside a title.
+  static const TextStyle kickerStyle = ChurchType.eyebrow;
 
   static AppBar of({
     required Widget title,

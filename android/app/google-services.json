@@ -8,6 +8,50 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1053433403648:android:f43eaac560568a0996fbe5",
+        "android_client_info": {
+          "package_name": "com.RejoiceGreatly.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1053433403648-nm8fqlhrlcuhupuv69ro133oo8dh596d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.RejoiceGreatly.app",
+            "certificate_hash": "00236c752172543064f877b353bac0c49d25b83f"
+          }
+        },
+        {
+          "client_id": "1053433403648-6h8u89n0ts8ijrmv13qm5dj57j6v7pgd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyrT00jKue3A31bW5g90Lz_Ffq1grIYYU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1053433403648-6h8u89n0ts8ijrmv13qm5dj57j6v7pgd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1053433403648-al7lk10bh9dh0jjj8dnt6l0l83i2k7bt.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "rejoice-greatly"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1053433403648:android:000cbe011b70be3796fbe5",
         "android_client_info": {
           "package_name": "com.example.church_app"

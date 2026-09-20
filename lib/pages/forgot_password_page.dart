@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/auth_ui.dart';
 
@@ -74,12 +75,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             const SizedBox(height: 12),
             const Text(
               'Reset your password',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: ChurchColors.bodyText,
-                letterSpacing: 0.3,
-              ),
+              style: ChurchType.display,
             ),
             const SizedBox(height: 8),
             const Text(
@@ -173,11 +169,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           const SizedBox(height: 20),
           const Text(
             'Check your inbox',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: ChurchColors.bodyText,
-            ),
+            style: ChurchType.headline,
           ),
           const SizedBox(height: 10),
           Text(

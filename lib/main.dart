@@ -4,7 +4,7 @@ import 'firebase_options.dart';
 import 'routes.dart';
 import 'pages/splash_screen.dart';
 import 'theme/church_colors.dart';
-import 'theme/page_transitions.dart';
+import 'theme/church_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
@@ -68,30 +68,7 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
       initialRoute: '/',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: ChurchColors.button,
-          brightness: Brightness.light,
-          primary: ChurchColors.button,
-        ),
-        scaffoldBackgroundColor: ChurchColors.background,
-        pageTransitionsTheme: kChurchPageTransitionsTheme,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: ChurchColors.background,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            color: ChurchColors.bodyText,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
-          ),
-          iconTheme: IconThemeData(color: ChurchColors.accent, size: 24),
-        ),
-      ),
+      theme: buildChurchTheme(),
       routes: {
         '/': (context) => const SplashScreen(),
         ...AppRoutes.getRoutes(),

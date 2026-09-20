@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import '../theme/church_type.dart';
 
 class ReportsWidget extends StatelessWidget {
   const ReportsWidget({super.key});
@@ -56,7 +57,7 @@ class ReportsWidget extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -112,7 +113,7 @@ class ReportsWidget extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
               ),
               child: const _AttendanceChart(),
             ),
@@ -124,7 +125,7 @@ class ReportsWidget extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: const Color(0xFFEAF3FF),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: ChurchRadius.lgAll,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +144,7 @@ class ReportsWidget extends StatelessWidget {
                         height: 36,
                         decoration: BoxDecoration(
                           color: const Color(0xFFBDD9FF),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: ChurchRadius.lgAll,
                         ),
                       ),
                       FractionallySizedBox(
@@ -152,7 +153,7 @@ class ReportsWidget extends StatelessWidget {
                           height: 36,
                           decoration: BoxDecoration(
                             color: const Color(0xFF438FFC),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: ChurchRadius.lgAll,
                           ),
                           alignment: Alignment.center,
                           child: const Text(
@@ -191,7 +192,7 @@ class ReportsWidget extends StatelessWidget {
                   backgroundColor: const Color(0xFF438FFC),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: ChurchRadius.mdAll,
                   ),
                   elevation: 0,
                 ),

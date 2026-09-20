@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 
 /// Hero image (natural height, capped) + back affordance for detail screens.
 ///
@@ -221,22 +222,7 @@ class DetailCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: ChurchColors.button.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: ChurchColors.accent,
-          letterSpacing: 0.2,
-        ),
-      ),
-    );
+    return ChurchStampBadge(label);
   }
 }
 
@@ -259,12 +245,7 @@ class DetailInfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: ChurchColors.bodyText,
-                fontSize: 16,
-                height: 1.35,
-                fontWeight: FontWeight.w500,
-              ),
+              style: ChurchType.body.copyWith(fontWeight: FontWeight.w500),
             ),
           ),
         ],

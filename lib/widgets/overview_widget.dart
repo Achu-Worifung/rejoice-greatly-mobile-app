@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../services/api_envelope.dart';
 import '../services/church_api.dart';
+import '../theme/church_type.dart';
 
 
 class OverviewWidget extends StatefulWidget {
@@ -153,7 +154,7 @@ appBar: AppBar(
   title: Row(
     children: [
       ClipRRect(
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: ChurchRadius.lgAll,
         child: Image.network(
           'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcST4JjHURtaso7i__VnumOCn8QoUHn-WXURHQ&s',
           height: 40,
@@ -207,7 +208,7 @@ appBar: AppBar(
                 ),
                 decoration: BoxDecoration(
                   color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: ChurchRadius.lgAll,
                   border: Border.all(color: Colors.blue[200]!),
                 ),
                 child: Row(
@@ -238,7 +239,7 @@ appBar: AppBar(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.red[50],
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: ChurchRadius.mdAll,
               border: Border.all(color: Colors.red[200]!),
             ),
             child: Column(
@@ -264,7 +265,7 @@ appBar: AppBar(
         // Stats card
         Card(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: ChurchRadius.mdAll,
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -361,7 +362,7 @@ appBar: AppBar(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: ChurchRadius.mdAll,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.04),
@@ -381,7 +382,7 @@ appBar: AppBar(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: const Color(0xFFEAF3FF),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: ChurchRadius.lgAll,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +398,7 @@ appBar: AppBar(
                       height: 36,
                       decoration: BoxDecoration(
                         color: const Color(0xFFBDD9FF),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: ChurchRadius.lgAll,
                       ),
                     ),
                     FractionallySizedBox(
@@ -406,7 +407,7 @@ appBar: AppBar(
                         height: 36,
                         decoration: BoxDecoration(
                           color: const Color(0xFF438FFC),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: ChurchRadius.lgAll,
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -460,7 +461,7 @@ appBar: AppBar(
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(borderRadius: ChurchRadius.mdAll),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,

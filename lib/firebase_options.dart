@@ -53,7 +53,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAyrT00jKue3A31bW5g90Lz_Ffq1grIYYU',
-    appId: '1:1053433403648:android:aa8e2b0a839f0ca496fbe5',
+    appId: '1:1053433403648:android:f43eaac560568a0996fbe5',
     messagingSenderId: '1053433403648',
     projectId: 'moodchangingcafe',
     databaseURL: 'https://moodchangingcafe-default-rtdb.firebaseio.com',

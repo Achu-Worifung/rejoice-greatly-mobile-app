@@ -64,9 +64,8 @@ class _DashboardState extends State<Dashboard> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: ChurchColors.background,
-          border: Border(
-            top: BorderSide(color: Colors.grey.shade200, width: 1),
-          ),
+          // The register's rule closes the page above the nav.
+          border: const Border(top: BorderSide(color: ChurchColors.divider)),
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,

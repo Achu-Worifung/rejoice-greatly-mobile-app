@@ -12,6 +12,7 @@ import '../util/video_handler_web.dart'
 import '../util/camera_frame.dart';
 import '../util/frame_to_jpeg.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../services/auth_service.dart';
 import '../main.dart' show navigatorKey;
 
@@ -828,11 +829,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                 const Spacer(),
                 Text(
                   _headingText,
-                  style: const TextStyle(
-                    color: ChurchColors.buttonText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: ChurchType.headline.copyWith(color: ChurchColors.buttonText),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1002,14 +999,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
             const Icon(Icons.check_circle,
                 color: ChurchColors.card, size: 40),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               "You're all set!",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: ChurchColors.buttonText,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: ChurchType.display.copyWith(color: ChurchColors.buttonText),
             ),
             const SizedBox(height: 12),
             Text(
@@ -1090,7 +1083,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         height: 56,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: ChurchRadius.mdAll,
           border: border != null ? Border.all(color: border) : null,
         ),
         child: Center(
@@ -1121,7 +1114,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.red.withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: ChurchRadius.mdAll,
       ),
       child: Row(
         children: [

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'event_detail_page.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_tab_page_header.dart';
 import '../widgets/church_buttons.dart';
@@ -100,7 +101,7 @@ class _EventsPageState extends State<EventsPage> {
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
         automaticallyImplyLeading: false,
-        toolbarHeight: ChurchTabPageHeader.height,
+        toolbarHeight: ChurchTabPageHeader.heightOf(context),
         centerTitle: true,
         title: ChurchTabPageHeader(
           title: 'Upcoming events',
@@ -217,15 +218,13 @@ class _EventsPageState extends State<EventsPage> {
               padding: const EdgeInsets.only(right: 8),
               child: FilterChip(
                 showCheckmark: false,
-                elevation: isSel ? 2.5 : 0,
-                shadowColor: ChurchColors.button.withValues(alpha: 0.2),
+                elevation: 0,
+                pressElevation: 0,
                 label: Text(
                   cat,
-                  style: TextStyle(
-                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w600,
-                    color: isSel ? ChurchColors.buttonText : ChurchColors.accent.withValues(alpha: 0.85),
-                    fontSize: 12,
-                    letterSpacing: 0.2,
+                  style: ChurchType.label.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: isSel ? ChurchColors.buttonText : ChurchColors.bodyText,
                   ),
                 ),
                 selected: isSel,
@@ -237,14 +236,14 @@ class _EventsPageState extends State<EventsPage> {
                     }
                   });
                 },
-                backgroundColor: ChurchColors.card,
+                backgroundColor: ChurchColors.background,
                 selectedColor: ChurchColors.button,
                 side: BorderSide(
-                  color: isSel ? Colors.transparent : ChurchColors.divider.withValues(alpha: 0.35),
+                  color: isSel ? ChurchColors.button : ChurchColors.divider,
                   width: 1,
                 ),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                shape: const RoundedRectangleBorder(borderRadius: ChurchRadius.smAll),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               ),
             );
           }).toList(),
@@ -262,15 +261,7 @@ class _EventsPageState extends State<EventsPage> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-          child: Text(
-            header,
-            style: const TextStyle(
-              color: ChurchColors.accent,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-              letterSpacing: 0.2,
-            ),
-          ),
+          child: ChurchEyebrow(header),
         ),
         ...events.map(_buildEventCard),
       ],
@@ -283,14 +274,14 @@ class _EventsPageState extends State<EventsPage> {
       child: Material(
         color: ChurchColors.card,
         elevation: 0,
-        borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+        borderRadius: ChurchRadius.lgAll,
         child: InkWell(
           onTap: () => _openEvent(event),
-          borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+          borderRadius: ChurchRadius.lgAll,
           child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
-              border: Border.all(color: ChurchColors.divider.withValues(alpha: 0.45)),
+              borderRadius: ChurchRadius.lgAll,
+              border: Border.all(color: ChurchColors.divider),
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -298,7 +289,7 @@ class _EventsPageState extends State<EventsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: ChurchRadius.mdAll,
                     child: SizedBox(
                       width: 86,
                       height: 86,
@@ -319,12 +310,7 @@ class _EventsPageState extends State<EventsPage> {
                       children: [
                         Text(
                           event['title'] as String? ?? '',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
-                            color: ChurchColors.bodyText,
-                            height: 1.2,
-                          ),
+                          style: ChurchType.title,
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -333,11 +319,7 @@ class _EventsPageState extends State<EventsPage> {
                             const SizedBox(width: 4),
                             Text(
                               event['time'] as String? ?? 'Time TBA',
-                              style: const TextStyle(
-                                color: ChurchColors.muted,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: ChurchType.dataSmall,
                             ),
                           ],
                         ),
@@ -370,16 +352,17 @@ class _EventsPageState extends State<EventsPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: ChurchColors.button.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: ChurchRadius.smAll,
+                              border: Border.all(
+                                color: ChurchColors.accent.withValues(alpha: 0.6),
+                              ),
                             ),
                             child: Text(
-                              event['category'] as String? ?? 'General',
-                              style: const TextStyle(
+                              (event['category'] as String? ?? 'General').toUpperCase(),
+                              style: ChurchType.eyebrow.copyWith(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
                                 color: ChurchColors.accent,
-                                letterSpacing: 0.2,
                               ),
                             ),
                           ),

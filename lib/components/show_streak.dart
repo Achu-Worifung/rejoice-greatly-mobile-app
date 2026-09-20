@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 
 /// Loads `POST /member/stats` and shows [AttendanceSheet].
 class AttendanceStatsLoader extends StatefulWidget {
@@ -75,7 +76,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(ChurchRadius.lg)),
         ),
         child: const Column(
           mainAxisSize: MainAxisSize.min,
@@ -95,18 +96,14 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(ChurchRadius.lg)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'Complete your profile',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: ChurchColors.bodyText,
-              ),
+              style: ChurchType.headline,
             ),
             const SizedBox(height: 8),
             const Text(
@@ -134,18 +131,14 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         decoration: const BoxDecoration(
           color: ChurchColors.card,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(ChurchRadius.lg)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               'Could not load stats',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: ChurchColors.bodyText,
-              ),
+              style: ChurchType.headline,
             ),
             const SizedBox(height: 8),
             Text(
@@ -218,7 +211,7 @@ class AttendanceSheet extends StatelessWidget {
             height: 5,
             decoration: BoxDecoration(
               color: ChurchColors.divider,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: ChurchRadius.mdAll,
             ),
           ),
           const SizedBox(height: 20),
@@ -230,72 +223,31 @@ class AttendanceSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          const Text(
-            'Attendance stats',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: ChurchColors.accent,
-            ),
-          ),
-          const SizedBox(height: 24),
+          const Text('Attendance stats', style: ChurchType.headline),
+          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatCircle(
-                label: attendance['streakLabel'] as String? ?? 'Current streak',
-                value: '$current',
-                icon: Icons.local_fire_department,
-                color: Colors.orange,
+              Expanded(
+                child: _RegisterStat(
+                  label: attendance['streakLabel'] as String? ?? 'Current streak',
+                  value: '$current',
+                  accent: true,
+                ),
               ),
-              _buildStatCircle(
-                label: attendance['totalLabel'] as String? ?? 'Total attendances',
-                value: '$total',
-                icon: Icons.calendar_today,
-                color: ChurchColors.button,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _RegisterStat(
+                  label: attendance['totalLabel'] as String? ?? 'Total attendances',
+                  value: '$total',
+                ),
               ),
             ],
           ),
-          const Divider(height: 40, thickness: 1, color: ChurchColors.divider),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: ChurchColors.background,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(color: ChurchColors.divider),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.emoji_events, color: ChurchColors.accent, size: 30),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        attendance['bestLabel'] as String? ?? 'Longest streak',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: ChurchColors.muted,
-                        ),
-                      ),
-                      Text(
-                        '$best',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: ChurchColors.bodyText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 12),
+          _RegisterStat(
+            label: attendance['bestLabel'] as String? ?? 'Longest streak',
+            value: '$best',
           ),
-        
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -305,7 +257,7 @@ class AttendanceSheet extends StatelessWidget {
                 backgroundColor: ChurchColors.button,
                 foregroundColor: ChurchColors.buttonText,
                 padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
               ),
               child: const Text('Close'),
             ),
@@ -320,7 +272,7 @@ class AttendanceSheet extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
         color: ChurchColors.background,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: ChurchRadius.mdAll,
         border: Border.all(color: ChurchColors.divider),
       ),
       child: Column(
@@ -348,52 +300,44 @@ class AttendanceSheet extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildStatCircle({
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 80,
-              height: 80,
-              child: CircularProgressIndicator(
-                value: 1.0,
-                strokeWidth: 6,
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-                backgroundColor: color.withValues(alpha: 0.12),
-              ),
-            ),
-            Icon(icon, color: color, size: 30),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: ChurchColors.bodyText,
+/// A register stat: a mono label over a large mono tabular number. The focal
+/// stat takes the accent as its ink; the rest stay in ink.
+class _RegisterStat extends StatelessWidget {
+  const _RegisterStat({
+    required this.label,
+    required this.value,
+    this.accent = false,
+  });
+
+  final String label;
+  final String value;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: ChurchColors.background,
+        borderRadius: ChurchRadius.lgAll,
+        border: Border.all(color: ChurchColors.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChurchEyebrow(label),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: accent
+                ? ChurchType.data.copyWith(color: ChurchColors.accent)
+                : ChurchType.data,
           ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 9,
-            color: ChurchColors.muted,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

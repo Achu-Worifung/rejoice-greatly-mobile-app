@@ -5,6 +5,7 @@ import '../main.dart' show navigatorKey;
 import '../services/auth_service.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/church_buttons.dart';
 
 /// First onboarding step: the member confirms their date of birth so we can set
@@ -186,11 +187,7 @@ class _DobPageState extends State<DobPage> {
               const SizedBox(height: 20),
               const Text(
                 'When were you born?',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: ChurchColors.bodyText,
-                ),
+                style: ChurchType.display,
               ),
               const SizedBox(height: 12),
               const Text(

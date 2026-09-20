@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../services/church_api.dart';
 import '../services/church_audio_player.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/detail_page_hero.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/sermon_playing_waveform.dart';
@@ -80,15 +81,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: ChurchColors.bodyText,
-                    height: 1.2,
-                  ),
-                ),
+                Text(title, style: ChurchType.display.copyWith(fontSize: 26)),
                 const SizedBox(height: 10),
                 DetailCategoryChip(
                   label: category?.isNotEmpty == true ? category! : 'Sermon',
@@ -113,14 +106,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                   if (description.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     const DashboardLabelText(label: 'Details'),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.5,
-                        color: ChurchColors.bodyText,
-                      ),
-                    ),
+                    Text(description, style: ChurchType.body.copyWith(fontSize: 16)),
                   ],
                   if (duration.isNotEmpty)
                     DetailInfoRow(icon: Icons.timelapse, text: 'Duration: $duration'),
@@ -229,13 +215,10 @@ class _AudioPlayButton extends StatelessWidget {
               foregroundColor: ChurchColors.buttonText,
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: const RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
             ),
             icon: leadingIcon(),
-            label: Text(
-              label,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-            ),
+            label: Text(label, style: ChurchType.button),
           ),
         );
       },

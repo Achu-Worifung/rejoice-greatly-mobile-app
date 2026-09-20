@@ -13,40 +13,51 @@ colors:
   error-ink: "#8A2C1F"
 typography:
   display:
-    fontFamily: "Roboto (Android) / SF Pro (iOS) — Material 3 platform default"
+    fontFamily: "Source Serif 4"
     fontSize: "28"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "1"
+    fontWeight: 600
+    lineHeight: 1.15
+    letterSpacing: "-0.3"
   headline:
-    fontFamily: "Platform default"
-    fontSize: "17"
-    fontWeight: 700
-    lineHeight: 1.25
+    fontFamily: "Source Serif 4"
+    fontSize: "20"
+    fontWeight: 600
+    lineHeight: 1.2
     letterSpacing: "-0.2"
   title:
-    fontFamily: "Platform default"
-    fontSize: "16"
-    fontWeight: 700
+    fontFamily: "Source Serif 4"
+    fontSize: "17"
+    fontWeight: 600
     lineHeight: 1.25
     letterSpacing: "0"
   body:
-    fontFamily: "Platform default"
+    fontFamily: "IBM Plex Sans"
     fontSize: "15"
     fontWeight: 400
-    lineHeight: 1.4
+    lineHeight: 1.45
     letterSpacing: "0"
   label:
-    fontFamily: "Platform default"
+    fontFamily: "IBM Plex Sans"
     fontSize: "13"
     fontWeight: 500
     lineHeight: 1.3
     letterSpacing: "0"
+  eyebrow:
+    fontFamily: "IBM Plex Mono"
+    fontSize: "12"
+    fontWeight: 500
+    lineHeight: 1.2
+    letterSpacing: "0.14em"
+  data:
+    fontFamily: "IBM Plex Mono"
+    fontSize: "28"
+    fontWeight: 600
+    lineHeight: 1.2
+    letterSpacing: "-0.5"
 rounded:
-  sm: "8px"
-  md: "12px"
-  lg: "14px"
-  xl: "16px"
+  sm: "3px"
+  md: "6px"
+  lg: "8px"
 spacing:
   xs: "4px"
   sm: "8px"
@@ -57,230 +68,216 @@ components:
   button-primary:
     backgroundColor: "{colors.roasted-cocoa}"
     textColor: "{colors.sanctuary-white}"
-    rounded: "{rounded.lg}"
+    rounded: "{rounded.md}"
     height: "52px"
   button-secondary:
     backgroundColor: "{colors.candlelight-cream}"
     textColor: "{colors.ink}"
+    border: "1px solid {colors.warm-sand}"
     rounded: "{rounded.md}"
-    height: "60px"
+    height: "50px"
   card:
     backgroundColor: "{colors.candlelight-cream}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.xl}"
+    border: "1px solid {colors.warm-sand}"
+    rounded: "{rounded.lg}"
     padding: "14px"
   input:
     backgroundColor: "{colors.sanctuary-white}"
     textColor: "{colors.ink}"
+    border: "1px solid {colors.warm-sand}"
     rounded: "{rounded.md}"
   input-focused:
     backgroundColor: "{colors.sanctuary-white}"
     textColor: "{colors.ink}"
+    border: "1.5px solid {colors.roasted-cocoa}"
+    rounded: "{rounded.md}"
+  page-hero:
+    backgroundColor: "transparent"
+    borderBottom: "double 4px {colors.ink}/60"
+  stat-card:
+    backgroundColor: "{colors.candlelight-cream}"
+    border: "1px solid {colors.warm-sand}"
     rounded: "{rounded.lg}"
   error-callout:
     backgroundColor: "{colors.error-surface}"
     textColor: "{colors.error-ink}"
-    rounded: "{rounded.sm}"
+    rounded: "{rounded.md}"
     padding: "12px"
 ---
 
-# Design System: Rejoice Greatly
+# Design System: Rejoice Greatly — "The Register", on the Warm Welcome palette
 
 ## 1. Overview
 
-**Creative North Star: "The Warm Welcome"**
+**Creative North Star: "The Warm Welcome, written into The Register"**
 
 Rejoice Greatly is the front porch of the church. Opening it should feel like
 being greeted at the door by name: warm candlelight cream, grounded roasted-cocoa
-brown, and generous white space that never rushes you. The system is
-**light-first and unhurried** — a clean white sanctuary floor, warm cream cards
-that hold content like a shared table, and a single deep-brown voice for every
-action worth taking. It serves a broad, non-technical congregation, so legibility
-and calm always win over density or cleverness.
+brown, and generous white space that never rushes you. That palette is
+unchanged. What changed is the *hand* the app is written in: the same visual
+language as the admin site ("The Register" — see the admin repo's `DESIGN.md`),
+grounded in the physical objects a church runs on — the attendance ledger, the
+ruled register, the rubber date-stamp.
 
-The visual job is load-bearing but quiet: get a member to *play this sermon* or
-*know when the next event is* in a tap or two, and let the warmth carry the rest.
-Warmth here is structural, not decorative — it lives in the palette, the spacing,
-and the copy, never in ornament. Components are **clean and grounded**: clear
-edges, comfortable radii, low-contrast borders, and only a whisper of brown
-shadow to lift a card off the floor.
+So the app now reads like pages from a register: a serif for the one headline
+on a screen, a mono face with tabular figures for every number and micro-label,
+a plain sans for everything else; crisp low-radius edges instead of soft rounded
+cards; 1px ruled borders and a signature double rule instead of shadows; and no
+icon-in-a-box stat tiles — a number's weight carries its meaning.
 
-This system explicitly rejects three things. It is **not cold corporate SaaS** —
-no sterile blue/gray chrome, no spreadsheet density, no enterprise dashboard
-energy. It is **not dated megachurch kitsch** — no clip-art crosses, no glowing
-stock-photo sunsets, no cheesy multi-stop gradients or heavy drop shadows. And it
-is **not cluttered or busy** — no walls of near-identical cards, no screens with
-three competing calls-to-action.
+It is still **not cold corporate SaaS**, **not dated megachurch kitsch**, and
+**not cluttered**. Warmth is structural: it lives in the palette, the spacing
+and the copy, never in ornament.
 
 **Key Characteristics:**
 - Light-first: white floor, warm cream surfaces, deep-brown as the single accent.
-- Unhurried: generous spacing, comfortable type, calm hierarchy.
+- Ruled, not shadowed: 1px sand rules separate; a double ink rule closes a hero.
+- Three faces, one job each: serif headings, mono data and labels, sans body.
+- Crisp edges: 3 / 6 / 8px radii. Nothing is a pill except an avatar.
 - One-voice color: roasted cocoa is the only action color across the app.
-- Warmth through restraint: no ornament; warmth is the palette and the copy.
-- Legible for everyone: strong contrast, plain labels, mobile-first tap targets.
+- Legible for everyone: 15px body, nothing below 12px, 44px tap targets.
 
 ## 2. Colors
 
-A warm-neutral palette built on a true-white floor, candlelight cream surfaces,
-and one grounding brown — the warmth carried by the cream-and-cocoa relationship,
-not by tinting everything.
+Unchanged. A warm-neutral palette built on a true-white floor, candlelight
+cream surfaces, and one grounding brown.
 
 ### Primary
-- **Roasted Cocoa** (#633A02): The single action and identity color. Every
-  primary button, active nav item, link, focused input border, icon accent, and
-  play affordance. Its scarcity is deliberate — one voice for "do this."
+- **Roasted Cocoa** (#633A02): The single action and identity color. Primary
+  buttons, active nav item, focused input rule, the stamp badge's outline and
+  ink, the play affordance, and — sparingly — the ink of one focal number.
 
 ### Neutral
-- **Sanctuary White** (#FFFFFF): The scaffold background and app-bar surface. The
-  calm floor everything sits on. Keeps screens from ever feeling heavy.
-- **Candlelight Cream** (#FFF7EB): Card and secondary-surface fill. The warmth of
-  the whole system lives here — content sits on cream, chrome sits on white.
-- **Ink** (#1A1A1A): Primary body and heading text. Near-black, ~15:1 on both
-  white and cream — the workhorse for legibility.
-- **Weathered Wood** (#6B5C4D): Muted secondary text, captions, input labels,
-  placeholder icons. A warm brown-gray, ~5.6:1 on white — passes AA for body.
-- **Warm Sand** (#E8DFD0): Dividers and card borders (usually at ~40% alpha).
-  Barely-there structure; separates without drawing a line.
+- **Sanctuary White** (#FFFFFF): Scaffold, app bar and input fill.
+- **Candlelight Cream** (#FFF7EB): Card and secondary-surface fill.
+- **Ink** (#1A1A1A): Primary text, and the ink a double rule is drawn in (at 60%).
+- **Weathered Wood** (#6B5C4D): Secondary text, captions, eyebrows, input labels.
+- **Warm Sand** (#E8DFD0): The register's rule — every card border, input
+  border, hairline divider and the line above the bottom nav. Full strength now,
+  not 40% alpha: a rule is meant to be seen.
 
 ### Tertiary (functional only)
 - **Error Surface / Border / Ink** (#FFF1EE / #E1B0A9 / #8A2C1F): The inline
-  error callout — warm rose-tinted, never a harsh system red block. Used only for
-  validation and failure messages.
+  error callout.
 
 ### Named Rules
-**The One Voice Rule.** Roasted Cocoa (#633A02) is the *only* action color in the
-app. If something is tappable and primary, it is cocoa; if it is not, it is not.
-Never introduce a second accent hue to "add interest" — interest comes from
-spacing and copy.
+**The One Voice Rule.** Roasted Cocoa is the only action color. Never introduce
+a second accent hue — this port deliberately did *not* bring the admin site's
+violet or its green/amber status inks across.
 
-**The Cream-on-White Rule.** Content lives on Candlelight Cream cards; chrome
-(scaffold, app bar, nav) lives on Sanctuary White. Never invert this into cream
-chrome with white cards — the warmth belongs to the content, not the frame.
+**The Cream-on-White Rule.** Content lives on cream cards; chrome lives on white.
+The admin site inverts this (white forms on cream paper); the app does not.
 
 ## 3. Typography
 
-**Display / Body Font:** Material 3 platform default — Roboto on Android, SF Pro
-on iOS. No custom font family is bundled; the app inherits the native system face
-for maximum legibility and zero-cost rendering.
+Bundled in `assets/fonts/` and declared in `pubspec.yaml`; tokens in
+`lib/theme/church_type.dart` (`ChurchType`). The app theme sets IBM Plex Sans as
+the default family, so an inline `TextStyle` without a family inherits it.
 
-**Character:** Neutral, familiar, and legible by design. The personality comes
-from *weight and space*, not from a distinctive typeface — appropriate for a
-broad, non-technical congregation who should never have to work to read.
-
-### Hierarchy
-- **Display** (w700, 28px, line-height 1.2, letter-spacing 1): Page-opening
-  greetings — "Let's Get Started!". One per screen, top of the flow.
-- **Headline** (w700, 17px, letter-spacing −0.2): App-bar titles and section
-  headers. Tight tracking keeps them crisp and centered.
-- **Title** (w700, 16px, line-height 1.25): Card titles — sermon and event names.
-  Capped at 2 lines with ellipsis so cards stay uniform height.
-- **Body** (w400–w500, 15–16px, line-height ~1.4): Running text, button labels,
-  list content. The default reading size; keep it at 15px or larger, never below.
-- **Label** (w400–w500, 12–13px): Dates, captions, input labels, "Forgot
-  Password?". Always in Weathered Wood, never smaller than 12px.
+**Three faces, one job each:**
+- **Source Serif 4** — headings only: `display` (28, w600) for the one page
+  headline, `headline` (20) for app-bar and sheet titles, `title` (17) for card
+  titles. Record-book gravitas for the one or two headline moments per screen.
+- **IBM Plex Mono** — numbers and micro-labels: `data` (28, w600, tabular) for a
+  focal number, `dataSmall` (13) for dates, times and inline counts, `eyebrow`
+  (12, uppercase, 0.14em tracking) for section labels and the line above a hero.
+- **IBM Plex Sans** — everything else: `body` (15), `bodyStrong`, `button` (15,
+  w600), `label` (13, muted), `caption` (12, muted).
 
 ### Named Rules
-**The 12px Floor Rule.** No user-facing text below 12px, ever. This congregation
-skews broad and non-technical; sub-12px "elegance" is illegible here.
+**The 12px Floor Rule.** No user-facing text below 12px. The admin site's 11px
+eyebrow is 12px here on purpose.
 
-**The Weight-Not-Color Rule.** Emphasis comes from weight (w400 → w700) and size,
-not from coloring text with the accent. Only genuinely tappable text may be cocoa.
+**The One Headline Rule.** Each screen gets exactly one serif `display`, inside
+its page hero (`ChurchPageHero`, the dashboard app bar, or `ChurchTabPageHeader`).
+
+**Numbers Are Mono Rule.** Any rendered count, streak, date or duration uses a
+mono style with tabular figures. Headings never use mono; data never uses serif.
+
+**The Weight-Not-Color Rule.** Emphasis comes from face, weight and size. Only
+genuinely tappable text — and at most one focal number per view — may be cocoa.
 
 ## 4. Elevation
 
-Nearly flat. The system conveys depth through **tonal layering** (cream content on
-a white floor) far more than through shadow. The one shadow in the vocabulary is
-soft, warm, and diffuse — a whisper that lifts a card, never a hard drop shadow
-that screams "2014 app."
-
-### Shadow Vocabulary
-- **Card lift** (`color: #633A02 @ 8% alpha, blur 20, offset (0, 8)`): The default
-  card shadow — a warm brown glow, not a gray drop shadow. Tinting the shadow with
-  the brand brown is what keeps it feeling warm rather than generic.
-- **Secondary-button lift** (Material elevation 2): Social/secondary buttons sit
-  slightly proud of the surface; primary buttons stay flat (elevation 0) because
-  color already carries their weight.
+Flat. Depth is tonal (cream on white) and *ruled*, never cast. The old warm
+card shadow is gone; `ChurchColors.cardDecoration()` now draws a 1px sand rule
+and no shadow. The one "drawn line" motif is the **double rule**
+(`ChurchDoubleRule`: two 1px ink lines, 2px apart) under a page hero — the
+structural boundary that a shadow used to signal.
 
 ### Named Rules
-**The Warm-Shadow Rule.** Shadows are tinted with Roasted Cocoa at low alpha,
-never neutral black. A gray drop shadow on a warm surface reads cold and dated —
-if a card looks like it's floating on a spreadsheet, the shadow is wrong.
+**The Rule-Not-Shadow Rule.** If a surface needs to look separate, give it a
+rule. A shadow is reserved for something genuinely floating over content
+(a sheet, a banner), never for a card at rest.
 
-**The Flat-Primary Rule.** The primary button is flat (elevation 0). Its color is
-its elevation. Only secondary/neutral surfaces earn a lift, to signal "also
-tappable, but not the main thing."
+**The Flat-Primary Rule.** The primary button is flat; its color is its
+elevation. The secondary button is flat too, ruled in sand.
 
 ## 5. Components
 
-Components are **clean and grounded**: clear edges, comfortable radii, restrained
-borders, and depth used only to signal interactivity.
+Tokens: `ChurchRadius.sm` (3, chips and tags), `.md` (6, inputs, buttons,
+thumbnails), `.lg` (8, cards and sheets).
 
-### Buttons
-- **Shape:** Gently rounded — 14px (lg) on primary, 12px (md) on secondary.
-- **Primary:** Roasted Cocoa fill, Sanctuary White text (w600, 15px), full-width,
-  52px tall, flat (elevation 0). The one unmistakable "do this" affordance.
-- **Secondary / Social:** Candlelight Cream fill, Ink text/icon, 1px Warm Sand
-  border, 60px tall, Material elevation 2. Used for Google/Apple sign-in and other
-  non-primary actions.
-- **States:** Loading swaps the label for a 20–22px CircularProgressIndicator
-  (white on primary, cocoa on secondary). Disabled keeps the same background
-  (`disabledBackgroundColor` matches) so the button never visually collapses.
+### Buttons (`lib/widgets/church_buttons.dart`)
+- **Primary:** cocoa fill, white `button` text, 52px, 6px radius, elevation 0.
+- **Secondary:** cream fill, ink text, 1px sand rule, 50px, 6px radius, flat.
+- **Danger:** outlined red, 6px radius. **Social:** cream, ruled, flat.
+- **States:** loading swaps the label for a 20–22px spinner; disabled keeps the
+  same fill.
 
-### Cards / Containers
-- **Corner Style:** 16px (xl) — the softest radius in the system, reserved for
-  content containers.
-- **Background:** Candlelight Cream (#FFF7EB).
-- **Shadow Strategy:** The warm "Card lift" from Elevation.
-- **Border:** 1px Warm Sand at ~40% alpha — present but nearly invisible.
-- **Internal Padding:** 14px. Thumbnails inside cards use a 12px radius, 72×72px.
+### Cards
+- Cream, 1px sand rule, 8px radius, no shadow, 14px padding. Thumbnails inside
+  use a 6px radius.
 
-### Inputs / Fields
-- **Style:** OutlineInputBorder, 12px radius, 1px Warm Sand stroke, Weathered Wood
-  label and prefix icon, on a white field.
-- **Focus:** Border shifts to Roasted Cocoa and radius grows to 14px — a subtle,
-  warm "you're here now" signal.
-- **Error:** Border → red accent; the inline Error Callout (warm rose surface,
-  #8A2C1F text, 8px radius) carries the message above the form.
+### Stat card
+- A mono `eyebrow` label over a large mono `data` number. **No icon tile** —
+  the profile's `_StatTile` and the streak sheet's `_RegisterStat` are the
+  reference implementations. One focal stat per view may take cocoa ink.
+
+### Page hero
+- `ChurchPageHero`: mono eyebrow, serif display title, optional muted
+  description, optional `ChurchStampBadge`, closed by a double rule. The
+  dashboard builds the same shape into its app bar; Sermons and Events use
+  `ChurchTabPageHeader` (eyebrow + serif title + ruled search field).
+
+### Stamp badge
+- `ChurchStampBadge`: mono uppercase, 2px cocoa outline at 70%, rotated -1 degree.
+  Used for a detail page's category — the rubber stamp on the record.
+
+### Inputs
+- White fill, 1px sand rule, 6px radius; 1.5px cocoa rule on focus. Set once in
+  the theme's `inputDecorationTheme`; call sites pass only label and icon.
+
+### Chips / filters
+- White, ruled, 3px radius; selected fills cocoa. No elevation, no pill.
 
 ### Navigation
-- **App bar:** Sanctuary White, transparent surface tint, elevation 0, centered
-  17px/w700 Ink title, cocoa icons. Never a tinted or colored bar.
-- **Bottom nav:** Fixed, white, top hairline border (grey ~200). Selected item
-  Roasted Cocoa; unselected grey 400. 12px labels, 22px SVG icons. The primary
-  wayfinding for Dashboard · Sermons · Events · Café.
+- **App bar:** white, elevation 0, serif `headline` title, cocoa icons.
+- **Bottom nav:** white, a 1px sand rule on top, cocoa selected item.
 
-### Signature Component — Sermon Card
-The recurring hero pattern: a cream card holding a 72px rounded thumbnail, a
-2-line title (w700, 16px) + date (Weathered Wood, 13px), and a circular play
-button (cocoa at 12% alpha behind the play icon). This is the shortest path to the
-app's core job — protect its clarity above all else.
+### Signature component — Sermon card
+- A cream ruled card holding a 72px 6px-radius thumbnail, a 2-line serif
+  `title`, a mono `dataSmall` date, and a circular play button (cocoa at 12%
+  alpha behind the play icon). Protect its clarity above all else.
 
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** keep Roasted Cocoa (#633A02) as the single action color — one voice for
-  every primary tap (The One Voice Rule).
-- **Do** put content on Candlelight Cream cards and chrome on Sanctuary White
-  (The Cream-on-White Rule).
-- **Do** tint card shadows with brown at low alpha (#633A02 @ 8%), never neutral
-  black (The Warm-Shadow Rule).
-- **Do** convey emphasis with weight and size, not by coloring text (The
-  Weight-Not-Color Rule).
-- **Do** keep the sermon/event path — card → play, or card → remind — the shortest
-  and most obvious action on any screen.
-- **Do** hold body text at 15px+ and never drop any label below 12px (The 12px
-  Floor Rule).
+- **Do** keep Roasted Cocoa as the single action color.
+- **Do** put content on cream cards and chrome on white.
+- **Do** render every number in mono, every heading in serif, everything else
+  in the default sans — via `ChurchType`, not a literal `TextStyle`.
+- **Do** separate with a rule; close a hero with the double rule.
+- **Do** use `ChurchRadius` tokens; nothing rounder than 8px except an avatar.
+- **Do** hold body at 15px and never drop any label below 12px.
 
 ### Don't:
-- **Don't** design cold corporate SaaS: no sterile blue/gray chrome, no
-  spreadsheet density, no enterprise-dashboard energy.
-- **Don't** slip into dated megachurch kitsch: no clip-art crosses, no glowing
-  stock-photo sunsets, no cheesy multi-stop gradients, no heavy gray drop shadows.
-- **Don't** clutter: no walls of near-identical cards, no screen with three
-  competing calls-to-action. Give the primary action room to breathe.
-- **Don't** introduce a second accent hue "for interest" — interest is spacing and
-  copy, not a new color.
-- **Don't** invert the surface roles into cream chrome with white cards; the
-  warmth belongs to the content.
-- **Don't** use gamified pressure — no streak-shaming, badge spam, or aggressive
-  confetti. Nudge, never nag.
+- **Don't** put a shadow on a card at rest, or bring the warm 16px card back.
+- **Don't** put an icon tile next to a stat — the number's ink is the signal.
+- **Don't** introduce a second accent hue, including the admin site's violet or
+  its status greens and ambers.
+- **Don't** use mono for a heading or serif for a number; **don't** add a
+  fourth typeface.
+- **Don't** design cold corporate SaaS, dated megachurch kitsch, or clutter.
+- **Don't** use gamified pressure — nudge, never nag.

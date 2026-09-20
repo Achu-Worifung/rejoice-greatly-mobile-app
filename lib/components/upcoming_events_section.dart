@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../pages/event_detail_page.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/dashboard_label_title.dart';
 
 class UpcomingEventsSection extends StatelessWidget {
@@ -67,12 +68,12 @@ class _EventStripCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => openEventDetailPage(context, event),
-          borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+          borderRadius: ChurchRadius.lgAll,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(ChurchColors.cardRadius),
+                borderRadius: ChurchRadius.lgAll,
                 child: AspectRatio(
                   aspectRatio: 3 / 4,
                   child: ColoredBox(
@@ -86,23 +87,14 @@ class _EventStripCard extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: ChurchColors.bodyText,
-                  height: 1.2,
-                ),
+                style: ChurchType.title.copyWith(fontSize: 15),
               ),
               const SizedBox(height: 4),
               Text(
                 dateLine,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: ChurchColors.accent,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: ChurchType.dataSmall.copyWith(fontSize: 12),
               ),
             ],
           ),

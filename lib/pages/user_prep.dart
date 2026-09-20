@@ -4,6 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_consent.dart';
 import '../services/church_api.dart';
@@ -96,11 +97,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
               const Text(
                 'Skip face check-in?',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: ChurchColors.bodyText,
-                ),
+                style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
               const Text(
@@ -203,11 +200,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
 
                 const Text(
                   "Set Up Facial Recognition",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: ChurchColors.bodyText,
-                  ),
+                  style: ChurchType.display,
                 ),
                 const SizedBox(height: 12),
 
@@ -330,7 +323,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                         disabledForegroundColor: ChurchColors.buttonText
                             .withValues(alpha: 0.8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: ChurchRadius.mdAll,
                         ),
                         elevation: 0,
                       ),
@@ -419,7 +412,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
   Widget _buildConsentTick() {
     return InkWell(
       onTap: _skipping ? null : () => setState(() => _consented = !_consented),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: ChurchRadius.mdAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -507,11 +500,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             minFontSize: 18,
             maxFontSize: 30,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: ChurchColors.bodyText,
-            ),
+            style: ChurchType.headline,
           ),
           const SizedBox(height: 10),
           Padding(

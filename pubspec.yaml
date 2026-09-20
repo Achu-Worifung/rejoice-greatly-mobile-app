@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.2
 
 environment:
   sdk: ^3.11.1
@@ -100,6 +100,37 @@ flutter:
     - assets/icons/
     - assets/images/
     - .env
+
+  # "The Register" type system, shared with the admin site: a serif for
+  # headings, a mono for numbers and micro-labels, a sans for everything else.
+  # Bundled rather than fetched so the first frame is right with no signal.
+  fonts:
+    - family: SourceSerif4
+      fonts:
+        - asset: assets/fonts/SourceSerif4-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/SourceSerif4-Semibold.ttf
+          weight: 600
+        - asset: assets/fonts/SourceSerif4-Bold.ttf
+          weight: 700
+    - family: IBMPlexSans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSans-Bold.ttf
+          weight: 700
+    - family: IBMPlexMono
+      fonts:
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
+          weight: 600
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

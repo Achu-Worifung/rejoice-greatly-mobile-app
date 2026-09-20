@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 
 /// A single shimmering placeholder block. Warm-tinted to sit naturally on the
 /// cream/white surfaces. Honors reduced-motion (renders a static fill).
@@ -9,7 +10,7 @@ class Skeleton extends StatefulWidget {
     super.key,
     this.width,
     this.height = 14,
-    this.radius = 8,
+    this.radius = ChurchRadius.md,
     this.shape = BoxShape.rectangle,
   });
 
@@ -110,16 +111,16 @@ class SkeletonRowCard extends StatelessWidget {
       decoration: ChurchColors.cardDecoration(shadow: const []),
       child: Row(
         children: [
-          Skeleton(width: thumbSize, height: thumbSize, radius: 12),
+          Skeleton(width: thumbSize, height: thumbSize, radius: ChurchRadius.md),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: const [
-                Skeleton(height: 15, radius: 6),
+                Skeleton(height: 15, radius: ChurchRadius.sm),
                 SizedBox(height: 10),
-                Skeleton(width: 120, height: 12, radius: 6),
+                Skeleton(width: 120, height: 12, radius: ChurchRadius.sm),
               ],
             ),
           ),

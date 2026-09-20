@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 
 /// App-wide button vocabulary, aligned to DESIGN.md:
-/// - Primary: cocoa fill, 14px radius, flat (elevation 0).
-/// - Secondary: cream, sand border, lifted — the "also tappable" affordance.
+/// - Primary: cocoa fill, crisp corners, flat (elevation 0) — colour is its
+///   elevation.
+/// - Secondary: cream, 1px sand rule, flat — the "also tappable" affordance,
+///   ruled rather than lifted.
 /// - Danger: flat outlined red for destructive actions (no gradient, no glow).
 
 const Color _danger = Color(0xFFC62828);
@@ -39,8 +42,8 @@ class ChurchPrimaryButton extends StatelessWidget {
           disabledBackgroundColor: ChurchColors.button,
           disabledForegroundColor: ChurchColors.buttonText,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+          shape: const RoundedRectangleBorder(
+            borderRadius: ChurchRadius.mdAll,
           ),
         ),
         child: loading
@@ -84,11 +87,10 @@ class ChurchSecondaryButton extends StatelessWidget {
           backgroundColor: ChurchColors.card,
           foregroundColor: ChurchColors.bodyText,
           disabledBackgroundColor: ChurchColors.card,
-          elevation: 2,
-          shadowColor: Colors.black.withValues(alpha: 0.12),
-          side: BorderSide(color: ChurchColors.divider.withValues(alpha: 0.7)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+          elevation: 0,
+          side: ChurchRules.hairline,
+          shape: const RoundedRectangleBorder(
+            borderRadius: ChurchRadius.mdAll,
           ),
         ),
         child: _labelRow(label, icon, ChurchColors.bodyText),
@@ -123,8 +125,8 @@ class ChurchDangerButton extends StatelessWidget {
           foregroundColor: _danger,
           backgroundColor: _danger.withValues(alpha: 0.05),
           side: const BorderSide(color: _danger, width: 1.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+          shape: const RoundedRectangleBorder(
+            borderRadius: ChurchRadius.mdAll,
           ),
         ),
         child: _labelRow(label, icon, _danger),
@@ -134,14 +136,7 @@ class ChurchDangerButton extends StatelessWidget {
 }
 
 Widget _labelRow(String label, IconData? icon, Color color) {
-  final text = Text(
-    label,
-    style: TextStyle(
-      color: color,
-      fontSize: 16,
-      fontWeight: FontWeight.w600,
-    ),
-  );
+  final text = Text(label, style: ChurchType.button.copyWith(color: color));
   if (icon == null) return text;
   return Row(
     mainAxisSize: MainAxisSize.min,

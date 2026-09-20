@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../services/nfc_checkin_service.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import 'church_buttons.dart';
 
 /// Admin-only tag provisioning: writes a chosen tag id onto a blank NFC tag as
@@ -134,15 +135,15 @@ class _NfcWriteTagSheetState extends State<_NfcWriteTagSheet> {
               filled: true,
               fillColor: ChurchColors.card,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
                 borderSide: BorderSide(color: ChurchColors.divider),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
                 borderSide: BorderSide(color: ChurchColors.divider),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
                 borderSide: const BorderSide(color: ChurchColors.accent),
               ),
             ),

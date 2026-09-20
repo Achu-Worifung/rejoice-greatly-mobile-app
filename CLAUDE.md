@@ -23,5 +23,6 @@ before designing or changing any UI. In short:
   never nag · greeted, not processed · unhurried and legible (WCAG AA contrast).
 
 Visual tokens live in `lib/theme/church_colors.dart` (cream card `#FFF7EB`,
-deep-brown action `#633A02`, 16px card radius). A `DESIGN.md` at the root
+deep-brown action `#633A02`) and `lib/theme/church_type.dart` (the serif /
+mono / sans type scale and the 3 / 6 / 8px radius scale). A `DESIGN.md` at the root
 captures the full visual system when present.

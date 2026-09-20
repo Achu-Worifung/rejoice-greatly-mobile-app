@@ -6,6 +6,7 @@ import '../services/api_envelope.dart';
 import '../services/church_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'nfc_write_tag_sheet.dart';
+import '../theme/church_type.dart';
 
 class AttendanceWidget extends StatefulWidget {
   const AttendanceWidget({super.key});
@@ -212,7 +213,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
               ),
               child: TextField(
                 controller: _searchController,
@@ -222,7 +223,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
                   hintStyle: const TextStyle(color: Colors.grey),
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: ChurchRadius.mdAll,
                     borderSide: BorderSide.none,
                   ),
                   filled: true,
@@ -241,7 +242,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: ChurchRadius.mdAll,
                   border: Border.all(color: const Color(0xFFDDE3F0)),
                 ),
                 child: Row(
@@ -267,7 +268,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: ChurchRadius.mdAll,
               ),
               padding: const EdgeInsets.all(4),
               child: Row(
@@ -333,7 +334,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFFEAF3FF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: ChurchRadius.mdAll,
           ),
           child: Text(
             '$label ($count)',
@@ -408,7 +409,7 @@ class _MemberTile extends StatelessWidget {
                   color: isPresent
                       ? const Color(0xFFE6F9F0)
                       : const Color(0xFFFFEDED),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: ChurchRadius.mdAll,
                 ),
                 child: Text(
                   isPresent ? 'Present' : 'Absent',
@@ -481,7 +482,7 @@ class _MemberDetailDrawer extends StatelessWidget {
               color: isPresent
                   ? const Color(0xFFE6F9F0)
                   : const Color(0xFFFFEDED),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: ChurchRadius.lgAll,
             ),
             child: Text(
               isPresent ? 'Present' : 'Absent',
@@ -508,7 +509,7 @@ class _MemberDetailDrawer extends StatelessWidget {
                 backgroundColor: const Color(0xFF438FFC),
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: ChurchRadius.mdAll,
                 ),
               ),
               child: const Text(

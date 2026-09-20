@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../components/Moderation_Card.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 
 class ContentModerationPage extends StatefulWidget {
@@ -49,7 +50,7 @@ class _ContentModerationPageState extends State<ContentModerationPage> with Sing
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: ChurchColors.button,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
         onPressed: () => _openEditor(context),
         child: const Icon(Icons.add, color: ChurchColors.buttonText),
       ),

@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../services/auth_service.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/auth_ui.dart';
 import '../main.dart' show navigatorKey;
 
@@ -88,22 +89,14 @@ class _LoginPageState extends State<LoginPage> {
                 Text(
                   'Welcome to\nRejoice Greatly',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: cream,
-                    fontSize: 32,
-                    height: 1.15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
+                  style: ChurchType.display.copyWith(color: cream, fontSize: 34),
                 ),
                 const SizedBox(height: 14),
                 Text(
                   'Secure, seamless check-ins for every service.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: ChurchType.body.copyWith(
                     color: cream.withValues(alpha: 0.85),
-                    fontSize: 15,
-                    height: 1.4,
                   ),
                 ),
                 const Spacer(flex: 3),

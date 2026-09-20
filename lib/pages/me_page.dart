@@ -11,6 +11,7 @@ import '../services/auth_service.dart';
 import '../services/church_api.dart';
 import '../services/profile_picture_upload.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
@@ -127,11 +128,7 @@ class _MePageState extends State<MePage> {
               const Text(
                 'Leave this account?',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: ChurchColors.accent,
-                ),
+                style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
               const Text(
@@ -322,11 +319,7 @@ class _MePageState extends State<MePage> {
               const Text(
                 'Delete your account',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: ChurchColors.bodyText,
-                ),
+                style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
               const Text(
@@ -586,7 +579,7 @@ class _MePageState extends State<MePage> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: ChurchColors.button.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: ChurchRadius.mdAll,
                       border: Border.all(color: ChurchColors.divider),
                     ),
                     child: Text(
@@ -602,7 +595,7 @@ class _MePageState extends State<MePage> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: ChurchColors.button.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: ChurchRadius.mdAll,
                       border: Border.all(color: ChurchColors.divider),
                     ),
                     child: Column(
@@ -670,7 +663,7 @@ class _MePageState extends State<MePage> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: ChurchColors.button.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: ChurchRadius.mdAll,
                         border: Border.all(color: ChurchColors.divider),
                       ),
                       child: Text(
@@ -811,11 +804,7 @@ class _ProfileHeader extends StatelessWidget {
                       name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: ChurchColors.bodyText,
-                      ),
+                      style: ChurchType.headline.copyWith(fontSize: 22),
                     ),
                     if (email.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -917,7 +906,7 @@ class _ActionTile extends StatelessWidget {
                   height: 44,
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: ChurchRadius.mdAll,
                   ),
                   child: Icon(icon, color: color, size: 22),
                 ),
@@ -1029,7 +1018,7 @@ class _ActivityRow extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: ChurchRadius.mdAll,
             ),
             child: Icon(
               isPresent ? Icons.check_circle_outline : Icons.cancel_outlined,
@@ -1128,65 +1117,32 @@ class _StatGrid extends StatelessWidget {
   }
 }
 
+/// A register stat card: a mono label, a large mono tabular number, no icon
+/// tile. The [icon] is kept for call-site compatibility but not rendered —
+/// the number's weight carries the meaning.
 class _StatTile extends StatelessWidget {
   const _StatTile({
     required this.label,
     required this.value,
-    required this.icon,
+    // ignore: unused_element_parameter
+    this.icon,
   });
 
   final String label;
   final String value;
-  final IconData icon;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: ChurchColors.cardDecoration(
-        shadow: const [],
-      ),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: ChurchColors.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: ChurchColors.button.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: ChurchColors.button, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: ChurchColors.muted,
-                    letterSpacing: 0.2,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: ChurchColors.bodyText,
-                    height: 1.1,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ChurchEyebrow(label),
+          const SizedBox(height: 6),
+          Text(value, style: ChurchType.data),
         ],
       ),
     );

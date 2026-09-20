@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import '../widgets/detail_page_hero.dart';
 import '../widgets/dashboard_label_title.dart';
 
@@ -50,15 +51,7 @@ class EventDetailPage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: ChurchColors.bodyText,
-                    height: 1.2,
-                  ),
-                ),
+                Text(title, style: ChurchType.display.copyWith(fontSize: 26)),
                 const SizedBox(height: 10),
                 DetailCategoryChip(label: category),
                 const SizedBox(height: 16),
@@ -67,14 +60,7 @@ class EventDetailPage extends StatelessWidget {
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   const DashboardLabelText(label: 'Details'),
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      height: 1.5,
-                      color: ChurchColors.bodyText,
-                    ),
-                  ),
+                  Text(description, style: ChurchType.body.copyWith(fontSize: 16)),
                 ],
               ]),
             ),

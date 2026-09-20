@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 
 // ChurchPrimaryButton now lives with the app-wide button vocabulary; re-exported
 // here so the auth screens can keep importing it from auth_ui.
@@ -10,7 +11,7 @@ export 'church_buttons.dart' show ChurchPrimaryButton;
 /// Shared building blocks for the auth screens (landing, sign in, sign up,
 /// forgot password). Extracted so the four screens stop drifting: one button
 /// vocabulary, one error style, one input decoration — all aligned to
-/// DESIGN.md (primary = 14px radius, flat; secondary = cream, bordered, lifted).
+/// DESIGN.md (primary = crisp radius, flat; secondary = cream, ruled, flat).
 
 // The warm-rose error palette (DESIGN.md error-callout tokens).
 const Color _errorSurface = Color(0xFFFFF1EE);
@@ -18,44 +19,23 @@ const Color _errorBorder = Color(0xFFE1B0A9);
 const Color _errorInk = Color(0xFF8A2C1F);
 
 /// Screen title for auth pages ("Let's Get Started!", "Reset your password").
-const TextStyle kAuthTitleStyle = TextStyle(
-  color: ChurchColors.bodyText,
-  fontSize: 28,
-  fontWeight: FontWeight.w700,
-  letterSpacing: 0.2,
-  height: 1.15,
-);
+const TextStyle kAuthTitleStyle = ChurchType.display;
 
 /// Supporting line beneath the title.
-const TextStyle kAuthSubtitleStyle = TextStyle(
-  color: ChurchColors.muted,
-  fontSize: 14,
-  fontWeight: FontWeight.w400,
-  letterSpacing: 0.2,
-  height: 1.4,
-);
+const TextStyle kAuthSubtitleStyle = ChurchType.label;
 
-/// The one input decoration every auth field uses: muted label + icon, sand
-/// border at rest, cocoa border on focus (radius grows 12 → 14, per DESIGN.md).
+/// The one input decoration every auth field uses: muted label + icon, and
+/// the ruled, crisp-cornered box from the app theme (sand rule at rest, cocoa
+/// rule on focus).
 InputDecoration authInputDecoration({
   required String label,
   required IconData icon,
   Widget? suffixIcon,
 }) {
-  OutlineInputBorder border(Color color, double radius) => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(radius),
-        borderSide: BorderSide(color: color),
-      );
-
   return InputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(color: ChurchColors.muted),
     prefixIcon: Icon(icon, color: ChurchColors.muted),
     suffixIcon: suffixIcon,
-    enabledBorder: border(ChurchColors.divider, 12),
-    focusedBorder: border(ChurchColors.button, 14),
-    errorBorder: border(Colors.redAccent, 12),
-    focusedErrorBorder: border(Colors.redAccent, 14),
   );
 }
 
@@ -74,7 +54,7 @@ class AuthErrorCallout extends StatelessWidget {
       decoration: BoxDecoration(
         color: _errorSurface,
         border: Border.all(color: _errorBorder),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: ChurchRadius.mdAll,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,10 +93,10 @@ class ChurchSocialButton extends StatelessWidget {
     this.background,
     this.foreground,
     this.borderColor,
-    this.elevation = 2,
+    this.elevation = 0,
     this.height = 52,
     this.iconSize = 20,
-    this.fontSize = 16,
+    this.fontSize = 15,
   });
 
   /// The cream-bordered ghost variant for dark (brown) surfaces.
@@ -130,7 +110,7 @@ class ChurchSocialButton extends StatelessWidget {
     this.enabled = true,
     this.height = 52,
     this.iconSize = 20,
-    this.fontSize = 16,
+    this.fontSize = 15,
   })  : background = Colors.transparent,
         foreground = ChurchColors.card,
         borderColor = ChurchColors.card,
@@ -155,7 +135,7 @@ class ChurchSocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = background ?? ChurchColors.card;
     final fg = foreground ?? ChurchColors.bodyText;
-    final bc = borderColor ?? ChurchColors.divider.withValues(alpha: 0.6);
+    final bc = borderColor ?? ChurchColors.divider;
 
     return SizedBox(
       width: double.infinity,
@@ -168,10 +148,9 @@ class ChurchSocialButton extends StatelessWidget {
           disabledBackgroundColor: bg,
           disabledForegroundColor: fg.withValues(alpha: 0.55),
           elevation: elevation,
-          shadowColor: Colors.black.withValues(alpha: 0.15),
           side: BorderSide(color: bc),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          shape: const RoundedRectangleBorder(
+            borderRadius: ChurchRadius.mdAll,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 12),
         ),
@@ -193,10 +172,9 @@ class ChurchSocialButton extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: ChurchType.button.copyWith(
                         color: fg,
                         fontSize: fontSize,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

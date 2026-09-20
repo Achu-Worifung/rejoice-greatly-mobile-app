@@ -10,6 +10,7 @@ import '../pages/sermon_detail_page.dart';
 import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
+import '../theme/church_type.dart';
 import 'church_app_bar.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/church_buttons.dart';
@@ -182,6 +183,10 @@ class _DashboardPageState extends State<DashboardPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              ChurchEyebrow(
+                dotenv.env['CHURCH_SUBTITLE'] ?? 'Rejoice Greatly - PHX',
+              ),
+              const SizedBox(height: 2),
               FutureBuilder<String>(
                 future: _greetingFuture,
                 builder: (context, snapshot) {
@@ -189,19 +194,19 @@ class _DashboardPageState extends State<DashboardPage> {
                   return AutoSizeText(
                     displayGreeting,
                     maxLines: 1,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: ChurchColors.accent,
-                    ),
+                    style: ChurchType.display.copyWith(fontSize: 24),
                   );
                 },
               ),
-              Text(
-                dotenv.env['CHURCH_SUBTITLE'] ?? 'Rejoice Greatly - PHX',
-                style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
-              ),
             ],
+          ),
+        ),
+        // The page hero closes with the register's double rule.
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(12),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: ChurchDoubleRule(),
           ),
         ),
         leading: IconButton(
@@ -366,13 +371,13 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
-          Skeleton(height: 14, radius: 6),
+          Skeleton(height: 14, radius: ChurchRadius.sm),
           SizedBox(height: 10),
-          Skeleton(height: 14, radius: 6),
+          Skeleton(height: 14, radius: ChurchRadius.sm),
           SizedBox(height: 10),
-          Skeleton(width: 180, height: 14, radius: 6),
+          Skeleton(width: 180, height: 14, radius: ChurchRadius.sm),
           SizedBox(height: 18),
-          Skeleton(width: 120, height: 12, radius: 6),
+          Skeleton(width: 120, height: 12, radius: ChurchRadius.sm),
         ],
       ),
     );
@@ -398,11 +403,10 @@ class VerseOfTheWeekCard extends StatelessWidget {
          
           Text(
             data['text'] ?? '',
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
-              color: ChurchColors.bodyText,
-              height: 1.65,
+            style: ChurchType.title.copyWith(
+              fontWeight: FontWeight.w400,
+              fontSize: 18,
+              height: 1.55,
             ),
           ),
           const SizedBox(height: 16),
@@ -413,17 +417,13 @@ class VerseOfTheWeekCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   data['reference'] ?? '',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: ChurchColors.accent,
-                  ),
+                  style: ChurchType.bodyStrong,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 data['version'] ?? '',
-                style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
+                style: ChurchType.dataSmall,
               ),
             ],
           ),

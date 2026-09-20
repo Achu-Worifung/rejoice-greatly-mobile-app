@@ -5,6 +5,7 @@ import 'package:church_app/services/auth_service.dart';
 import 'package:church_app/theme/church_colors.dart';
 import 'package:church_app/widgets/church_app_bar.dart';
 import 'package:church_app/widgets/auth_ui.dart';
+import '../theme/church_type.dart';
 
 class EmailSignupPage extends StatefulWidget {
   const EmailSignupPage({super.key});
@@ -329,7 +330,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
   }) {
     return InkWell(
       onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: ChurchRadius.mdAll,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(

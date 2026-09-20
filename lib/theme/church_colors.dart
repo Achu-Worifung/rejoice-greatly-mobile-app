@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'church_type.dart';
+
 /// User-facing home palette: white surface, warm cream cards, deep brown actions.
 class ChurchColors {
   ChurchColors._();
@@ -13,23 +15,19 @@ class ChurchColors {
   static const Color muted = Color(0xFF6B5C4D);
   static const Color divider = Color(0xFFE8DFD0);
 
-  static const double cardRadius = 16;
-  static BorderRadius borderRadiusCard =
-      BorderRadius.circular(cardRadius);
+  /// Crisp, not soft — see `church_type.dart` for the full radius scale.
+  static const double cardRadius = ChurchRadius.lg;
+  static BorderRadius borderRadiusCard = ChurchRadius.lgAll;
 
+  /// A card is a form slipped into the register: flat, cream, closed by a 1px
+  /// rule. No shadow — depth comes from the cream-on-white layering, and a
+  /// [shadow] is only honoured when a caller genuinely needs a lifted sheet.
   static BoxDecoration cardDecoration({Color? color, List<BoxShadow>? shadow}) {
     return BoxDecoration(
       color: color ?? card,
       borderRadius: borderRadiusCard,
-      border: Border.all(color: divider.withValues(alpha: 0.4)),
-      boxShadow: shadow ??
-          [
-            BoxShadow(
-              color: const Color(0xFF633A02).withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+      border: Border.all(color: divider),
+      boxShadow: shadow,
     );
   }
 }
