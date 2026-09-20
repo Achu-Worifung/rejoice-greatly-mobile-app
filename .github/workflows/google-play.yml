@@ -48,21 +48,22 @@ jobs:
 
       - run: flutter pub get
 
+      # .env is a declared asset (pubspec.yaml) and gitignored. `flutter test`
+      # and `flutter build` both bundle assets, so a placeholder must exist first.
+      - name: Create placeholder .env
+        run: cp .env.example .env
+
       # Only compile errors block. The codebase currently carries ~80 infos and
       # 11 unused_* warnings; tighten to --fatal-warnings once those are cleaned up.
       - run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - run: flutter test
 
-      # .env is a declared asset (pubspec.yaml) and gitignored, so a placeholder is
-      # needed for the bundle step. Gradle falls back to the debug key when
-      # android/key.properties is absent, so this needs no secrets.
+      # Gradle falls back to the debug key when android/key.properties is
+      # absent, so this needs no secrets.
       - name: Compile check (debug APK)
         if: github.event_name == 'pull_request'
-        run: |
-          set -euo pipefail
-          cp .env.example .env
-          flutter build apk --debug
+        run: flutter build apk --debug
 
   release:
     name: Build & upload to Google Play
