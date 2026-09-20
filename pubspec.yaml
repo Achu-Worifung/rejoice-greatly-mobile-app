@@ -82,6 +82,15 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/images/logo.png"
   min_sdk_android: 21
+  # Adaptive icon (Android 8+): launchers mask the outer third of the canvas,
+  # so the foreground keeps the medallion inside the 66dp safe zone on the
+  # Roasted Cocoa brand ground. Without this, launchers shrink the legacy
+  # square onto a white tile.
+  adaptive_icon_background: "#633A02"
+  adaptive_icon_foreground: "assets/images/icon_foreground.png"
+  # App Store rejects icons with an alpha channel; flatten onto the same brown.
+  remove_alpha_ios: true
+  background_color_ios: "#633A02"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

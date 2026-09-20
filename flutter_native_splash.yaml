@@ -14,9 +14,10 @@ flutter_native_splash:
   web: false
   fullscreen: true # Hides the status bar during the native splash.
 
-  # Android 12+ renders the splash icon in a fixed OS window (~240dp), so the
-  # emblem is a touch smaller there by platform decree; the Flutter splash
-  # smooths that over immediately after handoff.
+  # Android 12+ masks the splash icon to the inner 2/3 of its canvas, so this
+  # source pads the medallion into a 768px circle on a 1152px canvas (the
+  # platform's stated safe zone). Using the edge-to-edge splash_logo here
+  # crops the gold rim and the "Rejoice Greatly" wordmark.
   android_12:
     color: "#633A02"
-    image: assets/images/splash_logo.png
+    image: assets/images/splash_android12.png
