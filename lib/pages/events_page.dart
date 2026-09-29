@@ -9,6 +9,7 @@ import '../widgets/church_app_bar.dart';
 import '../widgets/church_tab_page_header.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/skeletons.dart';
+import '../services/user_facing_error.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -54,9 +55,10 @@ class _EventsPageState extends State<EventsPage> {
         _loading = false;
       });
     } catch (e) {
+      debugPrint('EventsPage: load failed: $e');
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = userFacingError(e);
         _loading = false;
         _rawEvents = [];
         _grouped = {};

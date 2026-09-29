@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/church_api.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
+import '../services/user_facing_error.dart';
 
 /// Loads `POST /member/stats` and shows [AttendanceSheet].
 class AttendanceStatsLoader extends StatefulWidget {
@@ -62,7 +63,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = userFacingError(e);
         _loading = false;
       });
     }

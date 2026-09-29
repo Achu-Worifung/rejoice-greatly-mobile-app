@@ -16,6 +16,7 @@ import '../widgets/dashboard_label_title.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
+import '../services/user_facing_error.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -110,7 +111,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final list = ChurchApi.mapEventInstances(raw);
       return _DashboardEventsLoad(items: list, error: null);
     } catch (e) {
-      return _DashboardEventsLoad(items: [], error: e.toString());
+      return _DashboardEventsLoad(items: [], error: userFacingError(e));
     }
   }
 

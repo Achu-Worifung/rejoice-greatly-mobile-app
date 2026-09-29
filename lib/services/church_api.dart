@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_envelope.dart';
+import 'user_facing_error.dart';
 import 'user_session_store.dart';
 
 /// Thrown by [ChurchApi.nfcCheckin] when the server responds with a non-200
@@ -402,7 +403,7 @@ class ChurchApi {
         profile: cached,
         hasProfile: hasMemberProfile(cached),
         syncedFromServer: false,
-        error: e.toString(),
+        error: userFacingError(e),
       );
     }
   }
@@ -430,10 +431,13 @@ class ChurchApi {
         return MemberStatsResult(
           stats: _statsFromAccountMap(cached),
           syncedFromServer: false,
-          error: e.toString(),
+          error: userFacingError(e),
         );
       }
-      return MemberStatsResult(syncedFromServer: false, error: e.toString());
+      return MemberStatsResult(
+        syncedFromServer: false,
+        error: userFacingError(e),
+      );
     }
   }
 
@@ -502,7 +506,7 @@ class ChurchApi {
       return MePageLoadResult(
         profile: cached,
         hasProfile: hasMemberProfile(cached),
-        error: e.toString(),
+        error: userFacingError(e),
       );
     }
 
@@ -530,7 +534,7 @@ class ChurchApi {
         } catch (e, st) {
           debugPrint('ChurchApi.loadMePage stats failed: $e\n$st');
           // A stats failure is the one reported, even if history failed first.
-          partialError = e.toString();
+          partialError = userFacingError(e);
           final cached = await getCachedAccountJson();
           if (cached != null) stats = _statsFromAccountMap(cached);
         }
@@ -542,7 +546,7 @@ class ChurchApi {
           attendanceSynced = true;
         } catch (e, st) {
           debugPrint('ChurchApi.loadMePage attendance failed: $e\n$st');
-          partialError ??= e.toString();
+          partialError ??= userFacingError(e);
         }
       }
 
@@ -565,7 +569,7 @@ class ChurchApi {
       return MePageLoadResult(
         profile: cached,
         hasProfile: hasMemberProfile(cached),
-        error: e.toString(),
+        error: userFacingError(e),
       );
     }
   }
@@ -616,14 +620,14 @@ class ChurchApi {
       throw SessionInvalidException('auth/firebase:${r.statusCode}');
     }
     if (r.statusCode != 200) {
-      throw Exception('/auth/firebase failed: ${r.statusCode} ${r.body}');
+      throw _failure(r);
     }
 
     final Map<String, dynamic> map;
     try {
       map = unwrapApiMap(r.body);
     } on FormatException {
-      throw Exception('/auth/firebase returned an invalid response');
+      throw ChurchApiException(r.statusCode);
     }
     await _mergeIntoCachedAccount(map);
     return map;
@@ -700,6 +704,14 @@ class ChurchApi {
       }
     }
 
+    throw _failure(r);
+  }
+
+  /// A non-200 response as a [ChurchApiException], keeping the status and the
+  /// envelope's `message`/`errorCode` but never the URL or raw body — the
+  /// exception's text can end up on screen.
+  static ChurchApiException _failure(http.Response r) {
+    debugPrint('ChurchApi: ${r.request?.url.path} failed ${r.statusCode}');
     // Error envelope: `message`/`errorCode` sit at the top level with a null
     // `data`, so decode the raw body rather than unwrapping it.
     String? message;
@@ -713,7 +725,7 @@ class ChurchApi {
     } catch (_) {
       // Non-JSON error body; fall through with nulls.
     }
-    throw ChurchApiException(
+    return ChurchApiException(
       r.statusCode,
       errorCode: errorCode,
       serverMessage: message,
@@ -735,12 +747,12 @@ class ChurchApi {
 
     debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
     if (r.statusCode != 200) {
-      throw Exception('${uri.path} failed: ${r.statusCode} ${r.body}');
+      throw _failure(r);
     }
     try {
       return unwrapApiMap(r.body);
     } on FormatException {
-      throw Exception('${uri.path} returned an invalid response');
+      throw ChurchApiException(r.statusCode);
     }
   }
 
@@ -908,7 +920,7 @@ class ChurchApi {
         .get(Uri.parse('$baseUrl/weekly-verse/current'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('weekly-verse/current failed: ${r.statusCode}');
+      throw _failure(r);
     }
     final data = unwrapApiMap(r.body);
     _verseCache = data;
@@ -921,7 +933,7 @@ class ChurchApi {
         .get(Uri.parse('$baseUrl/events/top4'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('events/top4 failed: ${r.statusCode}');
+      throw _failure(r);
     }
     return unwrapApiList(r.body);
   }
@@ -969,7 +981,7 @@ class ChurchApi {
         .get(Uri.parse('$baseUrl/events/upcoming'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('events/upcoming failed: ${r.statusCode}');
+      throw _failure(r);
     }
     final list = unwrapApiList(r.body);
     if (list.isNotEmpty) return list;
@@ -988,7 +1000,7 @@ class ChurchApi {
         .get(Uri.parse('$baseUrl/sermons'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('sermons failed: ${r.statusCode}');
+      throw _failure(r);
     }
     final data = unwrapApiList(r.body);
     _sermonsCache = data;
@@ -1001,7 +1013,7 @@ class ChurchApi {
         .get(Uri.parse('$baseUrl/sermons/$id'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('sermons/$id failed: ${r.statusCode}');
+      throw _failure(r);
     }
     return unwrapApiMap(r.body);
   }

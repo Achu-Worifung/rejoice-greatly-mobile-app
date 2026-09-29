@@ -2,6 +2,8 @@ import 'dart:convert';
 import '../dataobject/reminder_items.dart';
 import '../services/api_envelope.dart';
 import '../services/church_api.dart';
+import '../services/user_facing_error.dart';
+import 'package:flutter/foundation.dart';
 
 class ReminderApiService {
   late final String _baseUrl = '${ChurchApi.baseUrl}/schedule';
@@ -32,7 +34,8 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
@@ -49,7 +52,8 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
@@ -70,7 +74,8 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
@@ -91,7 +96,8 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
@@ -103,7 +109,8 @@ class ReminderApiService {
 
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
@@ -124,7 +131,8 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
@@ -136,7 +144,8 @@ class ReminderApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 }

@@ -11,6 +11,7 @@ import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
 import 'services/nfc_deep_link_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'services/user_facing_error.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +44,7 @@ void main() async {
     if (kDebugMode) {
       debugPrint('App startup failed: $e\n$st');
     }
-    runApp(StartupErrorApp(message: e.toString()));
+    runApp(StartupErrorApp(message: userFacingError(e)));
   }
 }
 
