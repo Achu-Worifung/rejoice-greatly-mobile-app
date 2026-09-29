@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../dataobject/reminder_items.dart';
 import '../services/api_envelope.dart';
 import '../services/church_api.dart';
@@ -23,7 +22,7 @@ class ReminderApiService {
     try {
       // Backend list endpoint is GET /schedule (no /getschedule suffix).
       final uri = Uri.parse(_baseUrl);
-      final response = await http.get(uri, headers: _headers).timeout(_timeout);
+      final response = await ChurchApi.httpClient.get(uri, headers: _headers).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = unwrapApiList(response.body);
@@ -39,7 +38,7 @@ class ReminderApiService {
 
   Future<ReminderItem> fetchReminder(String id) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .get(Uri.parse('$_baseUrl/getschedule/$id'), headers: _headers)
           .timeout(_timeout);
 
@@ -56,7 +55,7 @@ class ReminderApiService {
 
   Future<ReminderItem> createReminder(ReminderItem reminder) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .post(
             Uri.parse(_baseUrl),
             headers: _headers,
@@ -77,7 +76,7 @@ class ReminderApiService {
 
   Future<ReminderItem> updateReminder(ReminderItem reminder) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .put(
             Uri.parse('$_baseUrl/updateschedule/${reminder.id}'),
             headers: _headers,
@@ -98,7 +97,7 @@ class ReminderApiService {
 
   Future<bool> deleteReminder(String id) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .delete(Uri.parse('$_baseUrl/$id'), headers: _headers)
           .timeout(_timeout);
 
@@ -110,7 +109,7 @@ class ReminderApiService {
 
   Future<ReminderItem> toggleActive(String id, bool isActive) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .patch(
             Uri.parse('$_baseUrl/toggleschedule/$id'),
             headers: _headers,
@@ -131,7 +130,7 @@ class ReminderApiService {
 
   Future<bool> sendNow(String id) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .post(Uri.parse('$_baseUrl/sendnow/$id'), headers: _headers)
           .timeout(_timeout);
 

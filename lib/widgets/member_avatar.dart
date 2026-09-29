@@ -53,6 +53,12 @@ class MemberAvatar extends StatelessWidget {
             ? Image.network(
                 url,
                 fit: BoxFit.cover,
+                // Decode near display size: a full 1080px profile photo costs
+                // several MB of memory per avatar, and rosters show dozens.
+                // 2x leaves room for BoxFit.cover to crop a non-square photo
+                // without going soft.
+                cacheWidth: (size * MediaQuery.devicePixelRatioOf(context) * 2)
+                    .round(),
                 errorBuilder: (context, error, stack) => _initials(),
               )
             : _initials(),

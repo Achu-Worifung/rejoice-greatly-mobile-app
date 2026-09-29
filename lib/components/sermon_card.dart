@@ -19,6 +19,10 @@ class LatestSermonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = data['imageUrl'] as String?;
+    // Decode the cover near the 72px thumbnail rather than at full size; 2x
+    // leaves room for BoxFit.cover to crop without going soft.
+    final thumbCacheWidth = (72 * MediaQuery.devicePixelRatioOf(context) * 2)
+        .round();
 
     return Container(
       width: double.infinity,
@@ -45,9 +49,13 @@ class LatestSermonCard extends StatelessWidget {
                               ? Image.network(
                                   imageUrl,
                                   fit: BoxFit.cover,
+                                  cacheWidth: thumbCacheWidth,
                                   errorBuilder:
-                                      (BuildContext c, Object e, StackTrace? s) =>
-                                          _placeholder(),
+                                      (
+                                        BuildContext c,
+                                        Object e,
+                                        StackTrace? s,
+                                      ) => _placeholder(),
                                 )
                               : _placeholder(),
                         ),
