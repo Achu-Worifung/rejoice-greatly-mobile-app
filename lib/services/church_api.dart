@@ -893,6 +893,8 @@ class ChurchApi {
     _verseCachedAt = null;
     _sermonsCache = null;
     _sermonsCachedAt = null;
+    _latestSermonCache = null;
+    _latestSermonCachedAt = null;
     _dashboardEventsCache = null;
     _dashboardEventsCachedAt = null;
   }
@@ -905,6 +907,9 @@ class ChurchApi {
 
   static List<dynamic>? _sermonsCache;
   static DateTime? _sermonsCachedAt;
+
+  static List<dynamic>? _latestSermonCache;
+  static DateTime? _latestSermonCachedAt;
 
   static List<dynamic>? _dashboardEventsCache;
   static DateTime? _dashboardEventsCachedAt;
@@ -1005,6 +1010,36 @@ class ChurchApi {
     final data = unwrapApiList(r.body);
     _sermonsCache = data;
     _sermonsCachedAt = DateTime.now();
+    return data;
+  }
+
+  /// The newest sermon, for the dashboard card — asks the server for one
+  /// (`?limit=1`) instead of downloading the whole library. Reuses the full
+  /// list when the sermons page has already loaded it. A backend without the
+  /// `limit` parameter returns everything, which callers sort anyway.
+  static Future<List<dynamic>> getLatestSermons() async {
+    final now = DateTime.now();
+    final fullAt = _sermonsCachedAt;
+    if (_sermonsCache != null &&
+        fullAt != null &&
+        now.difference(fullAt) < _homeCacheDuration) {
+      return _sermonsCache!;
+    }
+    final latestAt = _latestSermonCachedAt;
+    if (_latestSermonCache != null &&
+        latestAt != null &&
+        now.difference(latestAt) < _homeCacheDuration) {
+      return _latestSermonCache!;
+    }
+    final r = await httpClient
+        .get(Uri.parse('$baseUrl/sermons?limit=1'))
+        .timeout(_httpTimeout);
+    if (r.statusCode != 200) {
+      throw _failure(r);
+    }
+    final data = unwrapApiList(r.body);
+    _latestSermonCache = data;
+    _latestSermonCachedAt = DateTime.now();
     return data;
   }
 

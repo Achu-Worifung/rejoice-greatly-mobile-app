@@ -94,7 +94,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<List<dynamic>> _fetchSermonsNewestFirst() async {
-    final list = await ChurchApi.getSermons();
+    final list = await ChurchApi.getLatestSermons();
     final copy = List<dynamic>.from(list);
     copy.sort((a, b) {
       final da = (a as Map<String, dynamic>)['datePreached'] as String? ?? '';
