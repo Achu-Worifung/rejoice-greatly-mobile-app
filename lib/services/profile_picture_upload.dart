@@ -82,7 +82,7 @@ class _UploadGrant {
 /// The blob written in step 2 is a *staging* artifact and is encrypted: a
 /// leaked SAS URL yields ciphertext only. The image the app later renders via
 /// `imgURL` is written by the backend in step 3 and is not encrypted, because
-/// it is fetched by `Image.network` all over the app.
+/// it is fetched by image widgets all over the app.
 ///
 /// See `docs/PROFILE_PICTURE_UPLOAD.md` for the backend contract.
 class ProfilePictureUpload {

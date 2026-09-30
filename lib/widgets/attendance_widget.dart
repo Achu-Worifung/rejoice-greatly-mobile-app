@@ -7,6 +7,7 @@ import '../services/church_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'nfc_write_tag_sheet.dart';
 import '../theme/church_type.dart';
+import 'cached_image.dart';
 
 class AttendanceWidget extends StatefulWidget {
   const AttendanceWidget({super.key});
@@ -359,7 +360,7 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
 ImageProvider _avatarImage(BuildContext context, String url, double radius) {
   final width = (radius * 2 * MediaQuery.devicePixelRatioOf(context) * 2)
       .round();
-  return ResizeImage(NetworkImage(url), width: width);
+  return cachedImage(url, cacheWidth: width);
 }
 
 class _MemberTile extends StatelessWidget {

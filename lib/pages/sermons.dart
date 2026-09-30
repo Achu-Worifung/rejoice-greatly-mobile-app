@@ -15,6 +15,7 @@ import '../widgets/church_buttons.dart';
 import '../widgets/skeletons.dart';
 import '../widgets/sermon_play_icon.dart';
 import '../services/user_facing_error.dart';
+import '../widgets/cached_image.dart';
 
 class SermonsPage extends StatefulWidget {
   const SermonsPage({super.key});
@@ -300,8 +301,11 @@ class _SermonRow extends StatelessWidget {
                     width: 76,
                     height: 76,
                     child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(
-                            imageUrl,
+                        ? Image(
+                            image: cachedImage(
+                              imageUrl,
+                              cacheWidth: (76 * MediaQuery.devicePixelRatioOf(context) * 2).round(),
+                            ),
                             fit: BoxFit.cover,
                             errorBuilder: (BuildContext c, Object e, StackTrace? s) => _ph(),
                           )

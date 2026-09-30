@@ -5,6 +5,7 @@ import '../pages/event_detail_page.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/cached_image.dart';
 
 class UpcomingEventsSection extends StatelessWidget {
   const UpcomingEventsSection({
@@ -116,8 +117,8 @@ class _PosterImage extends StatelessWidget {
         child: Icon(Icons.event, size: 40, color: ChurchColors.muted),
       );
     }
-    return Image.network(
-      url!,
+    return Image(
+      image: cachedImage(url!),
       width: double.infinity,
       height: double.infinity,
       fit: BoxFit.contain,

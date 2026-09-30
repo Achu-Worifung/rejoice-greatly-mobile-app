@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/sermon_play_icon.dart';
+import '../widgets/cached_image.dart';
 
 class LatestSermonCard extends StatelessWidget {
   const LatestSermonCard({
@@ -46,10 +47,12 @@ class LatestSermonCard extends StatelessWidget {
                           width: 72,
                           height: 72,
                           child: imageUrl != null && imageUrl.isNotEmpty
-                              ? Image.network(
-                                  imageUrl,
+                              ? Image(
+                                  image: cachedImage(
+                                    imageUrl,
+                                    cacheWidth: thumbCacheWidth,
+                                  ),
                                   fit: BoxFit.cover,
-                                  cacheWidth: thumbCacheWidth,
                                   errorBuilder:
                                       (
                                         BuildContext c,
