@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_envelope.dart';
+import 'user_facing_error.dart';
 import 'user_session_store.dart';
 
 /// Thrown by [ChurchApi.nfcCheckin] when the server responds with a non-200
@@ -141,6 +142,12 @@ class MePageLoadResult {
 
 class ChurchApi {
   ChurchApi._();
+
+  /// One client for every backend call, so requests reuse a kept-alive
+  /// connection. The top-level `http.get`/`http.post` helpers open and close a
+  /// fresh client each time, which on a phone means a new TCP + TLS handshake
+  /// in front of every request.
+  static final http.Client httpClient = http.Client();
 
   /// Backend origin from `.env`. Debug builds fall back to a LAN dev server so
   /// `flutter run` works without a `.env`; release builds must be configured
@@ -396,7 +403,7 @@ class ChurchApi {
         profile: cached,
         hasProfile: hasMemberProfile(cached),
         syncedFromServer: false,
-        error: e.toString(),
+        error: userFacingError(e),
       );
     }
   }
@@ -424,10 +431,13 @@ class ChurchApi {
         return MemberStatsResult(
           stats: _statsFromAccountMap(cached),
           syncedFromServer: false,
-          error: e.toString(),
+          error: userFacingError(e),
         );
       }
-      return MemberStatsResult(syncedFromServer: false, error: e.toString());
+      return MemberStatsResult(
+        syncedFromServer: false,
+        error: userFacingError(e),
+      );
     }
   }
 
@@ -496,7 +506,7 @@ class ChurchApi {
       return MePageLoadResult(
         profile: cached,
         hasProfile: hasMemberProfile(cached),
-        error: e.toString(),
+        error: userFacingError(e),
       );
     }
 
@@ -514,23 +524,33 @@ class ChurchApi {
       var attendanceSynced = false;
       String? partialError;
 
-      try {
-        stats = await fetchMemberStats();
-        statsSynced = true;
-      } catch (e, st) {
-        debugPrint('ChurchApi.loadMePage stats failed: $e\n$st');
-        partialError = e.toString();
-        final cached = await getCachedAccountJson();
-        if (cached != null) stats = _statsFromAccountMap(cached);
+      // Stats and history are independent, so fetch them side by side rather
+      // than paying for two sequential round-trips. Each handles its own
+      // failure, so one erroring can't surface unhandled while the other runs.
+      Future<void> loadStats() async {
+        try {
+          stats = await fetchMemberStats();
+          statsSynced = true;
+        } catch (e, st) {
+          debugPrint('ChurchApi.loadMePage stats failed: $e\n$st');
+          // A stats failure is the one reported, even if history failed first.
+          partialError = userFacingError(e);
+          final cached = await getCachedAccountJson();
+          if (cached != null) stats = _statsFromAccountMap(cached);
+        }
       }
 
-      try {
-        activities = await fetchMemberAttendanceHistory();
-        attendanceSynced = true;
-      } catch (e, st) {
-        debugPrint('ChurchApi.loadMePage attendance failed: $e\n$st');
-        partialError ??= e.toString();
+      Future<void> loadHistory() async {
+        try {
+          activities = await fetchMemberAttendanceHistory();
+          attendanceSynced = true;
+        } catch (e, st) {
+          debugPrint('ChurchApi.loadMePage attendance failed: $e\n$st');
+          partialError ??= userFacingError(e);
+        }
       }
+
+      await Future.wait([loadStats(), loadHistory()]);
 
       await UserSessionStore.saveMePageCachedAt(DateTime.now());
       return MePageLoadResult(
@@ -549,7 +569,7 @@ class ChurchApi {
       return MePageLoadResult(
         profile: cached,
         hasProfile: hasMemberProfile(cached),
-        error: e.toString(),
+        error: userFacingError(e),
       );
     }
   }
@@ -587,7 +607,7 @@ class ChurchApi {
     // Not routed through [postJson] so a "no such account" status can be told
     // apart from a transient failure and surfaced as a [SessionInvalidException].
     final uri = Uri.parse('$baseUrl/auth/firebase');
-    final r = await http
+    final r = await httpClient
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
@@ -600,20 +620,36 @@ class ChurchApi {
       throw SessionInvalidException('auth/firebase:${r.statusCode}');
     }
     if (r.statusCode != 200) {
-      throw Exception('/auth/firebase failed: ${r.statusCode} ${r.body}');
+      throw _failure(r);
     }
 
     final Map<String, dynamic> map;
     try {
       map = unwrapApiMap(r.body);
     } on FormatException {
-      throw Exception('/auth/firebase returned an invalid response');
+      throw ChurchApiException(r.statusCode);
     }
     await _mergeIntoCachedAccount(map);
     return map;
   }
 
-  static Future<void> _mergeIntoCachedAccount(
+  /// Tail of the queue of pending [_mergeIntoCachedAccount] writes.
+  static Future<void> _accountMergeQueue = Future.value();
+
+  /// Merges [incoming] into the cached account. Merges are queued one after
+  /// another: each is a read-modify-write of the same stored map, so two
+  /// responses landing together (the Me page fetches stats and history in
+  /// parallel) would otherwise each overwrite the other's fields.
+  static Future<void> _mergeIntoCachedAccount(Map<String, dynamic> incoming) {
+    final merge = _accountMergeQueue.then(
+      (_) => _mergeIntoCachedAccountNow(incoming),
+    );
+    // A failed merge must not wedge every later one behind it.
+    _accountMergeQueue = merge.catchError((Object _) {});
+    return merge;
+  }
+
+  static Future<void> _mergeIntoCachedAccountNow(
     Map<String, dynamic> incoming,
   ) async {
     final cached = await getCachedAccountJson();
@@ -648,7 +684,7 @@ class ChurchApi {
   static Future<Map<String, dynamic>> nfcCheckin(String tagId) async {
     final tokenBundle = await requireIdToken();
     final uri = Uri.parse('$baseUrl/attendance/nfc/checkin');
-    final r = await http
+    final r = await httpClient
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
@@ -668,6 +704,14 @@ class ChurchApi {
       }
     }
 
+    throw _failure(r);
+  }
+
+  /// A non-200 response as a [ChurchApiException], keeping the status and the
+  /// envelope's `message`/`errorCode` but never the URL or raw body — the
+  /// exception's text can end up on screen.
+  static ChurchApiException _failure(http.Response r) {
+    debugPrint('ChurchApi: ${r.request?.url.path} failed ${r.statusCode}');
     // Error envelope: `message`/`errorCode` sit at the top level with a null
     // `data`, so decode the raw body rather than unwrapping it.
     String? message;
@@ -681,7 +725,7 @@ class ChurchApi {
     } catch (_) {
       // Non-JSON error body; fall through with nulls.
     }
-    throw ChurchApiException(
+    return ChurchApiException(
       r.statusCode,
       errorCode: errorCode,
       serverMessage: message,
@@ -693,7 +737,7 @@ class ChurchApi {
     Map<String, dynamic> body,
   ) async {
     final uri = Uri.parse('$baseUrl$path');
-    final r = await http
+    final r = await httpClient
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
@@ -703,12 +747,12 @@ class ChurchApi {
 
     debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
     if (r.statusCode != 200) {
-      throw Exception('${uri.path} failed: ${r.statusCode} ${r.body}');
+      throw _failure(r);
     }
     try {
       return unwrapApiMap(r.body);
     } on FormatException {
-      throw Exception('${uri.path} returned an invalid response');
+      throw ChurchApiException(r.statusCode);
     }
   }
 
@@ -751,9 +795,38 @@ class ChurchApi {
     }
   }
 
+  /// How long a token from [requireIdToken] is handed out again before the
+  /// next call goes back to Firebase.
+  ///
+  /// Each fresh token costs two Firebase round-trips (a user reload and a
+  /// forced refresh) before the actual API call even starts, and one screen
+  /// can make several member calls in a row — the Me page makes four. Within
+  /// this window those calls share one token; the backend still verifies it
+  /// (revocation included) on every request.
+  static const Duration _idTokenReuseWindow = Duration(seconds: 60);
+
+  static ({User user, String token, DateTime issuedAt})? _recentIdToken;
+  static Future<({User user, String token})>? _idTokenInFlight;
+
   /// Public so sibling services (e.g. [ProfilePictureUpload]) can reuse the
   /// reload-and-retry behaviour rather than reimplementing it.
-  static Future<({User user, String token})> requireIdToken() async {
+  static Future<({User user, String token})> requireIdToken() {
+    final recent = _recentIdToken;
+    final current = FirebaseAuth.instance.currentUser;
+    if (recent != null &&
+        current != null &&
+        current.uid == recent.user.uid &&
+        DateTime.now().difference(recent.issuedAt) < _idTokenReuseWindow) {
+      return Future.value((user: recent.user, token: recent.token));
+    }
+    // Calls that start together (e.g. parallel fetches) share one refresh.
+    return _idTokenInFlight ??= _requireFreshIdToken().whenComplete(() {
+      _idTokenInFlight = null;
+    });
+  }
+
+  static Future<({User user, String token})> _requireFreshIdToken() async {
+    _recentIdToken = null;
     final user = await waitForSignedInUser();
     if (user == null) {
       throw StateError('Not signed in to Firebase');
@@ -773,6 +846,7 @@ class ChurchApi {
 
     final active = FirebaseAuth.instance.currentUser ?? user;
     final token = await forceFreshIdToken(active);
+    _recentIdToken = (user: active, token: token, issuedAt: DateTime.now());
     return (user: active, token: token);
   }
 
@@ -819,6 +893,8 @@ class ChurchApi {
     _verseCachedAt = null;
     _sermonsCache = null;
     _sermonsCachedAt = null;
+    _latestSermonCache = null;
+    _latestSermonCachedAt = null;
     _dashboardEventsCache = null;
     _dashboardEventsCachedAt = null;
   }
@@ -832,6 +908,9 @@ class ChurchApi {
   static List<dynamic>? _sermonsCache;
   static DateTime? _sermonsCachedAt;
 
+  static List<dynamic>? _latestSermonCache;
+  static DateTime? _latestSermonCachedAt;
+
   static List<dynamic>? _dashboardEventsCache;
   static DateTime? _dashboardEventsCachedAt;
 
@@ -842,11 +921,11 @@ class ChurchApi {
         DateTime.now().difference(cachedAt) < _homeCacheDuration) {
       return _verseCache!;
     }
-    final r = await http
+    final r = await httpClient
         .get(Uri.parse('$baseUrl/weekly-verse/current'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('weekly-verse/current failed: ${r.statusCode}');
+      throw _failure(r);
     }
     final data = unwrapApiMap(r.body);
     _verseCache = data;
@@ -855,11 +934,11 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getTop4Events() async {
-    final r = await http
+    final r = await httpClient
         .get(Uri.parse('$baseUrl/events/top4'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('events/top4 failed: ${r.statusCode}');
+      throw _failure(r);
     }
     return unwrapApiList(r.body);
   }
@@ -903,11 +982,11 @@ class ChurchApi {
   }
 
   static Future<List<dynamic>> getUpcomingEvents() async {
-    final r = await http
+    final r = await httpClient
         .get(Uri.parse('$baseUrl/events/upcoming'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('events/upcoming failed: ${r.statusCode}');
+      throw _failure(r);
     }
     final list = unwrapApiList(r.body);
     if (list.isNotEmpty) return list;
@@ -922,11 +1001,11 @@ class ChurchApi {
         DateTime.now().difference(cachedAt) < _homeCacheDuration) {
       return _sermonsCache!;
     }
-    final r = await http
+    final r = await httpClient
         .get(Uri.parse('$baseUrl/sermons'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('sermons failed: ${r.statusCode}');
+      throw _failure(r);
     }
     final data = unwrapApiList(r.body);
     _sermonsCache = data;
@@ -934,12 +1013,42 @@ class ChurchApi {
     return data;
   }
 
+  /// The newest sermon, for the dashboard card — asks the server for one
+  /// (`?limit=1`) instead of downloading the whole library. Reuses the full
+  /// list when the sermons page has already loaded it. A backend without the
+  /// `limit` parameter returns everything, which callers sort anyway.
+  static Future<List<dynamic>> getLatestSermons() async {
+    final now = DateTime.now();
+    final fullAt = _sermonsCachedAt;
+    if (_sermonsCache != null &&
+        fullAt != null &&
+        now.difference(fullAt) < _homeCacheDuration) {
+      return _sermonsCache!;
+    }
+    final latestAt = _latestSermonCachedAt;
+    if (_latestSermonCache != null &&
+        latestAt != null &&
+        now.difference(latestAt) < _homeCacheDuration) {
+      return _latestSermonCache!;
+    }
+    final r = await httpClient
+        .get(Uri.parse('$baseUrl/sermons?limit=1'))
+        .timeout(_httpTimeout);
+    if (r.statusCode != 200) {
+      throw _failure(r);
+    }
+    final data = unwrapApiList(r.body);
+    _latestSermonCache = data;
+    _latestSermonCachedAt = DateTime.now();
+    return data;
+  }
+
   static Future<Map<String, dynamic>> getSermonById(Object id) async {
-    final r = await http
+    final r = await httpClient
         .get(Uri.parse('$baseUrl/sermons/$id'))
         .timeout(_httpTimeout);
     if (r.statusCode != 200) {
-      throw Exception('sermons/$id failed: ${r.statusCode}');
+      throw _failure(r);
     }
     return unwrapApiMap(r.body);
   }

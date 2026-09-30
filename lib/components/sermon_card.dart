@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/sermon_play_icon.dart';
+import '../widgets/cached_image.dart';
 
 class LatestSermonCard extends StatelessWidget {
   const LatestSermonCard({
@@ -19,6 +20,10 @@ class LatestSermonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final imageUrl = data['imageUrl'] as String?;
+    // Decode the cover near the 72px thumbnail rather than at full size; 2x
+    // leaves room for BoxFit.cover to crop without going soft.
+    final thumbCacheWidth = (72 * MediaQuery.devicePixelRatioOf(context) * 2)
+        .round();
 
     return Container(
       width: double.infinity,
@@ -42,12 +47,18 @@ class LatestSermonCard extends StatelessWidget {
                           width: 72,
                           height: 72,
                           child: imageUrl != null && imageUrl.isNotEmpty
-                              ? Image.network(
-                                  imageUrl,
+                              ? Image(
+                                  image: cachedImage(
+                                    imageUrl,
+                                    cacheWidth: thumbCacheWidth,
+                                  ),
                                   fit: BoxFit.cover,
                                   errorBuilder:
-                                      (BuildContext c, Object e, StackTrace? s) =>
-                                          _placeholder(),
+                                      (
+                                        BuildContext c,
+                                        Object e,
+                                        StackTrace? s,
+                                      ) => _placeholder(),
                                 )
                               : _placeholder(),
                         ),

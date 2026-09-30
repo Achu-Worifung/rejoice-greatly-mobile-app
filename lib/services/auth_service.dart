@@ -12,6 +12,7 @@ import '../notifications/notification_service.dart';
 import 'church_api.dart';
 import 'user_session_store.dart';
 import '../main.dart' show navigatorKey;
+import 'user_facing_error.dart';
 
 /// Result of syncing the Firebase user to Postgres via `POST /auth/firebase`.
 class AuthSyncResult {
@@ -229,7 +230,7 @@ class AuthService {
       return _authErrorMessage(e);
     } catch (e, st) {
       debugPrint('AuthService: Apple unexpected error: $e\n$st');
-      return 'Apple sign-in failed: $e';
+      return userFacingError(e);
     } finally {
       _appleSignInInProgress = false;
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../dataobject/reminder_items.dart';
 import '../notifications/reminder_api_service.dart';
+import '../services/user_facing_error.dart';
 // import '../notifications/notification_service.dart';
 
 class RemindersWidget extends StatefulWidget {
@@ -43,7 +44,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
       debugPrint('Error initializing notifications: $e');
       if (mounted) {
         _showSnackBar(
-          'Failed to initialize notifications: $e',
+          'Failed to initialize notifications. ${userFacingError(e)}',
           Colors.red,
         );
       }
@@ -76,7 +77,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Unexpected error: $e';
+          _errorMessage = userFacingError(e);
           _isLoading = false;
         });
       }
@@ -135,7 +136,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
     } on ApiException catch (e) {
       _showSnackBar('Error: ${e.message}', Colors.red);
     } catch (e) {
-      _showSnackBar('Unexpected error: $e', Colors.red);
+      _showSnackBar(userFacingError(e), Colors.red);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -170,7 +171,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _reminders.insert(reminderIndex, removed));
-      _showSnackBar('Unexpected error: $e', Colors.red);
+      _showSnackBar(userFacingError(e), Colors.red);
     }
   }
 
@@ -196,7 +197,7 @@ class _RemindersWidgetState extends State<RemindersWidget> {
     } catch (e) {
       if (!mounted) return;
       setState(() => reminder.isActive = oldValue);
-      _showSnackBar('Unexpected error: $e', Colors.red);
+      _showSnackBar(userFacingError(e), Colors.red);
     }
   }
 

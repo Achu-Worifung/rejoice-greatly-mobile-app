@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
+import 'cached_image.dart';
 
 /// A member's avatar: their photo when there is one, their initials when there
 /// isn't.
@@ -50,8 +51,17 @@ class MemberAvatar extends StatelessWidget {
         width: size,
         height: size,
         child: url != null && url.isNotEmpty
-            ? Image.network(
-                url,
+            ? Image(
+                // Decode near display size: a full 1080px profile photo costs
+                // several MB of memory per avatar, and rosters show dozens.
+                // 2x leaves room for BoxFit.cover to crop a non-square photo
+                // without going soft.
+                image: cachedImage(
+                  url,
+                  cacheWidth:
+                      (size * MediaQuery.devicePixelRatioOf(context) * 2)
+                          .round(),
+                ),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stack) => _initials(),
               )

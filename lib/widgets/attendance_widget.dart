@@ -7,6 +7,7 @@ import '../services/church_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'nfc_write_tag_sheet.dart';
 import '../theme/church_type.dart';
+import 'cached_image.dart';
 
 class AttendanceWidget extends StatefulWidget {
   const AttendanceWidget({super.key});
@@ -353,6 +354,15 @@ class _AttendanceWidgetState extends State<AttendanceWidget> {
 
 // ── Member row tile ──────────────────────────────────────────────────────────
 
+/// A roster photo decoded near the size it's drawn at rather than at full
+/// resolution — the roster lists every member, and a full profile photo per
+/// row adds up fast. 2x leaves headroom for the circular crop.
+ImageProvider _avatarImage(BuildContext context, String url, double radius) {
+  final width = (radius * 2 * MediaQuery.devicePixelRatioOf(context) * 2)
+      .round();
+  return cachedImage(url, cacheWidth: width);
+}
+
 class _MemberTile extends StatelessWidget {
   final AdminType member;
   final bool showStatus;
@@ -377,7 +387,7 @@ class _MemberTile extends StatelessWidget {
             CircleAvatar(
               radius: 22,
               backgroundImage: member.imgURL != null
-                  ? NetworkImage(member.imgURL!)
+                  ? _avatarImage(context, member.imgURL!, 22)
                   : null,
               backgroundColor: Colors.grey[200],
               child: member.imgURL == null
@@ -457,7 +467,7 @@ class _MemberDetailDrawer extends StatelessWidget {
           CircleAvatar(
             radius: 36,
             backgroundImage: member.imgURL != null
-                ? NetworkImage(member.imgURL!)
+                ? _avatarImage(context, member.imgURL!, 36)
                 : null,
             backgroundColor: Colors.grey[200],
             child: member.imgURL == null
