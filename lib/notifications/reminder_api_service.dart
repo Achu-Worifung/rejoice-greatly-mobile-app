@@ -1,8 +1,9 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../dataobject/reminder_items.dart';
 import '../services/api_envelope.dart';
 import '../services/church_api.dart';
+import '../services/user_facing_error.dart';
+import 'package:flutter/foundation.dart';
 
 class ReminderApiService {
   late final String _baseUrl = '${ChurchApi.baseUrl}/schedule';
@@ -23,7 +24,7 @@ class ReminderApiService {
     try {
       // Backend list endpoint is GET /schedule (no /getschedule suffix).
       final uri = Uri.parse(_baseUrl);
-      final response = await http.get(uri, headers: _headers).timeout(_timeout);
+      final response = await ChurchApi.httpClient.get(uri, headers: _headers).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = unwrapApiList(response.body);
@@ -33,13 +34,14 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
   Future<ReminderItem> fetchReminder(String id) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .get(Uri.parse('$_baseUrl/getschedule/$id'), headers: _headers)
           .timeout(_timeout);
 
@@ -50,13 +52,14 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
   Future<ReminderItem> createReminder(ReminderItem reminder) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .post(
             Uri.parse(_baseUrl),
             headers: _headers,
@@ -71,13 +74,14 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
   Future<ReminderItem> updateReminder(ReminderItem reminder) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .put(
             Uri.parse('$_baseUrl/updateschedule/${reminder.id}'),
             headers: _headers,
@@ -92,25 +96,27 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
   Future<bool> deleteReminder(String id) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .delete(Uri.parse('$_baseUrl/$id'), headers: _headers)
           .timeout(_timeout);
 
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
   Future<ReminderItem> toggleActive(String id, bool isActive) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .patch(
             Uri.parse('$_baseUrl/toggleschedule/$id'),
             headers: _headers,
@@ -125,19 +131,21 @@ class ReminderApiService {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 
   Future<bool> sendNow(String id) async {
     try {
-      final response = await http
+      final response = await ChurchApi.httpClient
           .post(Uri.parse('$_baseUrl/sendnow/$id'), headers: _headers)
           .timeout(_timeout);
 
       return response.statusCode == 200;
     } catch (e) {
-      throw ApiException('Network error: $e', 0);
+      debugPrint('ReminderApiService: request failed: $e');
+      throw ApiException(userFacingError(e), 0);
     }
   }
 }

@@ -7,6 +7,7 @@ import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/auth_ui.dart';
 import '../main.dart' show navigatorKey;
+import '../services/user_facing_error.dart';
 
 /// The app's front door. A Roasted Cocoa surface that flows straight out of the
 /// splash — cream welcome copy and three sign-in choices.
@@ -50,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e, st) {
       debugPrint('LoginPage: $provider sign-in threw: $e\n$st');
-      _showError('Sign-in failed: $e');
+      _showError(userFacingError(e));
     } finally {
       if (mounted) setState(() => _busy = null);
     }

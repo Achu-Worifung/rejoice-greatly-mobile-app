@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
+import 'cached_image.dart';
 
 /// Hero image (natural height, capped) + back affordance for detail screens.
 ///
@@ -100,7 +101,9 @@ class _DetailHeroImageState extends State<DetailHeroImage> {
     final url = widget.imageUrl;
     if (url == null || url.isEmpty) return;
 
-    final provider = NetworkImage(url);
+    // The same cached provider the hero renders with, so measuring the aspect
+    // ratio and drawing the image share one download.
+    final provider = cachedImage(url);
     final stream = provider.resolve(const ImageConfiguration());
     final listener = ImageStreamListener((ImageInfo info, bool _) {
       final w = info.image.width.toDouble();
@@ -172,8 +175,8 @@ class _DetailHeroImageState extends State<DetailHeroImage> {
       child: ColoredBox(
         color: ChurchColors.card,
         child: Center(
-          child: Image.network(
-            url,
+          child: Image(
+            image: cachedImage(url),
             width: size.width,
             height: size.height,
             fit: BoxFit.contain,

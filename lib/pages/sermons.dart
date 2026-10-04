@@ -14,6 +14,8 @@ import '../widgets/church_tab_page_header.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/skeletons.dart';
 import '../widgets/sermon_play_icon.dart';
+import '../services/user_facing_error.dart';
+import '../widgets/cached_image.dart';
 
 class SermonsPage extends StatefulWidget {
   const SermonsPage({super.key});
@@ -104,9 +106,10 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         _loading = false;
       });
     } catch (e) {
+      debugPrint('SermonsPage: load failed: $e');
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = userFacingError(e);
         _sermons = [];
         _loading = false;
       });
@@ -298,8 +301,11 @@ class _SermonRow extends StatelessWidget {
                     width: 76,
                     height: 76,
                     child: imageUrl != null && imageUrl.isNotEmpty
-                        ? Image.network(
-                            imageUrl,
+                        ? Image(
+                            image: cachedImage(
+                              imageUrl,
+                              cacheWidth: (76 * MediaQuery.devicePixelRatioOf(context) * 2).round(),
+                            ),
                             fit: BoxFit.cover,
                             errorBuilder: (BuildContext c, Object e, StackTrace? s) => _ph(),
                           )

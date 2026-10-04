@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/church_colors.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/cached_image.dart';
 
 class WorshipWithUsCard extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -194,8 +195,8 @@ class _MapPreview extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: _hasMapImage
-                    ? Image.network(
-                        staticMapUrl!,
+                    ? Image(
+                        image: cachedImage(staticMapUrl!),
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, progress) {
                           if (progress == null) return child;
