@@ -6,6 +6,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../components/sermon_card.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
+import '../pages/notifications_page.dart';
 import '../pages/sermon_detail_page.dart';
 import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
@@ -50,6 +51,7 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    NotificationsPage.refreshUnread();
     _greetingFuture = _getGreeting();
     _verseFuture = ChurchApi.getCurrentVerse();
     _sermonFuture = _fetchSermonsNewestFirst();
@@ -80,6 +82,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Future<void> _refresh() async {
     ChurchApi.invalidateHomeCache();
+    NotificationsPage.refreshUnread();
     setState(() {
       _verseFuture = ChurchApi.getCurrentVerse();
       _sermonFuture = _fetchSermonsNewestFirst();
@@ -217,6 +220,25 @@ class _DashboardPageState extends State<DashboardPage> {
           padding: const EdgeInsets.only(left: 8),
           icon: _buildAvatar(),
         ),
+        actions: [
+          ValueListenableBuilder<int>(
+            valueListenable: NotificationsPage.unread,
+            builder: (context, unread, _) => IconButton(
+              tooltip: unread > 0 ? 'Notifications, $unread unread' : 'Notifications',
+              onPressed: () async {
+                await Navigator.pushNamed(context, '/notifications');
+                NotificationsPage.refreshUnread();
+              },
+              icon: Badge(
+                isLabelVisible: unread > 0,
+                backgroundColor: ChurchColors.accent,
+                label: Text(unread > 99 ? '99+' : '$unread'),
+                child: const Icon(Icons.notifications_none_rounded),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: SafeArea(
         child: RefreshIndicator(

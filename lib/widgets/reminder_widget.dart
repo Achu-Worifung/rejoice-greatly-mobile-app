@@ -576,11 +576,7 @@ class _ReminderCard extends StatelessWidget {
                   ),
                   _MetaChip(
                     icon: Icons.people_outline,
-                    label: reminder.sendTo == SendTo.all
-                        ? 'All members'
-                        : reminder.sendTo == SendTo.absent
-                            ? 'Absent only'
-                            : 'Present only',
+                    label: reminder.audienceLabel,
                   ),
                   _MetaChip(
                     icon: Icons.access_time_rounded,
@@ -888,6 +884,8 @@ void _save() {
         : RecurringFrequency.none,
     recurringDays: _selectedDays.toList()..sort(),
     sendTo: _sendTo,
+    targetedSendTo: widget.existing?.targetedSendTo,
+    targetIds: widget.existing?.targetIds ?? const [],
     isActive: widget.existing?.isActive ?? true,
     churchId: widget.existing?.churchId,
     // Backend manages oneSignalNotificationId, so we don't set it here
@@ -1001,6 +999,12 @@ void _save() {
 
             const _SectionLabel(text: 'Send to'),
             const SizedBox(height: 8),
+            if (widget.existing?.targetedSendTo != null)
+              Text(
+                '${widget.existing!.audienceLabel}. Change who this goes to in the admin dashboard.',
+                style: TextStyle(color: Colors.grey[700], fontSize: 14, height: 1.4),
+              )
+            else
             Container(
               decoration: BoxDecoration(
                 color: Colors.grey[100],

@@ -375,6 +375,16 @@ class ChurchApi {
         .toList();
   }
 
+  /// `POST /member/notifications[/read|/clear]` — the member's inbox. Every
+  /// call returns `{notifications, unreadCount}`; empty [ids] means all.
+  static Future<Map<String, dynamic>> memberNotifications(
+    String action, [
+    List<String>? ids,
+  ]) {
+    final path = action.isEmpty ? 'notifications' : 'notifications/$action';
+    return _postMember(path, {'ids': ?ids});
+  }
+
   static Future<ProfileLoadResult> loadMemberProfile() async {
     final user = await waitForSignedInUser();
     if (user == null) {

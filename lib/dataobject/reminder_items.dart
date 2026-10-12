@@ -13,6 +13,9 @@ class ReminderItem {
   RecurringFrequency recurring;
   List<int> recurringDays;
   SendTo sendTo;
+  /// BACENTAS, BASONTAS or PEOPLE when the admin dashboard chose targets; wins over [sendTo].
+  String? targetedSendTo;
+  List<String> targetIds;
   bool isActive;
   String? oneSignalNotificationId; // read-only from backend
   String? churchId;
@@ -29,6 +32,8 @@ class ReminderItem {
     this.recurring = RecurringFrequency.none,
     this.recurringDays = const [],
     this.sendTo = SendTo.absent,
+    this.targetedSendTo,
+    this.targetIds = const [],
     this.isActive = true,
     this.oneSignalNotificationId,
     this.churchId,
@@ -60,6 +65,10 @@ class ReminderItem {
           : RecurringFrequency.none,
       recurringDays: recurringDays,
       sendTo: _parseSendTo(json['sendTo']?.toString()),
+      targetedSendTo: _targeted.contains(json['sendTo']) ? json['sendTo'] as String : null,
+      targetIds: json['targetIds'] is List
+          ? (json['targetIds'] as List).map((e) => '$e').toList()
+          : const [],
       isActive: json['isActive'] ?? true,
       oneSignalNotificationId: json['oneSignalId']?.toString(),
       churchId: json['churchId']?.toString(),
@@ -81,7 +90,8 @@ class ReminderItem {
       'scheduledAt': scheduledAt?.toUtc().toIso8601String(),
       'timezone': 'UTC',
       'recurringDays': recurringDays,
-      'sendTo': _sendToToString(sendTo),
+      'sendTo': targetedSendTo ?? _sendToToString(sendTo),
+      if (targetedSendTo != null) 'targetIds': targetIds,
       'isActive': isActive,
       // Don't send oneSignalNotificationId — backend manages it
       if (churchId != null) 'churchId': churchId,
@@ -93,6 +103,26 @@ class ReminderItem {
     if (push) return NotificationType.push;
     if (email) return NotificationType.email;
     return NotificationType.both;
+  }
+
+  static const _targeted = {'BACENTAS', 'BASONTAS', 'PEOPLE'};
+
+  /// Short label for the audience, e.g. "Absent only" or "2 bacentas".
+  String get audienceLabel {
+    final n = targetIds.length;
+    switch (targetedSendTo) {
+      case 'BACENTAS':
+        return n == 1 ? '1 bacenta' : '$n bacentas';
+      case 'BASONTAS':
+        return n == 1 ? '1 basonta' : '$n basontas';
+      case 'PEOPLE':
+        return n == 1 ? '1 person' : '$n people';
+    }
+    return sendTo == SendTo.all
+        ? 'All members'
+        : sendTo == SendTo.absent
+            ? 'Absent only'
+            : 'Present only';
   }
 
   static SendTo _parseSendTo(String? value) {
@@ -140,6 +170,8 @@ class ReminderItem {
       recurring: recurring ?? this.recurring,
       recurringDays: recurringDays ?? this.recurringDays,
       sendTo: sendTo ?? this.sendTo,
+      targetedSendTo: targetedSendTo,
+      targetIds: targetIds,
       isActive: isActive ?? this.isActive,
       oneSignalNotificationId:
           oneSignalNotificationId ?? this.oneSignalNotificationId,

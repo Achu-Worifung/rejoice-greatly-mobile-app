@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
+import '../pages/notifications_page.dart';
 import '../widgets/attendance_banner.dart';
 
 /// Wires up the OneSignal SDK so this device registers a push subscription
@@ -36,6 +37,8 @@ class NotificationService {
 
       // Show notifications while the app is in the foreground too.
       OneSignal.Notifications.addForegroundWillDisplayListener((event) {
+        // The backend files the push in the inbox just after sending it.
+        Future.delayed(const Duration(seconds: 3), NotificationsPage.refreshUnread);
         final data = event.notification.additionalData;
         final type = data == null ? null : data['type'];
 
