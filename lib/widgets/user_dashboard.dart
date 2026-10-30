@@ -391,7 +391,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  WorshipWithUsCard(
+                  FutureBuilder<_DashboardEventsLoad>(
+                    future: _eventsFuture,
+                    builder: (context, snapshot) => WorshipWithUsCard(
+                    events: snapshot.data?.items ?? const [],
                     data: {
                       'name': dotenv.env['CHURCH_NAME'] ?? 'REJOICE GREATLY PHX',
                       'address':
@@ -401,6 +404,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         dotenv.env['CHURCH_ADDRESS'] ?? '2323 E Magnolia St, Phoenix, AZ 85012',
                       ),
                     },
+                    ),
                   ),
                 ],
               ),
