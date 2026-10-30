@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../services/auth_service.dart';
-import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/auth_ui.dart';
 import '../main.dart' show navigatorKey;
 import '../services/user_facing_error.dart';
+import 'visitor_hello_page.dart';
 
 /// The app's front door. A Roasted Cocoa surface that flows straight out of the
 /// splash — cream welcome copy and three sign-in choices.
@@ -70,7 +70,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final cream = ChurchColors.card;
+    // The front door keeps the brand colours in dark mode too, like the splash.
+    const cream = Color(0xFFFFF7EB);
+    const cocoa = Color(0xFF633A02);
     final busy = _busy != null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -80,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: ChurchColors.button,
+        backgroundColor: cocoa,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -123,7 +125,20 @@ class _LoginPageState extends State<LoginPage> {
                   enabled: !busy,
                   onPressed: _handleEmail,
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: busy
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(builder: (_) => const VisitorHelloPage()),
+                          ),
+                  style: TextButton.styleFrom(foregroundColor: cream),
+                  child: const Text(
+                    'First time at Rejoice Greatly? Say hello',
+                    style: TextStyle(decoration: TextDecoration.underline, decorationColor: cream),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
