@@ -170,7 +170,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           const SizedBox(height: 6),
           Text(
             _error == null
-                ? 'Reminders and check-in confirmations will stay here for 90 days.'
+                ? 'Reminders, check-ins and prayer replies will stay here for 90 days.'
                 : 'Pull down to try again.',
             textAlign: TextAlign.center,
             style: const TextStyle(color: ChurchColors.muted, height: 1.45, fontSize: 14),
@@ -228,9 +228,11 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = item.type == 'attendance'
-        ? Icons.check_circle_outline_rounded
-        : Icons.notifications_none_rounded;
+    final icon = switch (item.type) {
+      'attendance' => Icons.check_circle_outline_rounded,
+      'prayer' => Icons.volunteer_activism_outlined,
+      _ => Icons.notifications_none_rounded,
+    };
     return Container(
       decoration: ChurchColors.cardDecoration(
         color: item.read ? ChurchColors.background : ChurchColors.card,

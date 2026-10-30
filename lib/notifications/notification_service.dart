@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import '../pages/notifications_page.dart';
+import '../services/prayer_wall_api.dart';
 import '../widgets/attendance_banner.dart';
 
 /// Wires up the OneSignal SDK so this device registers a push subscription
@@ -64,6 +65,15 @@ class NotificationService {
         }
 
         event.notification.display();
+      });
+
+      // A tapped prayer-reply push opens that request once the tabs are up.
+      OneSignal.Notifications.addClickListener((event) {
+        final data = event.notification.additionalData;
+        final prayerId = data == null ? null : data['prayerId'];
+        if (data?['type'] == 'prayer' && prayerId is String && prayerId.isNotEmpty) {
+          PrayerWallApi.pendingThread.value = prayerId;
+        }
       });
 
       await OneSignal.Notifications.requestPermission(true);

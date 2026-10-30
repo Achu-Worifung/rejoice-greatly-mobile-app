@@ -385,6 +385,15 @@ class ChurchApi {
     return _postMember(path, {'ids': ?ids});
   }
 
+  /// `POST /member/prayers[/path]` — the prayer wall. Typed wrappers live in
+  /// `PrayerWallApi`; this only adds the id token.
+  static Future<Map<String, dynamic>> memberPrayers(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'prayers' : 'prayers/$path', extra);
+  }
+
   static Future<ProfileLoadResult> loadMemberProfile() async {
     final user = await waitForSignedInUser();
     if (user == null) {
