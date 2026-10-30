@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../main.dart' show navigatorKey;
 import '../services/auth_service.dart';
 import '../services/church_api.dart';
+import '../services/milestones.dart';
 import '../services/profile_picture_upload.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
@@ -18,6 +19,7 @@ import '../widgets/dashboard_label_title.dart';
 import '../widgets/display_section.dart';
 import '../widgets/household_section.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/milestone_widgets.dart';
 import '../widgets/skeletons.dart';
 
 class MePage extends StatefulWidget {
@@ -40,6 +42,7 @@ class _MePageState extends State<MePage> {
     setState(() {
       _pageFuture = ChurchApi.loadMePage(forceRefresh: forceRefresh);
     });
+    if (forceRefresh) Milestones.refresh();
   }
 
   void _onBack() {
@@ -641,9 +644,9 @@ class _MePageState extends State<MePage> {
                       currentStreak: _i(stats['currentStreak']),
                       longestStreak: _i(stats['longestStreak']),
                       totalAttendance: _i(stats['totalAttendance']),
-                      totalAbsences: _i(stats['totalAbsences']),
-                      absenceStreak: _i(stats['absenceStreak']),
                     ),
+                    const SizedBox(height: 24),
+                    const MilestonesShelf(),
                   ],
                 ] else ...[
                   if (syncError != null) ...[
@@ -670,8 +673,6 @@ class _MePageState extends State<MePage> {
                       currentStreak: _i(stats['currentStreak']),
                       longestStreak: _i(stats['longestStreak']),
                       totalAttendance: _i(stats['totalAttendance']),
-                      totalAbsences: _i(stats['totalAbsences']),
-                      absenceStreak: _i(stats['absenceStreak']),
                     )
                   else
                     Padding(
@@ -681,6 +682,8 @@ class _MePageState extends State<MePage> {
                         style: TextStyle(color: ChurchColors.muted, fontSize: 13),
                       ),
                     ),
+                  const SizedBox(height: 24),
+                  const MilestonesShelf(),
                   const SizedBox(height: 28),
                   Text(
                     _syncStatusText(result),
@@ -1055,16 +1058,14 @@ class _StatGrid extends StatelessWidget {
     required this.currentStreak,
     required this.longestStreak,
     required this.totalAttendance,
-    required this.totalAbsences,
-    required this.absenceStreak,
   });
 
   final int currentStreak;
   final int longestStreak;
   final int totalAttendance;
-  final int totalAbsences;
-  final int absenceStreak;
 
+  // Only what they did. Absences stay with the pastors (the follow-up list);
+  // counting them back at a member is the shame the app avoids.
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -1089,26 +1090,14 @@ class _StatGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _StatTile(
-                label: 'Total attendances',
-                value: '$totalAttendance',
-                icon: Icons.check_circle_outline,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatTile(
-                label: 'Total absences',
-                value: '$totalAbsences',
-                icon: Icons.remove_circle_outline,
-              ),
-            ),
-          ],
+        SizedBox(
+          width: double.infinity,
+          child: _StatTile(
+            label: 'Times at church',
+            value: '$totalAttendance',
+            icon: Icons.check_circle_outline,
+          ),
         ),
-        
       ],
     );
   }

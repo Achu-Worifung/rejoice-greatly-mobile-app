@@ -11,6 +11,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
 import 'services/nfc_deep_link_service.dart';
+import 'services/milestones.dart';
 import 'services/sermon_downloads.dart';
 import 'services/sermon_progress.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
@@ -36,6 +37,9 @@ void main() async {
     ]);
 
     await UserSessionStore.initialize();
+
+    // A sermon heard to the end may be a milestone.
+    SermonProgress.onFinished = Milestones.sermonFinished;
 
     // Registers this device with OneSignal so backend push/email reminders
     // are actually delivered. Not awaited: the OS permission prompt must not

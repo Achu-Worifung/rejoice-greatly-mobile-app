@@ -11,6 +11,7 @@ import '../pages/sermon_detail_page.dart';
 import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
 import '../services/member_events.dart';
+import '../services/milestones.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import 'church_app_bar.dart';
@@ -21,6 +22,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
 import 'leader_card.dart';
+import 'milestone_widgets.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -63,6 +65,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _sermonFuture = _fetchSermonsNewestFirst();
     _eventsFuture = _fetchDashboardEventCards();
     _syncUserAccountAndAvatar();
+    Milestones.refresh();
   }
 
   Future<void> _syncUserAccountAndAvatar() async {
@@ -99,6 +102,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _sermonFuture,
       _eventsFuture,
       _syncUserAccountAndAvatar(),
+      Milestones.refresh(),
     ]);
   }
 
@@ -260,6 +264,8 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Only while there's a milestone they haven't seen yet.
+                  const NewMilestoneCard(),
                   // Leaders only: their bacenta and what needs them.
                   const LeaderCard(),
                   const SizedBox(height: 16),

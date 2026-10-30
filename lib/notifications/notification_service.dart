@@ -6,6 +6,7 @@ import '../pages/notifications_page.dart';
 import '../services/member_events.dart';
 import '../services/prayer_wall_api.dart';
 import '../widgets/attendance_banner.dart';
+import '../widgets/milestone_widgets.dart';
 
 /// Wires up the OneSignal SDK so this device registers a push subscription
 /// and can receive the notifications the backend sends/schedules via the
@@ -62,6 +63,7 @@ class NotificationService {
                 'You’re marked present for today.',
             tone: AttendanceBannerTone.success,
           );
+          celebrateAfterCheckIn();
           return;
         }
 

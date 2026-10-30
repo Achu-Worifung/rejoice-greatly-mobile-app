@@ -57,6 +57,11 @@ class SermonProgress {
   /// Sermon id → where they got to. Listen to repaint progress bars.
   static final ValueNotifier<Map<String, SermonListen>> all = ValueNotifier(const {});
 
+  /// Called with the sermon's id each time one is heard to the end; the app
+  /// points it at `Milestones.sermonFinished`. Kept as a hook so this store
+  /// never touches the network.
+  static void Function(String sermonId)? onFinished;
+
   static bool _loaded = false;
 
   static Future<void> load() async {
@@ -87,6 +92,7 @@ class SermonProgress {
     final next = Map<String, SermonListen>.from(all.value);
     final finished = duration > Duration.zero && duration - position <= finishedWithin;
     if (finished) {
+      onFinished?.call(sermonId);
       if (next.remove(sermonId) == null) return;
     } else if (position < const Duration(seconds: 5)) {
       return;

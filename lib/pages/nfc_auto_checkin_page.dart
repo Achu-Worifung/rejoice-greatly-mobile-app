@@ -6,6 +6,7 @@ import '../theme/church_colors.dart';
 import '../widgets/attendance_banner.dart';
 import '../widgets/branded_loader.dart';
 import '../widgets/checkin_location_sheet.dart';
+import '../widgets/milestone_widgets.dart';
 
 /// Landing screen for a tap on an NFC check-in tag that reached the app via
 /// a deep link (Android NDEF dispatch — cold or warm; iOS Universal Link
@@ -63,6 +64,8 @@ class _NfcAutoCheckinPageState extends State<NfcAutoCheckinPage> {
             ? AttendanceBannerTone.info
             : AttendanceBannerTone.success,
       );
+      // This Sunday may be a milestone; the card follows the banner.
+      if (!result.alreadyPresent) celebrateAfterCheckIn();
     } else if (result.errorKind == NfcCheckinErrorKind.needsLocation) {
       // Their choice, or a phone that couldn't find itself — not a failure.
       AttendanceBanner.show(

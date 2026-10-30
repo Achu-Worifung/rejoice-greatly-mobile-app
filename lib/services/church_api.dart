@@ -433,6 +433,20 @@ class ChurchApi {
     return _postMember(path.isEmpty ? 'leader' : 'leader/$path', extra);
   }
 
+  /// `POST /member/milestones[/path]` — the member's own milestones. Typed
+  /// wrappers live in `Milestones`.
+  static Future<Map<String, dynamic>> memberMilestones(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'milestones' : 'milestones/$path', extra);
+  }
+
+  /// `POST /member/sermons/{id}/finished` — heard to the end; returns their milestones.
+  static Future<Map<String, dynamic>> memberSermonFinished(String sermonId) {
+    return _postMember('sermons/${Uri.encodeComponent(sermonId)}/finished', const {});
+  }
+
   /// `POST /member/prayers[/path]` — the prayer wall. Typed wrappers live in
   /// `PrayerWallApi`; this only adds the id token.
   static Future<Map<String, dynamic>> memberPrayers(
