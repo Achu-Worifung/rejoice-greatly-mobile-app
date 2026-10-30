@@ -43,6 +43,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
   bool _canReply = false;
   bool _sending = false;
   bool _changed = false;
+  bool _anonymous = false;
   String? _error;
 
   @override
@@ -123,7 +124,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
     try {
-      final thread = await PrayerWallApi.reply(widget.prayerId, text);
+      final thread = await PrayerWallApi.reply(widget.prayerId, text, anonymous: _anonymous);
       if (!mounted) return;
       _reply.clear();
       FocusScope.of(context).unfocus();
@@ -287,7 +288,9 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
       );
     } else {
       final canSend = _reply.text.trim().isNotEmpty && !_sending;
-      child = Row(
+      // Someone who asked anonymously stays anonymous in their replies too.
+      final alwaysAnonymous = prayer?.mine == true && prayer?.anonymous == true;
+      final input = Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Expanded(
@@ -326,6 +329,43 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
           ),
         ],
       );
+      child = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          input,
+          if (alwaysAnonymous)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text('You asked anonymously, so your replies are anonymous too.',
+                  style: ChurchType.caption),
+            )
+          else if (prayer?.mine != true)
+            InkWell(
+              borderRadius: ChurchRadius.smAll,
+              onTap: () => setState(() => _anonymous = !_anonymous),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Checkbox(
+                        value: _anonymous,
+                        activeColor: ChurchColors.button,
+                        onChanged: (v) => setState(() => _anonymous = v ?? false),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('Reply anonymously', style: ChurchType.label),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
     }
     return Container(
       decoration: const BoxDecoration(
@@ -353,7 +393,7 @@ class _ReplyTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          MemberAvatar(name: reply.authorName, size: 32, radius: 16),
+          MemberAvatar(name: reply.anonymous ? '' : reply.authorName, size: 32, radius: 16),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -363,7 +403,10 @@ class _ReplyTile extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: 8,
                   children: [
-                    Text(reply.mine ? 'You' : reply.authorName, style: ChurchType.bodyStrong.copyWith(fontSize: 14)),
+                    Text(
+                      reply.mine ? (reply.anonymous ? 'You · anonymous' : 'You') : reply.authorName,
+                      style: ChurchType.bodyStrong.copyWith(fontSize: 14),
+                    ),
                     if (reply.fromTeam) const ChurchEyebrow('Church team', color: ChurchColors.accent),
                     Text(prayerWhen(reply.createdAt), style: ChurchType.caption),
                   ],

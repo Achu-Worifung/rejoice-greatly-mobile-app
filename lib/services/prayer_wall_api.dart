@@ -111,6 +111,7 @@ class PrayerReply {
     required this.authorName,
     required this.mine,
     required this.fromTeam,
+    required this.anonymous,
     required this.createdAt,
   });
 
@@ -121,6 +122,7 @@ class PrayerReply {
       authorName: json['authorName'] as String? ?? 'A church member',
       mine: json['mine'] as bool? ?? false,
       fromTeam: json['fromTeam'] as bool? ?? false,
+      anonymous: json['anonymous'] as bool? ?? false,
       createdAt: _date(json['createdAt']) ?? DateTime.now(),
     );
   }
@@ -132,6 +134,9 @@ class PrayerReply {
 
   /// Written by a pastor or admin — shown with a "Church team" label.
   final bool fromTeam;
+
+  /// Other members see "Someone from church" rather than a name.
+  final bool anonymous;
   final DateTime createdAt;
 }
 
@@ -232,9 +237,9 @@ class PrayerWallApi {
 
   static Future<void> delete(String id) => ChurchApi.memberPrayers('$id/delete');
 
-  static Future<PrayerThread> reply(String id, String body) async =>
-      PrayerThread.fromJson(
-          await ChurchApi.memberPrayers('$id/comments', {'body': body}));
+  static Future<PrayerThread> reply(String id, String body, {bool anonymous = false}) async =>
+      PrayerThread.fromJson(await ChurchApi.memberPrayers(
+          '$id/comments', {'body': body, 'anonymous': anonymous}));
 
   static Future<PrayerThread> deleteReply(String replyId) async =>
       PrayerThread.fromJson(

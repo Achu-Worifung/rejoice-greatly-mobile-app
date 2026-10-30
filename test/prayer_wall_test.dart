@@ -48,6 +48,19 @@ void main() {
       expect(prayed.withPrayed(false).prayerCount, 0);
     });
 
+    test('replies carry whether they were anonymous', () {
+      final t = PrayerThread.fromJson({
+        'prayer': _json(),
+        'canComment': true,
+        'comments': [
+          {'id': 'c1', 'body': 'Praying', 'authorName': 'Someone from church', 'mine': false, 'anonymous': true},
+          {'id': 'c2', 'body': 'Me too', 'authorName': 'Ben O.', 'mine': false},
+        ],
+      });
+      expect(t.replies.first.anonymous, isTrue);
+      expect(t.replies.last.anonymous, isFalse);
+    });
+
     test('a thread tolerates a missing comment list', () {
       final t = PrayerThread.fromJson({'prayer': _json(), 'canComment': true});
       expect(t.replies, isEmpty);
