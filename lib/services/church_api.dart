@@ -424,6 +424,15 @@ class ChurchApi {
     }
   }
 
+  /// `POST /member/leader[/path]` — a bacenta leader's tools. Typed wrappers
+  /// live in `LeaderApi`.
+  static Future<Map<String, dynamic>> memberLeader(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'leader' : 'leader/$path', extra);
+  }
+
   /// `POST /member/prayers[/path]` — the prayer wall. Typed wrappers live in
   /// `PrayerWallApi`; this only adds the id token.
   static Future<Map<String, dynamic>> memberPrayers(

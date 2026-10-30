@@ -20,6 +20,7 @@ import '../widgets/event_actions.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
+import 'leader_card.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -259,6 +260,8 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Leaders only: their bacenta and what needs them.
+                  const LeaderCard(),
                   const SizedBox(height: 16),
                   const DashboardLabelText(label: 'Verse of the week'),
                   FutureBuilder<Map<String, dynamic>>(

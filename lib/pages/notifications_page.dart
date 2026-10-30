@@ -233,6 +233,7 @@ class _NotificationTile extends StatelessWidget {
       'prayer' => Icons.volunteer_activism_outlined,
       'event' => Icons.event_outlined,
       'birthday' => Icons.cake_outlined,
+      'bacenta' => Icons.groups_2_outlined,
       _ => Icons.notifications_none_rounded,
     };
     return Container(
