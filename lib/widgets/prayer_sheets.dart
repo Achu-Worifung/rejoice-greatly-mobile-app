@@ -44,12 +44,13 @@ Future<PrayerActionResult?> runPrayerAction(
   try {
     switch (action) {
       case PrayerAction.markAnswered:
-        final note = await showAnsweredSheet(context);
-        if (note == null) return null;
+        final answer = await showAnsweredSheet(context, anonymous: prayer.anonymous);
+        if (answer == null) return null;
         final updated = await PrayerWallApi.setAnswered(
           prayer.id,
           answered: true,
-          note: note.isEmpty ? null : note,
+          note: answer.note.isEmpty ? null : answer.note,
+          shareAtService: answer.shareAtService,
         );
         if (context.mounted) showPrayerSnack(context, 'Praise God! Your church family will rejoice with you.');
         return PrayerActionResult.updated(updated);
@@ -57,6 +58,18 @@ Future<PrayerActionResult?> runPrayerAction(
         return PrayerActionResult.updated(
           await PrayerWallApi.setAnswered(prayer.id, answered: false),
         );
+      case PrayerAction.keepPraying:
+        final updated = await PrayerWallApi.renew(prayer.id);
+        if (context.mounted) {
+          showPrayerSnack(context, prayer.archived ? 'It’s back on the wall.' : 'We’ll keep praying with you.');
+        }
+        return PrayerActionResult.updated(updated);
+      case PrayerAction.archive:
+        final updated = await PrayerWallApi.archive(prayer.id);
+        if (context.mounted) {
+          showPrayerSnack(context, 'It’s off the wall. You’ll still find it under My requests.');
+        }
+        return PrayerActionResult.updated(updated);
       case PrayerAction.delete:
         final ok = await confirmPrayerDialog(
           context,
@@ -362,14 +375,20 @@ class _VisibilityOption extends StatelessWidget {
 
 // ── Mark answered ─────────────────────────────────────────────────────────
 
-/// Asks for an optional praise report. Returns the note ('' for none), or
-/// null if the member backed out.
-Future<String?> showAnsweredSheet(BuildContext context) {
-  return _sheet<String>(context, const _AnsweredSheet());
+/// What the member said when marking a request answered.
+typedef PrayerAnswer = ({String note, bool shareAtService});
+
+/// Asks for an optional praise report, and whether it may be shared at
+/// Sunday service. Null if the member backed out.
+Future<PrayerAnswer?> showAnsweredSheet(BuildContext context, {bool anonymous = false}) {
+  return _sheet<PrayerAnswer>(context, _AnsweredSheet(anonymous: anonymous));
 }
 
 class _AnsweredSheet extends StatefulWidget {
-  const _AnsweredSheet();
+  const _AnsweredSheet({required this.anonymous});
+
+  /// The request was shared anonymously, so it would be shared that way too.
+  final bool anonymous;
 
   @override
   State<_AnsweredSheet> createState() => _AnsweredSheetState();
@@ -377,6 +396,7 @@ class _AnsweredSheet extends StatefulWidget {
 
 class _AnsweredSheetState extends State<_AnsweredSheet> {
   final _controller = TextEditingController();
+  bool _share = false;
 
   @override
   void dispose() {
@@ -407,10 +427,27 @@ class _AnsweredSheetState extends State<_AnsweredSheet> {
           style: ChurchType.body,
           decoration: const InputDecoration(hintText: 'How was your prayer answered? (optional)'),
         ),
-        const SizedBox(height: 12),
+        CheckboxListTile(
+          value: _share,
+          onChanged: (v) => setState(() => _share = v ?? false),
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          activeColor: ChurchColors.button,
+          title: const Text('Share it at Sunday service too', style: ChurchType.body),
+          subtitle: Text(
+            widget.anonymous
+                ? 'It would be shared as from “Someone from church”.'
+                : 'With your first name and initial, as on the wall.',
+            style: ChurchType.caption,
+          ),
+        ),
+        const SizedBox(height: 8),
         ChurchPrimaryButton(
           label: 'Share the good news',
-          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          onPressed: () => Navigator.pop<PrayerAnswer>(
+            context,
+            (note: _controller.text.trim(), shareAtService: _share),
+          ),
         ),
       ],
     );

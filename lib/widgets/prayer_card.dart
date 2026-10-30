@@ -7,8 +7,9 @@ import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import 'member_avatar.dart';
 
-/// What a member can do to a request from its "…" menu.
-enum PrayerAction { markAnswered, markUnanswered, delete, report }
+/// What a member can do to a request, from its "…" menu or the
+/// "still need prayer?" prompt.
+enum PrayerAction { markAnswered, markUnanswered, keepPraying, archive, delete, report }
 
 /// "Just now", "3h ago", "Tue 9:41 AM", "Mar 4" — a wall reads by recency.
 String prayerWhen(DateTime t) {
@@ -65,6 +66,19 @@ class PrayerCard extends StatelessWidget {
             const _Note(
               icon: Icons.pause_circle_outline_rounded,
               text: 'Paused while a pastor takes a look. Only you can see it for now.',
+            ),
+          ] else if (prayer.mine && prayer.askedToRenew) ...[
+            const SizedBox(height: 12),
+            _StillNeedPrayer(onAction: onAction),
+          ] else if (prayer.mine && prayer.archived) ...[
+            const SizedBox(height: 12),
+            _Note(
+              icon: Icons.inventory_2_outlined,
+              text: 'Off the wall now. Only you can see it.',
+              action: TextButton(
+                onPressed: () => onAction(PrayerAction.keepPraying),
+                child: const Text('Put it back'),
+              ),
             ),
           ],
           if (prayer.answered) ...[
@@ -166,6 +180,10 @@ class PrayerCard extends StatelessWidget {
                       value: PrayerAction.markAnswered,
                       child: Text('Mark as answered'),
                     ),
+                  if (prayer.archived)
+                    const PopupMenuItem(value: PrayerAction.keepPraying, child: Text('Put back on the wall'))
+                  else if (!prayer.hidden && prayer.visibility == PrayerVisibility.church)
+                    const PopupMenuItem(value: PrayerAction.archive, child: Text('Take off the wall')),
                   const PopupMenuItem(value: PrayerAction.delete, child: Text('Delete request')),
                 ]
               : const [
@@ -287,21 +305,71 @@ class _PraiseReport extends StatelessWidget {
 }
 
 class _Note extends StatelessWidget {
-  const _Note({required this.icon, required this.text});
+  const _Note({required this.icon, required this.text, this.action});
 
   final IconData icon;
   final String text;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: action == null ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Icon(icon, size: 18, color: ChurchColors.muted),
           const SizedBox(width: 8),
           Expanded(child: Text(text, style: ChurchType.label)),
+          ?action,
+        ],
+      ),
+    );
+  }
+}
+
+/// A month on: "Still need prayer?" Keep it going, share that it was
+/// answered, or let it come down. Only the author ever sees this.
+class _StillNeedPrayer extends StatelessWidget {
+  const _StillNeedPrayer({required this.onAction});
+
+  final ValueChanged<PrayerAction> onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      decoration: const BoxDecoration(
+        color: ChurchColors.background,
+        border: Border(left: BorderSide(color: ChurchColors.accent, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const ChurchEyebrow('A month on', color: ChurchColors.accent),
+          const SizedBox(height: 4),
+          Text('Still need prayer for this?', style: ChurchType.body.copyWith(fontSize: 14)),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 4,
+            children: [
+              TextButton(
+                onPressed: () => onAction(PrayerAction.keepPraying),
+                child: const Text('Keep praying'),
+              ),
+              TextButton(
+                onPressed: () => onAction(PrayerAction.markAnswered),
+                child: const Text('It’s been answered'),
+              ),
+              TextButton(
+                onPressed: () => onAction(PrayerAction.archive),
+                style: TextButton.styleFrom(foregroundColor: ChurchColors.muted),
+                child: const Text('Take it down'),
+              ),
+            ],
+          ),
         ],
       ),
     );

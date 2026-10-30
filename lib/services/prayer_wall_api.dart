@@ -43,6 +43,9 @@ class PrayerRequestItem {
     required this.prayedByMe,
     required this.commentCount,
     required this.hidden,
+    this.askedToRenew = false,
+    this.archived = false,
+    this.shareAtService = false,
   });
 
   factory PrayerRequestItem.fromJson(Map<String, dynamic> json) {
@@ -60,6 +63,9 @@ class PrayerRequestItem {
       prayedByMe: json['prayedByMe'] as bool? ?? false,
       commentCount: (json['commentCount'] as num?)?.toInt() ?? 0,
       hidden: json['hidden'] as bool? ?? false,
+      askedToRenew: json['askedToRenew'] as bool? ?? false,
+      archived: json['archived'] as bool? ?? false,
+      shareAtService: json['shareAtService'] as bool? ?? false,
     );
   }
 
@@ -78,6 +84,16 @@ class PrayerRequestItem {
 
   /// Paused by a moderator. Only ever true on the member's own requests.
   final bool hidden;
+
+  /// A month on, the church asked "still need prayer?" and they haven't said.
+  /// Only ever true on the member's own requests.
+  final bool askedToRenew;
+
+  /// Came off the wall when it ran its course; only its author still sees it.
+  final bool archived;
+
+  /// They agreed to the answer being shared at Sunday service.
+  final bool shareAtService;
 
   bool get answered => answeredAt != null;
 
@@ -98,6 +114,9 @@ class PrayerRequestItem {
       prayedByMe: prayed,
       commentCount: commentCount,
       hidden: hidden,
+      askedToRenew: askedToRenew,
+      archived: archived,
+      shareAtService: shareAtService,
     );
   }
 }
@@ -142,9 +161,12 @@ class PrayerReply {
 
 @immutable
 class PrayerPage {
-  const PrayerPage(this.items, this.hasMore);
+  const PrayerPage(this.items, this.hasMore, {this.canPost = true});
   final List<PrayerRequestItem> items;
   final bool hasMore;
+
+  /// False while a pastor has paused this member's posting.
+  final bool canPost;
 }
 
 @immutable
@@ -183,6 +205,7 @@ class PrayerWallApi {
 
   /// A prayer request a push notification asked to open. The home screen
   /// picks it up once the member is signed in and the tabs are showing.
+  /// Empty opens the prayer wall itself.
   static final ValueNotifier<String?> pendingThread = ValueNotifier(null);
 
   static Future<PrayerPage> list({
@@ -204,6 +227,7 @@ class PrayerWallApi {
               .toList()
           : const [],
       map['hasMore'] as bool? ?? false,
+      canPost: map['canPost'] as bool? ?? true,
     );
   }
 
@@ -227,13 +251,24 @@ class PrayerWallApi {
       PrayerRequestItem.fromJson(
           await ChurchApi.memberPrayers('$id/pray', {'prayed': prayed}));
 
+  /// [shareAtService] is the member agreeing to the answer being shared at
+  /// Sunday service.
   static Future<PrayerRequestItem> setAnswered(
     String id, {
     required bool answered,
     String? note,
+    bool shareAtService = false,
   }) async =>
-      PrayerRequestItem.fromJson(await ChurchApi.memberPrayers(
-          '$id/answered', {'answered': answered, 'note': ?note}));
+      PrayerRequestItem.fromJson(await ChurchApi.memberPrayers('$id/answered',
+          {'answered': answered, 'note': ?note, 'shareAtService': shareAtService}));
+
+  /// "Still need prayer" — open for another month, and back on the wall if archived.
+  static Future<PrayerRequestItem> renew(String id) async =>
+      PrayerRequestItem.fromJson(await ChurchApi.memberPrayers('$id/renew'));
+
+  /// Off the wall, without deleting it.
+  static Future<PrayerRequestItem> archive(String id) async =>
+      PrayerRequestItem.fromJson(await ChurchApi.memberPrayers('$id/archive'));
 
   static Future<void> delete(String id) => ChurchApi.memberPrayers('$id/delete');
 

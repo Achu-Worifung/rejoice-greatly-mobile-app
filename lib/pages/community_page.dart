@@ -34,6 +34,9 @@ class _CommunityPageState extends State<CommunityPage> {
   bool _loadingMore = false;
   bool _started = false;
 
+  /// False while a pastor has paused this member's posting.
+  bool _canPost = true;
+
   /// Bumped on every fresh load, so a slow response for an old filter can't
   /// overwrite the list the member is now looking at.
   int _generation = 0;
@@ -70,6 +73,7 @@ class _CommunityPageState extends State<CommunityPage> {
       setState(() {
         _items = page.items;
         _hasMore = page.hasMore;
+        _canPost = page.canPost;
         _page = 0;
         _error = null;
       });
@@ -139,22 +143,21 @@ class _CommunityPageState extends State<CommunityPage> {
   }
 
   Future<void> _onAction(PrayerRequestItem prayer, PrayerAction action) async {
-    final result = await runPrayerAction(context, prayer, action);
-    if (result == null) return;
-    if (result.removed) {
-      _remove(prayer.id);
-    } else {
-      _replace(result.updated!);
-    }
+    _apply(prayer, await runPrayerAction(context, prayer, action));
   }
 
   Future<void> _open(PrayerRequestItem prayer) async {
-    final result = await openPrayerThread(context, prayer.id, initial: prayer);
+    _apply(prayer, await openPrayerThread(context, prayer.id, initial: prayer));
+  }
+
+  void _apply(PrayerRequestItem prayer, PrayerActionResult? result) {
     if (result == null) return;
-    if (result.removed) {
+    final updated = result.updated;
+    // Taken off the wall: it only belongs under My requests now.
+    if (result.removed || (updated!.archived && _filter != PrayerFilter.mine)) {
       _remove(prayer.id);
     } else {
-      _replace(result.updated!);
+      _replace(updated);
     }
   }
 
@@ -182,15 +185,17 @@ class _CommunityPageState extends State<CommunityPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ChurchColors.background,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _share,
-        backgroundColor: ChurchColors.button,
-        foregroundColor: ChurchColors.buttonText,
-        elevation: 1,
-        shape: const RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
-        icon: const Icon(Icons.edit_outlined),
-        label: const Text('Share a request', style: ChurchType.button),
-      ),
+      floatingActionButton: _canPost
+          ? FloatingActionButton.extended(
+              onPressed: _share,
+              backgroundColor: ChurchColors.button,
+              foregroundColor: ChurchColors.buttonText,
+              elevation: 1,
+              shape: const RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Share a request', style: ChurchType.button),
+            )
+          : null,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
@@ -208,6 +213,7 @@ class _CommunityPageState extends State<CommunityPage> {
                 trailing: _CafeButton(onPressed: _openCafe),
               ),
               _FilterBar(selected: _filter, onSelected: _setFilter),
+              if (!_canPost) const _PostingPaused(),
               ..._content(),
             ],
           ),
@@ -357,6 +363,33 @@ class _Message extends StatelessWidget {
           const SizedBox(height: 6),
           Text(body, textAlign: TextAlign.center, style: ChurchType.body.copyWith(color: ChurchColors.muted)),
           if (action != null) ...[const SizedBox(height: 16), action!],
+        ],
+      ),
+    );
+  }
+}
+
+/// Shown in place of "Share a request" while a pastor has paused this
+/// member's posting. Quiet, and says what they can still do.
+class _PostingPaused extends StatelessWidget {
+  const _PostingPaused();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.pause_circle_outline_rounded, size: 18, color: ChurchColors.muted),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'You can’t post on the prayer wall right now, but you can still pray for others. '
+              'If you think that’s a mistake, please talk to one of the pastors.',
+              style: ChurchType.label,
+            ),
+          ),
         ],
       ),
     );

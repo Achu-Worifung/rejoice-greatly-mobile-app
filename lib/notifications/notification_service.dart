@@ -74,8 +74,9 @@ class NotificationService {
         final data = event.notification.additionalData;
         final prayerId = data == null ? null : data['prayerId'];
         final instanceId = data == null ? null : data['instanceId'];
-        if (data?['type'] == 'prayer' && prayerId is String && prayerId.isNotEmpty) {
-          PrayerWallApi.pendingThread.value = prayerId;
+        if (data?['type'] == 'prayer') {
+          // The weekly note about several requests has no one request to open.
+          PrayerWallApi.pendingThread.value = prayerId is String ? prayerId : '';
         } else if (data?['type'] == 'event' && instanceId is String && instanceId.isNotEmpty) {
           MemberEvents.pendingEvent.value = instanceId;
         }

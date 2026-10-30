@@ -9,6 +9,8 @@ Map<String, dynamic> _json({
   int prayers = 3,
   String? answeredAt,
   String visibility = 'CHURCH',
+  bool askedToRenew = false,
+  bool archived = false,
 }) =>
     {
       'id': 'p1',
@@ -24,6 +26,8 @@ Map<String, dynamic> _json({
       'prayedByMe': prayed,
       'commentCount': 1,
       'hidden': false,
+      'askedToRenew': askedToRenew,
+      'archived': archived,
     };
 
 Widget _host(Widget child) => MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child)));
@@ -130,7 +134,42 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Report'), findsNothing);
       expect(find.text('Mark as answered'), findsOneWidget);
+      expect(find.text('Take off the wall'), findsOneWidget);
       expect(find.text('Delete request'), findsOneWidget);
+    });
+
+    testWidgets('a month on, the author is asked if they still need prayer', (tester) async {
+      final actions = <PrayerAction>[];
+      await tester.pumpWidget(_host(PrayerCard(
+        prayer: PrayerRequestItem.fromJson(_json(mine: true, askedToRenew: true)),
+        onPrayed: (_) {},
+        onAction: actions.add,
+      )));
+      expect(find.text('Still need prayer for this?'), findsOneWidget);
+      await tester.tap(find.text('Keep praying'));
+      await tester.tap(find.text('It’s been answered'));
+      await tester.tap(find.text('Take it down'));
+      expect(actions, [PrayerAction.keepPraying, PrayerAction.markAnswered, PrayerAction.archive]);
+    });
+
+    testWidgets('an archived request can be put back by its author', (tester) async {
+      final actions = <PrayerAction>[];
+      await tester.pumpWidget(_host(PrayerCard(
+        prayer: PrayerRequestItem.fromJson(_json(mine: true, archived: true)),
+        onPrayed: (_) {},
+        onAction: actions.add,
+      )));
+      expect(find.text('Off the wall now. Only you can see it.'), findsOneWidget);
+      await tester.tap(find.text('Put it back'));
+      expect(actions, [PrayerAction.keepPraying]);
+    });
+  });
+
+  group('PrayerPage', () {
+    test('canPost defaults to true and survives withPrayed copies', () {
+      expect(const PrayerPage([], false).canPost, isTrue);
+      final p = PrayerRequestItem.fromJson(_json(mine: true, archived: true));
+      expect(p.withPrayed(true).archived, isTrue);
     });
   });
 }

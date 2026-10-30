@@ -57,13 +57,14 @@ class _DashboardState extends State<Dashboard> {
     }
   }
 
-  /// Opens the prayer request a tapped reply notification is about.
+  /// Opens the prayer request a tapped prayer notification is about, or
+  /// just the prayer wall when it isn't about one.
   void _openPendingThread() {
     final id = PrayerWallApi.pendingThread.value;
     if (id == null || !mounted) return;
     PrayerWallApi.pendingThread.value = null;
     setState(() => _selectedIndex = _communityTab);
-    openPrayerThread(context, id);
+    if (id.isNotEmpty) openPrayerThread(context, id);
   }
 
   void _onItemTapped(int index) {
