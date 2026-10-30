@@ -492,10 +492,10 @@ class _ErrorCard extends StatelessWidget {
       decoration: ChurchColors.cardDecoration(),
       child: Column(
         children: [
-          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: ChurchColors.muted)),
+          Text(message, textAlign: TextAlign.center, style: TextStyle(color: ChurchColors.muted)),
           TextButton(
             onPressed: () => onRetry(),
-            child: const Text('Try again', style: TextStyle(color: ChurchColors.accent, fontWeight: FontWeight.w600)),
+            child: Text('Try again', style: TextStyle(color: ChurchColors.accent, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -517,7 +517,7 @@ class _EmptyInlineCard extends StatelessWidget {
       child: Center(
         child: Text(
           message,
-          style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
+          style: TextStyle(color: ChurchColors.muted, fontSize: 14),
         ),
       ),
     );
@@ -547,9 +547,9 @@ class _DashboardEventsError extends StatelessWidget {
           decoration: ChurchColors.cardDecoration(),
           child: Column(
             children: [
-              const Icon(Icons.wifi_tethering_error_outlined, color: ChurchColors.muted, size: 32),
+              Icon(Icons.wifi_tethering_error_outlined, color: ChurchColors.muted, size: 32),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 "Couldn't load events",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
@@ -560,7 +560,7 @@ class _DashboardEventsError extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
+                style: TextStyle(fontSize: 12, color: ChurchColors.muted),
               ),
               const SizedBox(height: 12),
               Row(
@@ -568,13 +568,13 @@ class _DashboardEventsError extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () => onRetry(),
-                    child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
+                    child: Text('Retry', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
                   ),
                   if (onViewAll != null) ...[
-                    const Text('|', style: TextStyle(color: ChurchColors.muted)),
+                    Text('|', style: TextStyle(color: ChurchColors.muted)),
                     TextButton(
                       onPressed: onViewAll,
-                      child: const Text('Open Events tab', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
+                      child: Text('Open Events tab', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
                     ),
                   ],
                 ],
@@ -604,9 +604,9 @@ class _DashboardEventsEmpty extends StatelessWidget {
           decoration: ChurchColors.cardDecoration(),
           child: Column(
             children: [
-              const Icon(Icons.event_busy_outlined, size: 36, color: ChurchColors.muted),
+              Icon(Icons.event_busy_outlined, size: 36, color: ChurchColors.muted),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'No upcoming events right now',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -615,7 +615,7 @@ class _DashboardEventsEmpty extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'When your church adds events, they will show up here. Check the Events tab for the full schedule.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.35),

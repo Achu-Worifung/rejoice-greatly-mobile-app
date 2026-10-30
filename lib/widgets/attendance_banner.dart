@@ -121,7 +121,7 @@ class AttendanceBanner {
           icon: Icons.check_circle_rounded,
         );
       case AttendanceBannerTone.info:
-        return const _BannerPalette(
+        return _BannerPalette(
           background: ChurchColors.card,
           foreground: ChurchColors.accent,
           icon: Icons.event_available_rounded,

@@ -19,10 +19,10 @@ const Color _errorBorder = Color(0xFFE1B0A9);
 const Color _errorInk = Color(0xFF8A2C1F);
 
 /// Screen title for auth pages ("Let's Get Started!", "Reset your password").
-const TextStyle kAuthTitleStyle = ChurchType.display;
+TextStyle get kAuthTitleStyle => ChurchType.display;
 
 /// Supporting line beneath the title.
-const TextStyle kAuthSubtitleStyle = ChurchType.label;
+TextStyle get kAuthSubtitleStyle => ChurchType.label;
 
 /// The one input decoration every auth field uses: muted label + icon, and
 /// the ruled, crisp-cornered box from the app theme (sand rule at rest, cocoa
@@ -100,7 +100,7 @@ class ChurchSocialButton extends StatelessWidget {
   });
 
   /// The cream-bordered ghost variant for dark (brown) surfaces.
-  const ChurchSocialButton.ghost({
+  ChurchSocialButton.ghost({
     super.key,
     required this.label,
     required this.icon,

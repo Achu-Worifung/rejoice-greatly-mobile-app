@@ -10,17 +10,19 @@ class DashboardLabelText extends StatelessWidget {
   const DashboardLabelText({
     super.key,
     required this.label,
-    this.color = ChurchColors.muted,
+    this.color,
   });
 
   final String label;
-  final Color color;
+
+  /// Muted when not given.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: ChurchEyebrow(label, color: color),
+      child: ChurchEyebrow(label, color: color ?? ChurchColors.muted),
     );
   }
 }

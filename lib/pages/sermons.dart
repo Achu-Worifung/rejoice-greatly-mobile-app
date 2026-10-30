@@ -186,9 +186,9 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_outlined, size: 48, color: ChurchColors.muted),
+              Icon(Icons.wifi_off_outlined, size: 48, color: ChurchColors.muted),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "Couldn't load sermons",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
@@ -200,7 +200,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
+                style: TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -225,7 +225,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
                 ? 'Save sermons with the bookmark to see them here.'
                 : 'No sermons match your search.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: ChurchColors.muted,
               fontSize: 15,
               height: 1.4,
@@ -373,7 +373,7 @@ class _SermonRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 22, color: ChurchColors.muted),
+                Icon(Icons.chevron_right, size: 22, color: ChurchColors.muted),
               ],
             ),
           ),
@@ -385,7 +385,7 @@ class _SermonRow extends StatelessWidget {
   Widget _ph() {
     return Container(
       color: ChurchColors.button.withValues(alpha: 0.1),
-      child: const Icon(Icons.mic, color: ChurchColors.accent, size: 28),
+      child: Icon(Icons.mic, color: ChurchColors.accent, size: 28),
     );
   }
 

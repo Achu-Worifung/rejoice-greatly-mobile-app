@@ -119,20 +119,20 @@ class _MePageState extends State<MePage> {
                   color: ChurchColors.button.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.power_settings_new_rounded,
                   color: ChurchColors.accent,
                   size: 28,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Leave this account?',
                 textAlign: TextAlign.center,
                 style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'You will be signed out of Rejoice Greatly and the cafe tab. '
                 'You must sign in again to check in or view your stats.',
                 textAlign: TextAlign.center,
@@ -243,7 +243,7 @@ class _MePageState extends State<MePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Change profile photo',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
@@ -252,7 +252,7 @@ class _MePageState extends State<MePage> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 28),
                 child: Text(
                   'Use a clear, well-lit photo of your face so you can still be '
@@ -319,13 +319,13 @@ class _MePageState extends State<MePage> {
                 child: const Icon(Icons.delete_forever_rounded, color: _danger, size: 28),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Delete your account',
                 textAlign: TextAlign.center,
                 style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'To keep your facial recognition data safe, account deletion is '
                 "reviewed personally by the church team. We'll take you to our "
                 'website, where you sign in and tell us what to delete.',
@@ -391,12 +391,12 @@ class _MePageState extends State<MePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(color: ChurchColors.button),
+              CircularProgressIndicator(color: ChurchColors.button),
               const SizedBox(height: 18),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: ChurchColors.bodyText,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -491,11 +491,11 @@ class _MePageState extends State<MePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.person_off_outlined, size: 48, color: ChurchColors.muted),
+                    Icon(Icons.person_off_outlined, size: 48, color: ChurchColors.muted),
                     const SizedBox(height: 12),
                     Text(
                       signedIn ? 'Could not load your church account' : 'No account connected',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         color: ChurchColors.bodyText,
@@ -507,7 +507,7 @@ class _MePageState extends State<MePage> {
                           ? 'You are signed in, but we could not reach the church server. Check your connection and try again.'
                           : 'Sign in to connect your profile and see attendance stats.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
+                      style: TextStyle(color: ChurchColors.muted, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
                     if (signedIn) ...[
@@ -573,7 +573,7 @@ class _MePageState extends State<MePage> {
                     ),
                     child: Text(
                       'Could not refresh profile. Pull down to retry.\n$syncError',
-                      style: const TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
+                      style: TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
                     ),
                   ),
                 ],
@@ -590,7 +590,7 @@ class _MePageState extends State<MePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Complete your profile',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
@@ -599,7 +599,7 @@ class _MePageState extends State<MePage> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
+                        Text(
                           'Add a profile photo to unlock attendance stats and your check-in history.',
                           style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
                         ),
@@ -657,7 +657,7 @@ class _MePageState extends State<MePage> {
                       ),
                       child: Text(
                         'Some data could not refresh. Pull down to try again.\n$syncError',
-                        style: const TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
+                        style: TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
                       ),
                     ),
                   ],
@@ -673,7 +673,7 @@ class _MePageState extends State<MePage> {
                       absenceStreak: _i(stats['absenceStreak']),
                     )
                   else
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Text(
                         'Stats unavailable. Pull down to refresh.',
@@ -729,7 +729,7 @@ class _MePageState extends State<MePage> {
                   onTap: () => _requestAccountDeletion(),
                 ),
                 const SizedBox(height: 36),
-                const Divider(color: ChurchColors.divider, height: 1),
+                Divider(color: ChurchColors.divider, height: 1),
                 const SizedBox(height: 20),
                 const DashboardLabelText(label: 'Session', color: _danger),
                 ChurchDangerButton(
@@ -806,13 +806,13 @@ class _ProfileHeader extends StatelessWidget {
                         email,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, color: ChurchColors.muted),
+                        style: TextStyle(fontSize: 13, color: ChurchColors.muted),
                       ),
                     ],
                     const SizedBox(height: 6),
                     Text(
                       churchLine,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: ChurchColors.accent,
@@ -849,7 +849,7 @@ class _ProfileHeader extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: ChurchColors.card, width: 2),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.photo_camera_rounded,
                 size: 14,
                 color: ChurchColors.buttonText,
@@ -920,7 +920,7 @@ class _ActionTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           color: ChurchColors.muted,
                           height: 1.35,
@@ -961,7 +961,7 @@ class _AttendanceActivityList extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: ChurchColors.cardDecoration(shadow: const []),
-        child: const Text(
+        child: Text(
           'No services recorded yet. Your attendance history will appear here once services begin.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
@@ -1036,7 +1036,7 @@ class _ActivityRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   dateFmt.format(activity.date),
-                  style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
+                  style: TextStyle(fontSize: 12, color: ChurchColors.muted),
                 ),
               ],
             ),

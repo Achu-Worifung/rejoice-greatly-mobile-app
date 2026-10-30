@@ -38,7 +38,7 @@ ThemeData buildChurchTheme() {
     dividerColor: ChurchColors.divider,
     splashFactory: InkSparkle.splashFactory,
 
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: ChurchColors.background,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
@@ -60,7 +60,7 @@ ThemeData buildChurchTheme() {
       ),
     ),
 
-    dividerTheme: const DividerThemeData(
+    dividerTheme: DividerThemeData(
       color: ChurchColors.divider,
       thickness: 1,
       space: 1,
@@ -136,7 +136,7 @@ ThemeData buildChurchTheme() {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     ),
 
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: ChurchColors.background,
       elevation: 0,
       type: BottomNavigationBarType.fixed,
@@ -153,7 +153,7 @@ ThemeData buildChurchTheme() {
       ),
     ),
 
-    bottomSheetTheme: const BottomSheetThemeData(
+    bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: ChurchColors.background,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -189,13 +189,13 @@ ThemeData buildChurchTheme() {
       dividerColor: ChurchColors.divider,
     ),
 
-    listTileTheme: const ListTileThemeData(
+    listTileTheme: ListTileThemeData(
       titleTextStyle: ChurchType.bodyStrong,
       subtitleTextStyle: ChurchType.label,
       iconColor: ChurchColors.accent,
     ),
 
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
+    progressIndicatorTheme: ProgressIndicatorThemeData(
       color: ChurchColors.accent,
     ),
   );

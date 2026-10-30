@@ -64,7 +64,7 @@ class _HouseholdSectionState extends State<HouseholdSection> {
       builder: (ctx) => AlertDialog(
         backgroundColor: ChurchColors.card,
         title: Text('Remove ${child.firstName}?', style: ChurchType.title),
-        content: const Text(
+        content: Text(
           'You won’t be able to check them in from your phone. Their attendance so far is kept.',
           style: ChurchType.body,
         ),
@@ -97,13 +97,13 @@ class _HouseholdSectionState extends State<HouseholdSection> {
         else if (children == null)
           Row(
             children: [
-              const Expanded(child: Text('Couldn’t load your children.', style: ChurchType.label)),
+              Expanded(child: Text('Couldn’t load your children.', style: ChurchType.label)),
               TextButton(onPressed: _load, child: const Text('Try again')),
             ],
           )
         else ...[
           if (children.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(bottom: 12),
               child: Text(
                 'Bring children to church? Add them here, and you can check them in when you tap in at the door.',
@@ -134,7 +134,7 @@ class _HouseholdSectionState extends State<HouseholdSection> {
                     ),
                     IconButton(
                       tooltip: 'Remove ${child.firstName}',
-                      icon: const Icon(Icons.close_rounded, color: ChurchColors.muted),
+                      icon: Icon(Icons.close_rounded, color: ChurchColors.muted),
                       onPressed: () => _remove(child),
                     ),
                   ],
@@ -213,9 +213,9 @@ class _AddChildSheetState extends State<_AddChildSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Add a child', style: ChurchType.headline),
+            Text('Add a child', style: ChurchType.headline),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'For children under 18 who come with you. Only you and the church team see this.',
               style: ChurchType.label,
             ),

@@ -24,7 +24,7 @@ class _ContentModerationPageState extends State<ContentModerationPage> with Sing
     return Scaffold(
       backgroundColor: ChurchColors.background,
       appBar: ChurchAppBar.of(
-        title: const Text('Content moderation', style: ChurchAppBar.titleStyle),
+        title: Text('Content moderation', style: ChurchAppBar.titleStyle),
         centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
@@ -52,7 +52,7 @@ class _ContentModerationPageState extends State<ContentModerationPage> with Sing
         backgroundColor: ChurchColors.button,
         shape: RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
         onPressed: () => _openEditor(context),
-        child: const Icon(Icons.add, color: ChurchColors.buttonText),
+        child: Icon(Icons.add, color: ChurchColors.buttonText),
       ),
     );
   }

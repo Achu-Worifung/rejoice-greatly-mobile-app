@@ -47,7 +47,7 @@ class ChurchPrimaryButton extends StatelessWidget {
           ),
         ),
         child: loading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(

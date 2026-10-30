@@ -139,7 +139,7 @@ class _EventsPageState extends State<EventsPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_outlined, size: 48, color: ChurchColors.muted),
+              Icon(Icons.cloud_off_outlined, size: 48, color: ChurchColors.muted),
               const SizedBox(height: 12),
               Text(
                 "Couldn't load events",
@@ -152,7 +152,7 @@ class _EventsPageState extends State<EventsPage> {
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
+                style: TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -314,7 +314,7 @@ class _EventsPageState extends State<EventsPage> {
                         fit: BoxFit.cover,
                         errorBuilder: (BuildContext c, Object e, StackTrace? s) => Container(
                           color: ChurchColors.button.withValues(alpha: 0.08),
-                          child: const Icon(Icons.event, color: ChurchColors.accent, size: 32),
+                          child: Icon(Icons.event, color: ChurchColors.accent, size: 32),
                         ),
                       ),
                     ),
@@ -331,7 +331,7 @@ class _EventsPageState extends State<EventsPage> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.schedule, size: 15, color: ChurchColors.muted),
+                            Icon(Icons.schedule, size: 15, color: ChurchColors.muted),
                             const SizedBox(width: 4),
                             Text(
                               event['time'] as String? ?? 'Time TBA',
@@ -340,7 +340,7 @@ class _EventsPageState extends State<EventsPage> {
                             ValueListenableBuilder<Map<String, int>>(
                               valueListenable: MemberEvents.reminders,
                               builder: (context, reminders, _) => reminders.containsKey(event['id'])
-                                  ? const Padding(
+                                  ? Padding(
                                       padding: EdgeInsets.only(left: 8),
                                       child: Icon(
                                         Icons.notifications_active_rounded,
@@ -358,7 +358,7 @@ class _EventsPageState extends State<EventsPage> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(top: 2),
                                 child: Icon(Icons.place_outlined, size: 15, color: ChurchColors.muted),
                               ),
@@ -366,7 +366,7 @@ class _EventsPageState extends State<EventsPage> {
                               Expanded(
                                 child: Text(
                                   MemberEvents.placeLabel(event['location'] as String),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: ChurchColors.muted,
                                     fontSize: 12,
                                     height: 1.3,
@@ -400,7 +400,7 @@ class _EventsPageState extends State<EventsPage> {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: ChurchColors.muted),
+                  Icon(Icons.chevron_right, color: ChurchColors.muted),
                 ],
               ),
             ),

@@ -238,7 +238,7 @@ class _PrayerComposerState extends State<_PrayerComposer> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const _SheetHandle(),
-        const Text('Share a prayer request', style: ChurchType.headline),
+        Text('Share a prayer request', style: ChurchType.headline),
         const SizedBox(height: 6),
         Text(
           widget.isMinor
@@ -291,8 +291,8 @@ class _PrayerComposerState extends State<_PrayerComposer> {
                 (states) => states.contains(WidgetState.selected) ? ChurchColors.button : ChurchColors.muted,
               ),
               onChanged: (v) => setState(() => _anonymous = v),
-              title: const Text('Share anonymously', style: ChurchType.bodyStrong),
-              subtitle: const Text(
+              title: Text('Share anonymously', style: ChurchType.bodyStrong),
+              subtitle: Text(
                 'Your name won’t be shown. The pastors can still see it’s you.',
                 style: ChurchType.label,
               ),
@@ -411,9 +411,9 @@ class _AnsweredSheetState extends State<_AnsweredSheet> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const _SheetHandle(),
-        const Text('Mark as answered', style: ChurchType.headline),
+        Text('Mark as answered', style: ChurchType.headline),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'Share what happened, so everyone who prayed can rejoice with you.',
           style: ChurchType.label,
         ),
@@ -433,7 +433,7 @@ class _AnsweredSheetState extends State<_AnsweredSheet> {
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
           activeColor: ChurchColors.button,
-          title: const Text('Share it at Sunday service too', style: ChurchType.body),
+          title: Text('Share it at Sunday service too', style: ChurchType.body),
           subtitle: Text(
             widget.anonymous
                 ? 'It would be shared as from “Someone from church”.'
@@ -474,7 +474,7 @@ Future<String?> showReportSheet(BuildContext context, {required String what}) {
         const _SheetHandle(),
         Text('Report this $what', style: ChurchType.headline),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           'It’ll be hidden for you straight away, and a pastor will take a look. '
           'They won’t be told who reported it.',
           style: ChurchType.label,
@@ -485,7 +485,7 @@ Future<String?> showReportSheet(BuildContext context, {required String what}) {
             builder: (ctx) => ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(reason, style: ChurchType.body),
-              trailing: const Icon(Icons.chevron_right_rounded, color: ChurchColors.muted),
+              trailing: Icon(Icons.chevron_right_rounded, color: ChurchColors.muted),
               onTap: () => Navigator.pop(ctx, reason),
             ),
           ),

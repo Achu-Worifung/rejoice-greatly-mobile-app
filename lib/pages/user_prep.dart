@@ -87,20 +87,20 @@ class _UserPrepPageState extends State<UserPrepPage> {
                   color: ChurchColors.button.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.no_photography_outlined,
                   color: ChurchColors.accent,
                   size: 28,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Skip face check-in?',
                 textAlign: TextAlign.center,
                 style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "You can explore the app right away. Without a face photo the "
                 "cameras won't check you in — you can still tap the NFC tag at "
                 "the entrance or check in with a greeter, and you can set up "
@@ -191,20 +191,20 @@ class _UserPrepPageState extends State<UserPrepPage> {
                   onPressed: _goBack,
                   padding: EdgeInsets.zero,
                   alignment: Alignment.centerLeft,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back,
                     color: ChurchColors.bodyText,
                   ),
                 ),
                 const SizedBox(height: 8),
 
-                const Text(
+                Text(
                   "Set Up Facial Recognition",
                   style: ChurchType.display,
                 ),
                 const SizedBox(height: 12),
 
-                const Text(
+                Text(
                   "To take attendance with your face, we need to register your facial data. Don't worry, it's quick and secure!",
                   style: TextStyle(
                     fontSize: 15,
@@ -259,7 +259,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                 Center(
                   child: Text(
                     "${_currentIndex + 1} of ${_slides.length}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: ChurchColors.muted,
                     ),
@@ -373,7 +373,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               Icon(Icons.place_outlined, size: 18, color: ChurchColors.accent),
               SizedBox(width: 8),
               Expanded(
@@ -389,7 +389,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Facial recognition is available only to eligible members attending '
             'participating church locations. If you are under 18, are outside a '
             'participating church, or are in a jurisdiction where this feature '
@@ -427,7 +427,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     ? null
                     : (val) => setState(() => _consented = val ?? false),
                 activeColor: ChurchColors.button,
-                side: const BorderSide(color: ChurchColors.muted, width: 1.5),
+                side: BorderSide(color: ChurchColors.muted, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5),
                 ),
@@ -439,7 +439,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             Expanded(
               child: Text.rich(
                 TextSpan(
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: ChurchColors.muted,
                     height: 1.45,
@@ -448,7 +448,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     const TextSpan(text: 'I have read the '),
                     TextSpan(
                       text: 'Biometric Information Notice',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: ChurchColors.accent,
                         fontWeight: FontWeight.w700,
                         decoration: TextDecoration.underline,
@@ -508,7 +508,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             child: AutoSizeText(
               slide['description'] as String,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: ChurchColors.muted,
                 height: 1.4,

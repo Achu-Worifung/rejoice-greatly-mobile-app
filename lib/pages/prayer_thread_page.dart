@@ -219,7 +219,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
     if (prayer == null && _error != null) {
       return [
         const SizedBox(height: 80),
-        const Icon(Icons.cloud_off_outlined, size: 48, color: ChurchColors.muted),
+        Icon(Icons.cloud_off_outlined, size: 48, color: ChurchColors.muted),
         const SizedBox(height: 12),
         Text(_error!, textAlign: TextAlign.center, style: ChurchType.title),
         const SizedBox(height: 16),
@@ -229,7 +229,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
       ];
     }
     if (prayer == null) {
-      return const [
+      return [
         SizedBox(height: 120),
         Center(child: CircularProgressIndicator(color: ChurchColors.button)),
       ];
@@ -240,14 +240,14 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
       const SizedBox(height: 24),
       const ChurchEyebrow('Words of encouragement'),
       const SizedBox(height: 4),
-      const Divider(height: 1, color: ChurchColors.divider),
+      Divider(height: 1, color: ChurchColors.divider),
       if (replies == null && _error != null)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Text(_error!, textAlign: TextAlign.center, style: ChurchType.label),
         )
       else if (replies == null)
-        const Padding(
+        Padding(
           padding: EdgeInsets.all(24),
           child: Center(child: CircularProgressIndicator(color: ChurchColors.button)),
         )
@@ -320,7 +320,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
               shape: const RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
             ),
             icon: _sending
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2, color: ChurchColors.buttonText),
@@ -335,7 +335,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
         children: [
           input,
           if (alwaysAnonymous)
-            const Padding(
+            Padding(
               padding: EdgeInsets.only(top: 6),
               child: Text('You asked anonymously, so your replies are anonymous too.',
                   style: ChurchType.caption),
@@ -359,7 +359,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text('Reply anonymously', style: ChurchType.label),
+                    Text('Reply anonymously', style: ChurchType.label),
                   ],
                 ),
               ),
@@ -368,7 +368,7 @@ class _PrayerThreadPageState extends State<PrayerThreadPage> {
       );
     }
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ChurchColors.background,
         border: Border(top: ChurchRules.hairline),
       ),
@@ -389,7 +389,7 @@ class _ReplyTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.only(top: 14, bottom: 10),
-      decoration: const BoxDecoration(border: Border(bottom: ChurchRules.hairline)),
+      decoration: BoxDecoration(border: Border(bottom: ChurchRules.hairline)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -407,7 +407,7 @@ class _ReplyTile extends StatelessWidget {
                       reply.mine ? (reply.anonymous ? 'You · anonymous' : 'You') : reply.authorName,
                       style: ChurchType.bodyStrong.copyWith(fontSize: 14),
                     ),
-                    if (reply.fromTeam) const ChurchEyebrow('Church team', color: ChurchColors.accent),
+                    if (reply.fromTeam) ChurchEyebrow('Church team', color: ChurchColors.accent),
                     Text(prayerWhen(reply.createdAt), style: ChurchType.caption),
                   ],
                 ),
@@ -418,7 +418,7 @@ class _ReplyTile extends StatelessWidget {
           ),
           PopupMenuButton<String>(
             tooltip: 'More options',
-            icon: const Icon(Icons.more_horiz_rounded, color: ChurchColors.muted, size: 20),
+            icon: Icon(Icons.more_horiz_rounded, color: ChurchColors.muted, size: 20),
             onSelected: (v) => v == 'delete' ? onDelete() : onReport(),
             itemBuilder: (_) => [
               if (reply.mine)

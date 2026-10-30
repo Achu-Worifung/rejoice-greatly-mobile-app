@@ -715,7 +715,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   @override
   Widget build(BuildContext context) {
     if (_isRegisteringAccount) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: ChurchColors.bodyText,
         body: Center(
           child: Column(
@@ -758,7 +758,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: _ensurePostgresAccount,
-                    child: const Text(
+                    child: Text(
                       'Retry',
                       style: TextStyle(color: ChurchColors.button),
                     ),
@@ -782,7 +782,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         ),
 
         if (!_isCameraReady)
-          const ColoredBox(
+          ColoredBox(
             color: ChurchColors.bodyText,
             child: Center(
               child: CircularProgressIndicator(color: ChurchColors.button),
@@ -810,7 +810,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _circleButton(Icons.arrow_back, _goBack, false),
-                    const Text(
+                    Text(
                       "TAKE A SELFIE",
                       style: TextStyle(
                         color: ChurchColors.buttonText,
@@ -902,7 +902,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
               value: progress,
               backgroundColor: ChurchColors.buttonText.withValues(alpha: 0.2),
               valueColor:
-                  const AlwaysStoppedAnimation<Color>(ChurchColors.button),
+                  AlwaysStoppedAnimation<Color>(ChurchColors.button),
             ),
           ),
         ),
@@ -957,12 +957,12 @@ class _CompleteSignupState extends State<CompleteSignup> {
               _profileAvatar(120),
               const SizedBox(height: 28),
               if (_error == null) ...[
-                const CircularProgressIndicator(color: ChurchColors.button),
+                CircularProgressIndicator(color: ChurchColors.button),
                 const SizedBox(height: 20),
                 Text(
                   _uploadStatus ?? 'Finishing up…',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: ChurchColors.buttonText,
                     fontSize: 15,
                   ),
@@ -996,7 +996,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
             const Spacer(),
             _profileAvatar(150),
             const SizedBox(height: 32),
-            const Icon(Icons.check_circle,
+            Icon(Icons.check_circle,
                 color: ChurchColors.card, size: 40),
             const SizedBox(height: 16),
             Text(
@@ -1044,7 +1044,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       ),
       child: _capturedBytes != null
           ? Image.memory(_capturedBytes!, fit: BoxFit.cover)
-          : const Icon(Icons.person, color: ChurchColors.button, size: 64),
+          : Icon(Icons.person, color: ChurchColors.button, size: 64),
     );
   }
 
@@ -1074,9 +1074,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
     required VoidCallback? onTap,
     required Color color,
     Color? border,
-    Color textColor = ChurchColors.buttonText,
+    Color? textColor,
     bool isLoading = false,
   }) {
+    textColor ??= ChurchColors.buttonText;
     return GestureDetector(
       onTap: onTap,
       child: Container(

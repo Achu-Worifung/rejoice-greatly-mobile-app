@@ -104,7 +104,7 @@ class _NfcWriteTagSheetState extends State<_NfcWriteTagSheet> {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Provision an NFC tag',
             style: TextStyle(
               fontSize: 18,
@@ -113,7 +113,7 @@ class _NfcWriteTagSheetState extends State<_NfcWriteTagSheet> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Write a tag id onto a blank tag. Members tap it to check in. The id '
             'must match one registered in the admin console.',
             style: TextStyle(
@@ -144,7 +144,7 @@ class _NfcWriteTagSheetState extends State<_NfcWriteTagSheet> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: ChurchRadius.mdAll,
-                borderSide: const BorderSide(color: ChurchColors.accent),
+                borderSide: BorderSide(color: ChurchColors.accent),
               ),
             ),
           ),

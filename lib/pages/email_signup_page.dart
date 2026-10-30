@@ -97,7 +97,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
         toolbarHeight: 56,
         title: const SizedBox.shrink(),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
+          icon: Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
           onPressed: _goBack,
         ),
       ),
@@ -106,9 +106,9 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            const Text("Let's get started", style: kAuthTitleStyle),
+            Text("Let's get started", style: kAuthTitleStyle),
             const SizedBox(height: 6),
-            const Text("Create your account", style: kAuthSubtitleStyle),
+            Text("Create your account", style: kAuthSubtitleStyle),
             const SizedBox(height: 24),
             if (_error != null) ...[
               AuthErrorCallout(_error!),
@@ -121,7 +121,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                 children: [
                   TextFormField(
                     controller: _nameController,
-                    style: const TextStyle(color: ChurchColors.bodyText),
+                    style: TextStyle(color: ChurchColors.bodyText),
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
                     decoration: authInputDecoration(
@@ -135,7 +135,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: _emailController,
-                    style: const TextStyle(color: ChurchColors.bodyText),
+                    style: TextStyle(color: ChurchColors.bodyText),
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     decoration: authInputDecoration(
@@ -152,7 +152,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: const TextStyle(color: ChurchColors.bodyText),
+                    style: TextStyle(color: ChurchColors.bodyText),
                     decoration: authInputDecoration(
                       label: "Password",
                       icon: Icons.lock_outline,
@@ -197,7 +197,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                         color: ChurchColors.muted,
                       ),
                       const SizedBox(width: 6),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           "At least 8 characters, with an uppercase letter, a number, and a symbol.",
                           style: TextStyle(
@@ -234,7 +234,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                     // attendance can be recorded. Consent to facial processing
                     // is given at the enrollment step itself. (The app has no
                     // Bluetooth check-in, so it is not mentioned.)
-                    title: const Text(
+                    title: Text(
                       'I understand my attendance may be recorded when I tap the NFC tag at the entrance, or by facial recognition if I am 18 or older and choose to enroll.',
                       style: _consentTextStyle,
                     ),
@@ -278,7 +278,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   "Already have an account?",
                   style: TextStyle(color: ChurchColors.bodyText, fontSize: 15),
                 ),
@@ -287,7 +287,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
                   onTap: () =>
                       Navigator.pushReplacementNamed(context, '/email-login'),
                   behavior: HitTestBehavior.opaque,
-                  child: const Text(
+                  child: Text(
                     "Login",
                     style: TextStyle(
                       color: ChurchColors.button,
@@ -304,7 +304,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
     );
   }
 
-  static const TextStyle _consentTextStyle = TextStyle(
+  static TextStyle get _consentTextStyle => TextStyle(
     color: ChurchColors.bodyText,
     fontSize: 13.5,
     height: 1.4,
@@ -313,7 +313,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
   TextSpan _linkSpan(String text, String route) {
     return TextSpan(
       text: text,
-      style: const TextStyle(
+      style: TextStyle(
         color: ChurchColors.button,
         fontWeight: FontWeight.w600,
         decoration: TextDecoration.underline,
@@ -363,7 +363,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
   Widget _orDivider() {
     return Row(
       children: [
-        const Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
+        Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
@@ -376,7 +376,7 @@ class _EmailSignupPageState extends State<EmailSignupPage> {
             ),
           ),
         ),
-        const Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
+        Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
       ],
     );
   }

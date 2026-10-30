@@ -75,13 +75,13 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: ChurchColors.card,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(ChurchRadius.lg),
           ),
         ),
-        child: const Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(height: 8),
@@ -100,7 +100,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: ChurchColors.card,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(ChurchRadius.lg),
@@ -109,9 +109,9 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Complete your profile', style: ChurchType.headline),
+            Text('Complete your profile', style: ChurchType.headline),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Finish signup with a profile photo before attendance stats are available.',
               textAlign: TextAlign.center,
               style: TextStyle(color: ChurchColors.muted, fontSize: 13),
@@ -134,7 +134,7 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: ChurchColors.card,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(ChurchRadius.lg),
@@ -143,12 +143,12 @@ class _AttendanceStatsLoaderState extends State<AttendanceStatsLoader> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Could not load stats', style: ChurchType.headline),
+            Text('Could not load stats', style: ChurchType.headline),
             const SizedBox(height: 8),
             Text(
               _error!,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
+              style: TextStyle(color: ChurchColors.muted, fontSize: 13),
             ),
             const SizedBox(height: 20),
             FilledButton(
@@ -194,7 +194,7 @@ class AttendanceSheet extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ChurchColors.card,
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
@@ -214,11 +214,11 @@ class AttendanceSheet extends StatelessWidget {
             Text(
               bannerMessage!,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
+              style: TextStyle(fontSize: 12, color: ChurchColors.muted),
             ),
             const SizedBox(height: 12),
           ],
-          const Text('Attendance stats', style: ChurchType.headline),
+          Text('Attendance stats', style: ChurchType.headline),
           const SizedBox(height: 16),
           Row(
             children: [

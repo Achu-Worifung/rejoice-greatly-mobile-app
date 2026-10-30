@@ -241,7 +241,7 @@ class _MapPreview extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(Icons.location_on, size: 18, color: ChurchColors.button),
                     SizedBox(width: 6),
                     Text(
@@ -271,7 +271,7 @@ class _MapPreview extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.place, size: 16, color: ChurchColors.button),
+                    Icon(Icons.place, size: 16, color: ChurchColors.button),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -299,7 +299,7 @@ class _MapPreview extends StatelessWidget {
       color: ChurchColors.card,
       child: CustomPaint(
         painter: _MapGridPainter(),
-        child: const Center(
+        child: Center(
           child: Icon(Icons.map_outlined, size: 40, color: ChurchColors.accent),
         ),
       ),
@@ -469,7 +469,7 @@ class _IconOutlineButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           foregroundColor: ChurchColors.button,
-          side: const BorderSide(color: ChurchColors.button, width: 1.5),
+          side: BorderSide(color: ChurchColors.button, width: 1.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: EdgeInsets.zero,
         ),

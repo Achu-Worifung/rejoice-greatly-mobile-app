@@ -52,7 +52,7 @@ class LegalDocumentView extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '${LegalValues.appName} · Last updated $lastUpdated',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 color: ChurchColors.muted,
                 fontWeight: FontWeight.w600,
@@ -67,7 +67,7 @@ class LegalDocumentView extends StatelessWidget {
               for (final block in sections[i].blocks) block,
             ],
             const SizedBox(height: 32),
-            const Divider(color: ChurchColors.divider, height: 1),
+            Divider(color: ChurchColors.divider, height: 1),
             const SizedBox(height: 20),
             
           ],
@@ -98,7 +98,7 @@ class _SectionHeading extends StatelessWidget {
           ),
           child: Text(
             '$number',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
               color: ChurchColors.accent,
@@ -181,7 +181,7 @@ class LegalBullets extends LegalBlock {
                     margin: const EdgeInsets.only(top: 9, right: 12, left: 2),
                     width: 5,
                     height: 5,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: ChurchColors.accent,
                       shape: BoxShape.circle,
                     ),
@@ -189,7 +189,7 @@ class LegalBullets extends LegalBlock {
                   Expanded(
                     child: Text(
                       item,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         color: ChurchColors.muted,
                         height: 1.55,
@@ -233,7 +233,7 @@ class LegalCallout extends LegalBlock {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: ChurchColors.bodyText,
@@ -246,7 +246,7 @@ class LegalCallout extends LegalBlock {
           const SizedBox(height: 10),
           Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14.5,
               color: ChurchColors.muted,
               height: 1.6,
@@ -289,7 +289,7 @@ class LegalContacts extends LegalBlock {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               color: ChurchColors.bodyText,
               fontWeight: FontWeight.w600,

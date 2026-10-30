@@ -144,9 +144,9 @@ Future<List<HouseholdChild>> _askWhoIsWithYou(BuildContext context, List<Househo
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('You’re checked in', style: ChurchType.headline),
+              Text('You’re checked in', style: ChurchType.headline),
               const SizedBox(height: 6),
-              const Text('Who’s with you today?', style: ChurchType.body),
+              Text('Who’s with you today?', style: ChurchType.body),
               const SizedBox(height: 8),
               for (final child in children)
                 CheckboxListTile(
@@ -170,7 +170,7 @@ Future<List<HouseholdChild>> _askWhoIsWithYou(BuildContext context, List<Househo
                 const SizedBox(height: 4),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, const <HouseholdChild>[]),
-                  child: const Text('Just me today', style: ChurchType.button),
+                  child: Text('Just me today', style: ChurchType.button),
                 ),
               ],
             ],
@@ -205,11 +205,11 @@ Future<_Choice> _askForLocation(BuildContext context, LocationAccess access) asy
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.place_outlined, color: ChurchColors.accent, size: 28),
+          Icon(Icons.place_outlined, color: ChurchColors.accent, size: 28),
           const SizedBox(height: 12),
-          const Text('One more step', style: ChurchType.headline),
+          Text('One more step', style: ChurchType.headline),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'This tag checks people in at church, so it needs to see that your phone is here. '
             'Your location is used once, right now. We keep only how far you were from the tag.',
             style: ChurchType.body,
@@ -230,10 +230,10 @@ Future<_Choice> _askForLocation(BuildContext context, LocationAccess access) asy
           const SizedBox(height: 4),
           TextButton(
             onPressed: () => Navigator.pop(ctx, _Choice.notNow),
-            child: const Text('Not now', style: ChurchType.button),
+            child: Text('Not now', style: ChurchType.button),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'You can always check in at the welcome desk instead.',
             textAlign: TextAlign.center,
             style: ChurchType.caption,

@@ -86,7 +86,7 @@ class PrayerCard extends StatelessWidget {
             _PraiseReport(note: prayer.answeredNote),
           ],
           const SizedBox(height: 8),
-          const Divider(height: 1, color: ChurchColors.divider),
+          Divider(height: 1, color: ChurchColors.divider),
           const SizedBox(height: 4),
           Row(
             children: [
@@ -166,7 +166,7 @@ class PrayerCard extends StatelessWidget {
           ),
         PopupMenuButton<PrayerAction>(
           tooltip: 'More options',
-          icon: const Icon(Icons.more_horiz_rounded, color: ChurchColors.muted),
+          icon: Icon(Icons.more_horiz_rounded, color: ChurchColors.muted),
           onSelected: onAction,
           itemBuilder: (_) => prayer.mine
               ? [
@@ -285,14 +285,14 @@ class _PraiseReport extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ChurchColors.background,
         border: Border(left: BorderSide(color: ChurchColors.accent, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ChurchEyebrow('Praise report', color: ChurchColors.accent),
+          ChurchEyebrow('Praise report', color: ChurchColors.accent),
           const SizedBox(height: 4),
           Text(
             text == null || text.isEmpty ? 'God answered this prayer.' : text,
@@ -341,14 +341,14 @@ class _StillNeedPrayer extends StatelessWidget {
       width: double.infinity,
       margin: const EdgeInsets.only(right: 8),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ChurchColors.background,
         border: Border(left: BorderSide(color: ChurchColors.accent, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ChurchEyebrow('A month on', color: ChurchColors.accent),
+          ChurchEyebrow('A month on', color: ChurchColors.accent),
           const SizedBox(height: 4),
           Text('Still need prayer for this?', style: ChurchType.body.copyWith(fontSize: 14)),
           const SizedBox(height: 4),

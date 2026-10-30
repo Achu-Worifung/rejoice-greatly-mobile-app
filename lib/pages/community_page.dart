@@ -193,7 +193,7 @@ class _CommunityPageState extends State<CommunityPage> {
               elevation: 1,
               shape: const RoundedRectangleBorder(borderRadius: ChurchRadius.mdAll),
               icon: const Icon(Icons.edit_outlined),
-              label: const Text('Share a request', style: ChurchType.button),
+              label: Text('Share a request', style: ChurchType.button),
             )
           : null,
       body: SafeArea(
@@ -272,7 +272,7 @@ class _CommunityPageState extends State<CommunityPage> {
           ),
         ),
       if (_loadingMore)
-        const Padding(
+        Padding(
           padding: EdgeInsets.all(16),
           child: Center(child: CircularProgressIndicator(color: ChurchColors.button)),
         ),
@@ -376,7 +376,7 @@ class _PostingPaused extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

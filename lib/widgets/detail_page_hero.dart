@@ -151,7 +151,7 @@ class _DetailHeroImageState extends State<DetailHeroImage> {
       return SizedBox(
         width: screenWidth,
         height: _placeholderHeight,
-        child: const ColoredBox(
+        child: ColoredBox(
           color: ChurchColors.card,
           child: Center(
             child: SizedBox(

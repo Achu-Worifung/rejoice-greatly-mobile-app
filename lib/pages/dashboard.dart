@@ -75,7 +75,7 @@ class _DashboardState extends State<Dashboard> {
 
   BottomNavigationBarItem _buildNavItem(String assetPath, String label, int index) {
     // Muted brown, not light grey: the unselected tabs still need AA contrast.
-    const Color unselectedColor = ChurchColors.muted;
+    final Color unselectedColor = ChurchColors.muted;
     final Color color = _selectedIndex == index ? ChurchColors.accent : unselectedColor;
 
     return BottomNavigationBarItem(
@@ -114,7 +114,7 @@ class _DashboardState extends State<Dashboard> {
         decoration: BoxDecoration(
           color: ChurchColors.background,
           // The register's rule closes the page above the nav.
-          border: const Border(top: BorderSide(color: ChurchColors.divider)),
+          border: Border(top: BorderSide(color: ChurchColors.divider)),
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,

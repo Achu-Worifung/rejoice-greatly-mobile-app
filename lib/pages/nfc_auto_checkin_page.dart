@@ -88,7 +88,7 @@ class _NfcAutoCheckinPageState extends State<NfcAutoCheckinPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: ChurchColors.background,
       body: Center(child: BrandedLoader()),
     );

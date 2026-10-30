@@ -129,13 +129,13 @@ class StartupErrorApp extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   size: 48,
                   color: ChurchColors.muted,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Could not start the app',
                   style: TextStyle(
                     fontSize: 18,
@@ -147,7 +147,7 @@ class StartupErrorApp extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: ChurchColors.muted,
                     fontSize: 14,
                   ),

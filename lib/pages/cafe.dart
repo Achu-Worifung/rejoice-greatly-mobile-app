@@ -187,7 +187,7 @@ class _CafeState extends State<Cafe> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   'Open the cafe on your phone',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -211,7 +211,7 @@ class _CafeState extends State<Cafe> {
     }
 
     if (controller == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: ChurchColors.button),
         ),
@@ -229,7 +229,7 @@ class _CafeState extends State<Cafe> {
         appBar: ChurchAppBar.pageTitle(
           'Mood Changing Cafe',
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
+            icon: Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
             onPressed: () => _handleBack(context),
           ),
         ),
@@ -237,7 +237,7 @@ class _CafeState extends State<Cafe> {
           children: [
             WebViewWidget(controller: controller),
             if (_syncing)
-              const Align(
+              Align(
                 alignment: Alignment.topCenter,
                 child: LinearProgressIndicator(
                   color: ChurchColors.button,

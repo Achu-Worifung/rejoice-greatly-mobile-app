@@ -121,12 +121,12 @@ Future<void> showEventReminderSheet(BuildContext context, Map<String, dynamic> e
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Remind me', style: ChurchType.headline),
+          Text('Remind me', style: ChurchType.headline),
           const SizedBox(height: 4),
           Text(event['title'] as String? ?? '', style: ChurchType.label),
           const SizedBox(height: 8),
           if (choices.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Text('It’s starting too soon for a reminder.', style: ChurchType.body),
             ),
@@ -135,16 +135,16 @@ Future<void> showEventReminderSheet(BuildContext context, Map<String, dynamic> e
               contentPadding: EdgeInsets.zero,
               title: Text(MemberEvents.reminderLabel(m), style: ChurchType.body),
               trailing: m == current
-                  ? const Icon(Icons.check_rounded, color: ChurchColors.accent)
+                  ? Icon(Icons.check_rounded, color: ChurchColors.accent)
                   : null,
               onTap: () => Navigator.pop(ctx, m),
             ),
           if (current != null) ...[
-            const Divider(color: ChurchColors.divider),
+            Divider(color: ChurchColors.divider),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.notifications_off_outlined, color: ChurchColors.muted),
-              title: const Text('Turn off reminder', style: ChurchType.body),
+              leading: Icon(Icons.notifications_off_outlined, color: ChurchColors.muted),
+              title: Text('Turn off reminder', style: ChurchType.body),
               onTap: () => Navigator.pop(ctx, -1),
             ),
           ],
@@ -237,7 +237,7 @@ class _BacentaMeetingCardState extends State<BacentaMeetingCard> {
             _Line(icon: Icons.person_outline_rounded, text: 'Led by ${m.leaderName}'),
           if (m.cancelled) ...[
             const SizedBox(height: 6),
-            const Text('This week’s meeting is called off.', style: ChurchType.bodyStrong),
+            Text('This week’s meeting is called off.', style: ChurchType.bodyStrong),
           ] else if (m.online) ...[
             const SizedBox(height: 12),
             ChurchPrimaryButton(
@@ -248,7 +248,7 @@ class _BacentaMeetingCardState extends State<BacentaMeetingCard> {
             ),
             if (m.joinCountsNow && !m.present) ...[
               const SizedBox(height: 6),
-              const Text('Joining marks you present for this meeting.', style: ChurchType.caption),
+              Text('Joining marks you present for this meeting.', style: ChurchType.caption),
             ],
           ],
         ],

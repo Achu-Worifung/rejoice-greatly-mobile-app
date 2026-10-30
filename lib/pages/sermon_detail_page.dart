@@ -87,7 +87,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                 ),
                 const SizedBox(height: 16),
                 if (_loading)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: CircularProgressIndicator(color: ChurchColors.button),
@@ -146,7 +146,7 @@ class _AudioPlayButton extends StatelessWidget {
 
         Widget leadingIcon() {
           if (loading) {
-            return const SizedBox(
+            return SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
