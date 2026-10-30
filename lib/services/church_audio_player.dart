@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'church_api.dart';
+import 'sermon_downloads.dart';
+import 'sermon_progress.dart';
 
 /// One shared sermon audio player: starting a new sermon stops the previous.
 ///
@@ -18,7 +21,15 @@ class ChurchAudioPlayer extends ChangeNotifier {
   ChurchAudioPlayer._internal() {
     _playerStateSub = _player.playerStateStream.listen(_onPlayerState);
     _positionSub = _player.positionStream.listen(_onPosition);
+    _loadSpeed();
   }
+
+  /// Playback speeds offered, slowest first.
+  static const List<double> speeds = [1.0, 1.25, 1.5, 1.75, 2.0];
+  static const _speedKey = 'sermon_speed';
+
+  /// How often progress is saved while playing.
+  static const Duration _saveEvery = Duration(seconds: 10);
 
   static final ChurchAudioPlayer instance = ChurchAudioPlayer._internal();
 
@@ -27,6 +38,11 @@ class ChurchAudioPlayer extends ChangeNotifier {
   String? _activeKey;
   String? _loadingKey;
 
+  /// The sermon loaded now, for saving where they got to.
+  Map<String, dynamic>? _activeSermon;
+  Duration _lastSaved = Duration.zero;
+  double _speed = 1.0;
+
   bool _handlingPlaybackEnded = false;
 
   StreamSubscription<PlayerState>? _playerStateSub;
@@ -34,6 +50,58 @@ class ChurchAudioPlayer extends ChangeNotifier {
 
   AudioPlayer get player => _player;
 
+  /// The sermon playing or paused now, if any.
+  Map<String, dynamic>? get activeSermon => _activeKey == null ? null : _activeSermon;
+
+  double get speed => _speed;
+
+  Stream<Duration> get positionStream => _player.positionStream;
+  Duration get position => _player.position;
+  Duration? get duration => _player.duration;
+
+  Future<void> setSpeed(double value) async {
+    _speed = value;
+    notifyListeners();
+    await _player.setSpeed(value);
+    try {
+      await (await SharedPreferences.getInstance()).setDouble(_speedKey, value);
+    } catch (_) {}
+  }
+
+  Future<void> seek(Duration to) async {
+    final d = _player.duration;
+    var target = to < Duration.zero ? Duration.zero : to;
+    if (d != null && target > d) target = d;
+    await _player.seek(target);
+    _saveProgress(force: true);
+  }
+
+  /// Jumps back or forward, e.g. −15 s or +30 s.
+  Future<void> skip(Duration by) => seek(_player.position + by);
+
+  Future<void> _loadSpeed() async {
+    try {
+      final saved = (await SharedPreferences.getInstance()).getDouble(_speedKey);
+      if (saved != null && speeds.contains(saved)) {
+        _speed = saved;
+        await _player.setSpeed(saved);
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  /// Saves where they are in the current sermon: every [_saveEvery] while
+  /// playing, and straight away on pause, seek or stop.
+  void _saveProgress({bool force = false}) {
+    final sermon = _activeSermon;
+    final key = _activeKey;
+    final duration = _player.duration;
+    if (sermon == null || key == null || duration == null) return;
+    final position = _player.position;
+    if (!force && (position - _lastSaved).abs() < _saveEvery) return;
+    _lastSaved = position;
+    SermonProgress.record(key, sermon, position, duration);
+  }
   static String? sermonKey(Map<String, dynamic> m) {
     final id = m['id'];
     if (id != null) return id.toString();
@@ -127,6 +195,7 @@ class ChurchAudioPlayer extends ChangeNotifier {
     if (_activeKey == key) {
       if (_player.playing) {
         await _player.pause();
+        _saveProgress(force: true);
       } else {
         final ps = _player.processingState;
         if (ps == ProcessingState.completed || _isNearEnd) {
@@ -139,6 +208,7 @@ class ChurchAudioPlayer extends ChangeNotifier {
     }
 
     // New sermon — load and play
+    _saveProgress(force: true);
     _loadingKey = key;
     _activeKey = null;
     notifyListeners();
@@ -146,8 +216,10 @@ class ChurchAudioPlayer extends ChangeNotifier {
     await _player.stop();
 
     try {
-      final url = await _resolveAudioUrl(m);
-      if (url == null || url.isEmpty) {
+      // A downloaded copy plays without the network; otherwise stream it.
+      final file = SermonDownloads.fileFor(key);
+      final url = file == null ? await _resolveAudioUrl(m) : null;
+      if (file == null && (url == null || url.isEmpty)) {
         _loadingKey = null;
         notifyListeners();
         return false;
@@ -155,11 +227,17 @@ class ChurchAudioPlayer extends ChangeNotifier {
 
       // The MediaItem tag is what `just_audio_background` publishes to the
       // OS, so the notification names the sermon instead of the app.
+      final tag = _mediaItem(m, key);
       await _player.setAudioSource(
-        AudioSource.uri(Uri.parse(url), tag: _mediaItem(m, key)),
+        file != null ? AudioSource.file(file, tag: tag) : AudioSource.uri(Uri.parse(url!), tag: tag),
+        // Picks up where they left off last time.
+        initialPosition: SermonProgress.resumeAt(key),
       );
+      await _player.setSpeed(_speed);
 
       _activeKey = key;
+      _activeSermon = Map<String, dynamic>.from(m);
+      _lastSaved = _player.position;
       _loadingKey = null;
       notifyListeners();
 
@@ -176,6 +254,7 @@ class ChurchAudioPlayer extends ChangeNotifier {
   }
 
   Future<void> stop() async {
+    _saveProgress(force: true);
     _activeKey = null;
     notifyListeners();
     await _player.stop();
@@ -197,11 +276,17 @@ class ChurchAudioPlayer extends ChangeNotifier {
       _handlePlaybackEnded();
       return;
     }
+    // Paused from the lock screen or a headset counts as a pause too.
+    if (_wasPlaying && !state.playing) _saveProgress(force: true);
+    _wasPlaying = state.playing;
     notifyListeners();
   }
 
+  bool _wasPlaying = false;
+
   void _onPosition(Duration position) {
     if (!_player.playing) return;
+    _saveProgress();
     final duration = _player.duration;
     if (duration == null || duration <= Duration.zero) return;
     final slackMs = duration.inMilliseconds < 800 ? 50 : 400;
@@ -214,6 +299,13 @@ class ChurchAudioPlayer extends ChangeNotifier {
   Future<void> _handlePlaybackEnded() async {
     if (_handlingPlaybackEnded) return;
     _handlingPlaybackEnded = true;
+    // Finished: it leaves "Continue listening".
+    final key = _activeKey;
+    final sermon = _activeSermon;
+    final duration = _player.duration;
+    if (key != null && sermon != null && duration != null) {
+      SermonProgress.record(key, sermon, duration, duration);
+    }
 
     _activeKey = null;
     notifyListeners();

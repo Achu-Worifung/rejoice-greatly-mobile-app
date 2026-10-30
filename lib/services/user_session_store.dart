@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'sermon_progress.dart';
 
 /// Local persistence for logged-in member data (survives app restarts).
 class UserSessionStore {
@@ -328,6 +329,8 @@ class UserSessionStore {
     await p.remove(mePageCachedAtKey);
     // Per-user UI state that must not leak to the next account on this device.
     await p.remove('saved_sermon_ids');
+    // Where they'd got to in sermons is theirs, not the next account's.
+    await SermonProgress.clear();
     await p.reload();
     debugPrint('UserSessionStore: cleared');
   }

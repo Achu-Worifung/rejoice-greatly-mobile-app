@@ -11,6 +11,8 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
 import 'services/nfc_deep_link_service.dart';
+import 'services/sermon_downloads.dart';
+import 'services/sermon_progress.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'services/user_facing_error.dart';
 
@@ -28,6 +30,9 @@ void main() async {
       _loadEnv(),
       // Text size and light/dark, so the first frame is already right.
       DisplaySettings.load(),
+      // Where sermons were left off, and which are downloaded.
+      SermonProgress.load(),
+      SermonDownloads.load(),
     ]);
 
     await UserSessionStore.initialize();
