@@ -93,7 +93,7 @@ class WorshipWithUsCard extends StatelessWidget {
             color: ChurchColors.card,
             shadow: [
               BoxShadow(
-                color: const Color(0xFF633A02).withValues(alpha: 0.07),
+                color: ChurchColors.button.withValues(alpha: 0.07),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -380,19 +380,19 @@ class _InfoRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF6B6B6B),
+                  color: ChurchColors.muted,
                   letterSpacing: 1.2,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF1A1A1A),
+                  color: ChurchColors.bodyText,
                   height: 1.45,
                   fontWeight: FontWeight.w500,
                 ),
@@ -410,9 +410,9 @@ class _RowDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 14),
-      child: Divider(height: 1, color: Color(0xFFF0F0F0)),
+      child: Divider(height: 1, color: ChurchColors.divider),
     );
   }
 }

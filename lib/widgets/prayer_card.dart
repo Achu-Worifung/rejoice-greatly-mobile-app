@@ -88,14 +88,16 @@ class PrayerCard extends StatelessWidget {
           const SizedBox(height: 8),
           Divider(height: 1, color: ChurchColors.divider),
           const SizedBox(height: 4),
-          Row(
+          // Wraps rather than overflowing when the member has chosen larger text.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               PrayButton(
                 prayed: prayer.prayedByMe,
                 count: prayer.prayerCount,
                 onChanged: onPrayed,
               ),
-              const Spacer(),
               if (onOpen != null)
                 TextButton.icon(
                   onPressed: onOpen,

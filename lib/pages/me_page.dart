@@ -15,6 +15,7 @@ import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/display_section.dart';
 import '../widgets/household_section.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
@@ -50,7 +51,7 @@ class _MePageState extends State<MePage> {
     }
   }
 
-  static const Color _danger = Color(0xFFC62828);
+  static Color get _danger => ChurchColors.danger;
 
   Widget _meSkeleton() {
     return ListView(
@@ -316,7 +317,7 @@ class _MePageState extends State<MePage> {
                   color: _danger.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_forever_rounded, color: _danger, size: 28),
+                child: Icon(Icons.delete_forever_rounded, color: _danger, size: 28),
               ),
               const SizedBox(height: 20),
               Text(
@@ -695,6 +696,8 @@ class _MePageState extends State<MePage> {
                     activities: _parseActivities(result?.activities ?? []),
                   ),
                 ],
+                const SizedBox(height: 28),
+                const DisplaySection(),
                 // Parents check their children in alongside themselves.
                 if (profile['minor'] != true) ...[
                   const SizedBox(height: 28),
@@ -731,7 +734,7 @@ class _MePageState extends State<MePage> {
                 const SizedBox(height: 36),
                 Divider(color: ChurchColors.divider, height: 1),
                 const SizedBox(height: 20),
-                const DashboardLabelText(label: 'Session', color: _danger),
+                DashboardLabelText(label: 'Session', color: _danger),
                 ChurchDangerButton(
                   label: 'Log out of account',
                   icon: Icons.power_settings_new_rounded,
@@ -878,7 +881,7 @@ class _ActionTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool danger;
 
-  static const Color _danger = Color(0xFFC62828);
+  static Color get _danger => ChurchColors.danger;
 
   @override
   Widget build(BuildContext context) {
@@ -996,10 +999,10 @@ class _ActivityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPresent = activity.isPresent;
-    final iconColor = isPresent ? ChurchColors.button : const Color(0xFFC62828);
+    final iconColor = isPresent ? ChurchColors.button : ChurchColors.danger;
     final bgColor = isPresent
         ? ChurchColors.button.withValues(alpha: 0.12)
-        : const Color(0xFFC62828).withValues(alpha: 0.08);
+        : ChurchColors.danger.withValues(alpha: 0.08);
 
     return Container(
       width: double.infinity,
@@ -1030,7 +1033,7 @@ class _ActivityRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isPresent ? ChurchColors.bodyText : const Color(0xFFC62828),
+                    color: isPresent ? ChurchColors.bodyText : ChurchColors.danger,
                   ),
                 ),
                 const SizedBox(height: 2),

@@ -237,9 +237,9 @@ class _DobPageState extends State<DobPage> {
                 const SizedBox(height: 16),
                 Text(
                   _error!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFC62828),
+                    color: ChurchColors.danger,
                     height: 1.4,
                   ),
                 ),

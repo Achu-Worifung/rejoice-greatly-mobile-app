@@ -13,6 +13,7 @@ import 'pages/admin_dashboard.dart' as admin_page;
 import 'pages/me_page.dart';
 import 'pages/forgot_password_page.dart';
 import 'pages/notifications_page.dart';
+import 'theme/display_settings.dart';
 
 class AppRoutes {
   static const String login = '/login';
@@ -42,7 +43,8 @@ class AppRoutes {
       privacy: (context) => const PrivacyPage(),
       terms: (context) => const TermsPage(),
       biometricNotice: (context) => const BiometricNoticePage(),
-      admin: (context) => const admin_page.AdminDashboard(),
+      // The admin tools have their own colours, drawn for light only.
+      admin: (context) => const LightOnly(child: admin_page.AdminDashboard()),
       completeSignup: (context) => const CompleteSignup(),
       dashboard: (context) => const Dashboard(),
       userPrep: (context) => const UserPrepPage(),

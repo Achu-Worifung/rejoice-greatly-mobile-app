@@ -5,6 +5,7 @@ import 'routes.dart';
 import 'pages/splash_screen.dart';
 import 'theme/church_colors.dart';
 import 'theme/church_theme.dart';
+import 'theme/display_settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'notifications/notification_service.dart';
@@ -25,6 +26,8 @@ void main() async {
       if (Firebase.apps.isEmpty)
         Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
       _loadEnv(),
+      // Text size and light/dark, so the first frame is already right.
+      DisplaySettings.load(),
     ]);
 
     await UserSessionStore.initialize();
@@ -96,19 +99,28 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final ThemeData _lightTheme = buildChurchTheme(ChurchPalette.light);
+  static final ThemeData _darkTheme = buildChurchTheme(ChurchPalette.dark);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Rejoice Greatly',
-      navigatorKey: navigatorKey,
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      initialRoute: '/',
-      theme: buildChurchTheme(),
-      routes: {
-        '/': (context) => const SplashScreen(),
-        ...AppRoutes.getRoutes(),
-      },
-      debugShowCheckedModeBanner: false,
+    return ListenableBuilder(
+      listenable: Listenable.merge([DisplaySettings.current, DisplaySettings.lightOnlyScreens]),
+      builder: (context, _) => MaterialApp(
+        title: 'Rejoice Greatly',
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        initialRoute: '/',
+        theme: _lightTheme,
+        darkTheme: _darkTheme,
+        themeMode: DisplaySettings.themeMode,
+        builder: (context, child) => DisplayScope(child: child ?? const SizedBox.shrink()),
+        routes: {
+          '/': (context) => const SplashScreen(),
+          ...AppRoutes.getRoutes(),
+        },
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
