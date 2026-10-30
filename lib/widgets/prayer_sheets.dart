@@ -270,6 +270,13 @@ class _PrayerComposerState extends State<_PrayerComposer> {
               contentPadding: EdgeInsets.zero,
               value: _anonymous,
               activeTrackColor: ChurchColors.button,
+              // Off has to read as a switch too: the default cream track and
+              // pale thumb all but vanish on the white sheet.
+              inactiveThumbColor: ChurchColors.muted,
+              inactiveTrackColor: ChurchColors.background,
+              trackOutlineColor: WidgetStateProperty.resolveWith(
+                (states) => states.contains(WidgetState.selected) ? ChurchColors.button : ChurchColors.muted,
+              ),
               onChanged: (v) => setState(() => _anonymous = v),
               title: const Text('Share anonymously', style: ChurchType.bodyStrong),
               subtitle: const Text(
