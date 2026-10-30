@@ -5,6 +5,7 @@ import 'package:nfc_manager/nfc_manager.dart';
 
 import 'checkin_location.dart';
 import 'church_api.dart';
+import 'household_api.dart';
 
 /// Why an NFC check-in did not succeed. Callers use this to react distinctly —
 /// e.g. prompt re-login on [unauthorized], vs. surface a network hint on
@@ -47,6 +48,7 @@ class NfcCheckinResult {
     this.name,
     this.attendedAt,
     this.errorKind,
+    this.household = const [],
   });
 
   final bool success;
@@ -56,11 +58,26 @@ class NfcCheckinResult {
   final String? attendedAt;
   final NfcCheckinErrorKind? errorKind;
 
+  /// Children the member can check in alongside themselves.
+  final List<HouseholdChild> household;
+
+  /// The same outcome, worded differently — e.g. once their children are in too.
+  NfcCheckinResult withMessage(String message, {bool? alreadyPresent}) => NfcCheckinResult._(
+        success: success,
+        message: message,
+        alreadyPresent: alreadyPresent ?? this.alreadyPresent,
+        name: name,
+        attendedAt: attendedAt,
+        errorKind: errorKind,
+        household: household,
+      );
+
   factory NfcCheckinResult.ok({
     required String message,
     required bool alreadyPresent,
     String? name,
     String? attendedAt,
+    List<HouseholdChild> household = const [],
   }) =>
       NfcCheckinResult._(
         success: true,
@@ -68,6 +85,7 @@ class NfcCheckinResult {
         alreadyPresent: alreadyPresent,
         name: name,
         attendedAt: attendedAt,
+        household: household,
       );
 
   factory NfcCheckinResult.failure(
@@ -149,6 +167,7 @@ class NfcCheckinService {
         alreadyPresent: alreadyPresent,
         name: (data['name'] as String?)?.trim(),
         attendedAt: (data['attendedAt'] as String?)?.trim(),
+        household: parseHousehold(data['household']),
       );
     } on ChurchApiException catch (e) {
       return _resultForApiError(e);

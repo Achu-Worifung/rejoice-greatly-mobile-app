@@ -15,6 +15,7 @@ import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/household_section.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 
@@ -693,6 +694,11 @@ class _MePageState extends State<MePage> {
                   _AttendanceActivityList(
                     activities: _parseActivities(result?.activities ?? []),
                   ),
+                ],
+                // Parents check their children in alongside themselves.
+                if (profile['minor'] != true) ...[
+                  const SizedBox(height: 28),
+                  const HouseholdSection(),
                 ],
                 const SizedBox(height: 28),
                 const DashboardLabelText(label: 'Account'),

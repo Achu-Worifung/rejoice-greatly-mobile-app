@@ -399,6 +399,31 @@ class ChurchApi {
   static Future<Map<String, dynamic>> joinBacentaMeeting() =>
       _postMember('bacenta/join', const {});
 
+  /// `POST /member/household[/path]` — the children a member checks in.
+  /// Returns the unwrapped payload: a list for the household, a map for one
+  /// child. Typed wrappers live in `HouseholdApi`.
+  static Future<Object?> memberHousehold(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) async {
+    final tokenBundle = await requireIdToken();
+    final uri = Uri.parse('$baseUrl/member/${path.isEmpty ? 'household' : 'household/$path'}');
+    final r = await httpClient
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'idToken': tokenBundle.token, ...extra}),
+        )
+        .timeout(_httpTimeout);
+    debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
+    if (r.statusCode != 200) throw _failure(r);
+    try {
+      return unwrapApiBody(r.body);
+    } on FormatException {
+      throw ChurchApiException(r.statusCode);
+    }
+  }
+
   /// `POST /member/prayers[/path]` — the prayer wall. Typed wrappers live in
   /// `PrayerWallApi`; this only adds the id token.
   static Future<Map<String, dynamic>> memberPrayers(
@@ -749,6 +774,31 @@ class ChurchApi {
     }
 
     throw _failure(r);
+  }
+
+  /// `POST /attendance/nfc/checkin/children` — checks in the children a
+  /// parent brought, under the same tag and place rules as their own tap.
+  static Future<Map<String, dynamic>> nfcCheckinChildren(
+    String tagId,
+    List<String> childIds, {
+    Map<String, dynamic>? location,
+  }) async {
+    final tokenBundle = await requireIdToken();
+    final uri = Uri.parse('$baseUrl/attendance/nfc/checkin/children');
+    final r = await httpClient
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'idToken': tokenBundle.token, 'tagId': tagId, 'childIds': childIds, ...?location}),
+        )
+        .timeout(_httpTimeout);
+    debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
+    if (r.statusCode != 200) throw _failure(r);
+    try {
+      return unwrapApiMap(r.body);
+    } on FormatException {
+      throw ChurchApiException(r.statusCode);
+    }
   }
 
   /// A non-200 response as a [ChurchApiException], keeping the status and the

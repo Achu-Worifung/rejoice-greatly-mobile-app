@@ -1,4 +1,5 @@
 import 'package:church_app/services/checkin_location.dart';
+import 'package:church_app/services/household_api.dart';
 import 'package:church_app/services/nfc_checkin_service.dart';
 import 'package:church_app/widgets/checkin_location_sheet.dart';
 import 'package:flutter/material.dart';
@@ -145,6 +146,60 @@ void main() {
     expect(result.success, isFalse);
     expect(result.message, contains('couldn’t find where it is'));
     expect(server.received, [null]);
+  });
+
+  group('children', () {
+    const kofi = HouseholdChild(id: 'k', name: 'Kofi Mensah');
+    const ama = HouseholdChild(id: 'a', name: 'Ama Mensah', presentToday: true);
+    const esi = HouseholdChild(id: 'e', name: 'Esi Mensah');
+
+    Future<NfcCheckinResult> parent(String tagId, {CheckinPosition? position}) async =>
+        NfcCheckinResult.ok(message: 'Marked present for today.', alreadyPresent: false, household: const [kofi, ama, esi]);
+
+    testWidgets('a parent picks who is with them, and only those not yet in are offered', (tester) async {
+      await host(tester);
+      final sent = <List<String>>[];
+      Future<List<HouseholdChild>> children(String tagId, List<String> ids, {CheckinPosition? position}) async {
+        sent.add(ids);
+        return const [];
+      }
+
+      final pending = checkInAtTag(context, 'entrance',
+          submit: parent, submitChildren: children, location: _Phone(LocationAccess.granted));
+      await tester.pumpAndSettle();
+      expect(find.text('Who’s with you today?'), findsOneWidget);
+      expect(find.text('Ama Mensah'), findsNothing); // already checked in
+      await tester.tap(find.text('Esi Mensah')); // she stayed home
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Check in Kofi'));
+      await tester.pumpAndSettle();
+      final result = await pending;
+
+      expect(sent, [
+        ['k'],
+      ]);
+      expect(result.success, isTrue);
+      expect(result.message, 'You and Kofi are checked in.');
+    });
+
+    testWidgets('"Just me today" checks in only the parent', (tester) async {
+      await host(tester);
+      var called = false;
+      Future<List<HouseholdChild>> children(String tagId, List<String> ids, {CheckinPosition? position}) async {
+        called = true;
+        return const [];
+      }
+
+      final pending = checkInAtTag(context, 'entrance',
+          submit: parent, submitChildren: children, location: _Phone(LocationAccess.granted));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Just me today'));
+      await tester.pumpAndSettle();
+      final result = await pending;
+
+      expect(called, isFalse);
+      expect(result.message, 'Marked present for today.');
+    });
   });
 
   test('only the position and its accuracy are sent', () {
