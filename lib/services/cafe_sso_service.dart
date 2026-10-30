@@ -67,6 +67,18 @@ class CafeSsoService {
     return Uri.parse('$base/');
   }
 
+  /// Whether [controller] is showing the cafe's own origin. The custom token
+  /// signs whoever holds it in as this member, so it only ever goes to the
+  /// cafe — never to a page the member followed a link or redirect to.
+  static Future<bool> isOnCafe(WebViewController controller) async {
+    final current = Uri.tryParse(await controller.currentUrl() ?? '');
+    final cafe = cafeUri;
+    return current != null &&
+        current.scheme == cafe.scheme &&
+        current.host == cafe.host &&
+        current.port == cafe.port;
+  }
+
   /// Mints a Firebase custom token so the cafe WebView can sign in as the same
   /// member. Throws [SessionInvalidException] when the account has been
   /// deleted/disabled (so the cafe — and the app — can sign the member out
@@ -91,18 +103,24 @@ class CafeSsoService {
       throw SessionInvalidException('auth/custom-token:${r.statusCode}');
     }
     if (r.statusCode != 200) {
-      throw Exception('auth/custom-token failed: ${r.statusCode} ${r.body}');
+      // Status only: the body can carry server detail, and this ends up in logs.
+      throw Exception('auth/custom-token failed: ${r.statusCode}');
     }
     final map = unwrapApiMap(r.body);
     return map['customToken'] as String?;
   }
 
-  /// Injects cafe SSO into the loaded page (same origin as moodchangingcafe.vercel.app).
-  static Future<void> applyToWebView(
+  /// Injects cafe SSO into the loaded page. A sign-in is only injected while
+  /// the page is the cafe itself (see [isOnCafe]); returns whether it ran.
+  static Future<bool> applyToWebView(
     WebViewController controller, {
     required String? customToken,
   }) async {
-    if (kIsWeb) return;
+    if (kIsWeb) return false;
+    if (customToken != null && !await isOnCafe(controller)) {
+      debugPrint('CafeSso: not on the cafe origin; sign-in not injected');
+      return false;
+    }
 
     final tokenJson = json.encode(customToken);
     final script = customToken != null
@@ -111,8 +129,10 @@ class CafeSsoService {
 
     try {
       await controller.runJavaScript(script);
+      return true;
     } catch (e, st) {
       debugPrint('CafeSso: runJavaScript failed: $e\n$st');
+      return false;
     }
   }
 

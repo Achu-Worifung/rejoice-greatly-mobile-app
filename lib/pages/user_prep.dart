@@ -145,9 +145,9 @@ class _UserPrepPageState extends State<UserPrepPage> {
   final List<Map<String, dynamic>> _slides = [
     {
       'icon': Icons.lock_outline,
-      'title': 'Encrypted End to End',
+      'title': 'Encrypted From Your Phone',
       'description':
-          'Each photo is encrypted on your phone (AES-256-GCM) before it is uploaded, and stays encrypted in transit and at rest. Only ciphertext ever leaves your device.',
+          'Each photo is encrypted on your phone (AES-256-GCM) before it is uploaded, and stays encrypted in transit and in storage. Only the church\u2019s system can open it, to check it and to recognise you at check-in.',
     },
     {
       'icon': Icons.how_to_reg_outlined,

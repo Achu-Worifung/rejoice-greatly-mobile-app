@@ -127,11 +127,14 @@ class _CafeState extends State<Cafe> {
         return;
       }
 
+      // Only mint a sign-in token while the WebView is on the cafe itself; a
+      // page the member navigated away to must never receive it.
+      if (!await CafeSsoService.isOnCafe(controller)) return;
       final customToken = await CafeSsoService.fetchCustomToken();
       if (!mounted) return;
       if (customToken == null || customToken.isEmpty) return;
 
-      await CafeSsoService.applyToWebView(controller, customToken: customToken);
+      if (!await CafeSsoService.applyToWebView(controller, customToken: customToken)) return;
       _syncedUid = user.uid;
       await CafeSsoService.writeLastCafeUid(user.uid);
     } on SessionInvalidException catch (e) {

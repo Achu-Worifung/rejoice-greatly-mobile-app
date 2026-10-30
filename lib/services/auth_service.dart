@@ -263,11 +263,11 @@ class AuthService {
     );
 
     final idToken = appleCredential.identityToken;
+    // debugPrint still prints in release builds, so no identifiers or email.
     debugPrint(
       'AuthService: Apple credential received '
       '(hasIdToken=${idToken != null && idToken.isNotEmpty}, '
-      'userIdentifier=${appleCredential.userIdentifier}, '
-      'email=${appleCredential.email})',
+      'hasEmail=${appleCredential.email != null})',
     );
     if (idToken == null || idToken.isEmpty) {
       throw FirebaseAuthException(
@@ -365,16 +365,13 @@ class AuthService {
       );
 
       final firebaseUid = userData['firebaseUid'] ?? '';
-      final extractedName = userData['name'] ?? 'User';
       if ('$firebaseUid'.isNotEmpty) {
         // Fire-and-forget: push registration must not block or fail sign-in.
         NotificationService().login('$firebaseUid', email: active.email);
       }
 
       final persisted = await UserSessionStore.hasPersistedSession();
-      debugPrint(
-        'AuthService: synced $extractedName with backend (persisted=$persisted)',
-      );
+      debugPrint('AuthService: synced with backend (persisted=$persisted)');
       if (!persisted) {
         debugPrint('WARNING: account data was not written to device storage.');
       }
