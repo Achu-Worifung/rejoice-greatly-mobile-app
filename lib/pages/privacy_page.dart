@@ -76,6 +76,14 @@ class PrivacyPage extends StatelessWidget {
             'and reads nothing off your person.',
           ),
           const LegalParagraph(
+            'Location at check-in. Some tags only check people in near where '
+            'the tag is, so a copied check-in link cannot be used from '
+            'somewhere else. When you tap one of those, and only if you allow '
+            'it, the app reads your location once and sends it with that '
+            'check-in. We keep only how far you were from the tag, never where '
+            'you were, and the app does not read your location at any other time.',
+          ),
+          const LegalParagraph(
             'Attendance and activity. We collect records of when you were '
             'recognized or checked in present, your attendance and absence '
             'counts, your current and longest streaks, saved sermons, and your '

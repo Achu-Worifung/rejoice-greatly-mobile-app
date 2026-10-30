@@ -723,14 +723,16 @@ class ChurchApi {
   /// the unwrapped success `data` map (`message`, `name`, `attendedAt`,
   /// `alreadyPresent`). Throws [ChurchApiException] carrying the HTTP status on
   /// a non-200 response so the caller can react to 401/404 distinctly.
-  static Future<Map<String, dynamic>> nfcCheckin(String tagId) async {
+  /// [location] is the phone's position, for a tag that only checks people
+  /// in near it; see `CheckinPosition`.
+  static Future<Map<String, dynamic>> nfcCheckin(String tagId, {Map<String, dynamic>? location}) async {
     final tokenBundle = await requireIdToken();
     final uri = Uri.parse('$baseUrl/attendance/nfc/checkin');
     final r = await httpClient
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({'idToken': tokenBundle.token, 'tagId': tagId}),
+          body: json.encode({'idToken': tokenBundle.token, 'tagId': tagId, ...?location}),
         )
         .timeout(_httpTimeout);
 

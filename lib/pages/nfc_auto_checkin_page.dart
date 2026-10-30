@@ -5,16 +5,17 @@ import '../services/nfc_checkin_service.dart';
 import '../theme/church_colors.dart';
 import '../widgets/attendance_banner.dart';
 import '../widgets/branded_loader.dart';
+import '../widgets/checkin_location_sheet.dart';
 
 /// Landing screen for a tap on an NFC check-in tag that reached the app via
 /// a deep link (Android NDEF dispatch — cold or warm; iOS Universal Link
 /// after the system's one-tap NFC banner) instead of the member opening the
 /// app and pressing the manual "Check in with NFC" button on their profile.
 ///
-/// Fires the same check-in call that button uses
-/// ([NfcCheckinService.checkInWithTagId]) and shows the same
-/// [AttendanceBanner] outcome, then pops back to whatever was already on
-/// screen underneath — there's nothing on this page worth returning to.
+/// Fires the check-in ([checkInAtTag], which asks for location only if the
+/// tag needs it), shows the [AttendanceBanner] outcome, then pops back to
+/// whatever was already on screen underneath — there's nothing on this page
+/// worth returning to.
 class NfcAutoCheckinPage extends StatefulWidget {
   const NfcAutoCheckinPage({super.key, required this.tagId});
 
@@ -49,7 +50,7 @@ class _NfcAutoCheckinPageState extends State<NfcAutoCheckinPage> {
       return;
     }
 
-    final result = await NfcCheckinService.checkInWithTagId(widget.tagId);
+    final result = await checkInAtTag(context, widget.tagId);
     if (!mounted) return;
 
     if (result.success) {
@@ -61,6 +62,12 @@ class _NfcAutoCheckinPageState extends State<NfcAutoCheckinPage> {
         tone: result.alreadyPresent
             ? AttendanceBannerTone.info
             : AttendanceBannerTone.success,
+      );
+    } else if (result.errorKind == NfcCheckinErrorKind.needsLocation) {
+      // Their choice, or a phone that couldn't find itself — not a failure.
+      AttendanceBanner.show(
+        message: result.message,
+        tone: AttendanceBannerTone.info,
       );
     } else {
       AttendanceBanner.show(

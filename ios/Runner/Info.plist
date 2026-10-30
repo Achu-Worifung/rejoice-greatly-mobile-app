@@ -48,9 +48,9 @@
 		<key>NSMicrophoneUsageDescription</key>
 		<string>To record audio with video, please grant microphone access.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>Rejoice Greatly may use your location while you use the app so optional notification features can work. Location is not required for NFC check-in or core church features, and you can deny access.</string>
+		<string>Some check-in tags only work near where they are, so a copied link can't be used from home. When you tap one, your location is read once to confirm you're at church. Only the distance from the tag is kept.</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>Rejoice Greatly may use your location in the background only if you allow it, so optional notification features can stay relevant. Location is not required for NFC check-in or core church features, and you can deny access.</string>
+		<string>Rejoice Greatly only reads your location when you tap a check-in tag that needs it, to confirm you're at church. It never tracks you in the background.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>NSAppTransportSecurity</key>
