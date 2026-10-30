@@ -225,7 +225,8 @@ class DetailCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChurchStampBadge(label);
+    // Left-aligned at its own width; in a list it would otherwise stretch.
+    return Align(alignment: Alignment.centerLeft, child: ChurchStampBadge(label));
   }
 }
 

@@ -385,6 +385,20 @@ class ChurchApi {
     return _postMember(path, {'ids': ?ids});
   }
 
+  /// `POST /member/events[/path]` — the member's events and reminders. Typed
+  /// wrappers live in `MemberEvents`.
+  static Future<Map<String, dynamic>> memberEvents(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'events' : 'events/$path', extra);
+  }
+
+  /// `POST /member/bacenta/join` — an online bacenta meeting's link, marking
+  /// the member present while the meeting is on.
+  static Future<Map<String, dynamic>> joinBacentaMeeting() =>
+      _postMember('bacenta/join', const {});
+
   /// `POST /member/prayers[/path]` — the prayer wall. Typed wrappers live in
   /// `PrayerWallApi`; this only adds the id token.
   static Future<Map<String, dynamic>> memberPrayers(
@@ -923,8 +937,6 @@ class ChurchApi {
     _sermonsCachedAt = null;
     _latestSermonCache = null;
     _latestSermonCachedAt = null;
-    _dashboardEventsCache = null;
-    _dashboardEventsCachedAt = null;
   }
 
   // --- In-memory caches for home data (1-hour TTL) ---
@@ -939,8 +951,6 @@ class ChurchApi {
   static List<dynamic>? _latestSermonCache;
   static DateTime? _latestSermonCachedAt;
 
-  static List<dynamic>? _dashboardEventsCache;
-  static DateTime? _dashboardEventsCachedAt;
 
   static Future<Map<String, dynamic>> getCurrentVerse() async {
     final cachedAt = _verseCachedAt;
@@ -969,44 +979,6 @@ class ChurchApi {
       throw _failure(r);
     }
     return unwrapApiList(r.body);
-  }
-
-  static Future<List<dynamic>> getDashboardEventInstances() async {
-    final cachedAt = _dashboardEventsCachedAt;
-    if (_dashboardEventsCache != null &&
-        cachedAt != null &&
-        DateTime.now().difference(cachedAt) < _homeCacheDuration) {
-      return _dashboardEventsCache!;
-    }
-    List<dynamic> result;
-    try {
-      final top = await getTop4Events();
-      if (top.isNotEmpty) {
-        result = top;
-      } else {
-        result = await _fetchUpcoming4();
-      }
-    } catch (_) {
-      result = await _fetchUpcoming4();
-    }
-    _dashboardEventsCache = result;
-    _dashboardEventsCachedAt = DateTime.now();
-    return result;
-  }
-
-  static Future<List<dynamic>> _fetchUpcoming4() async {
-    final upcoming = await getUpcomingEvents();
-    if (upcoming.isEmpty) return [];
-    final list = List<dynamic>.from(upcoming);
-    list.sort((a, b) {
-      String dateOf(Object? x) {
-        if (x is! Map) return '';
-        return x['date'] as String? ?? '';
-      }
-
-      return dateOf(a).compareTo(dateOf(b));
-    });
-    return list.length <= 4 ? list : list.sublist(0, 4);
   }
 
   static Future<List<dynamic>> getUpcomingEvents() async {
@@ -1093,6 +1065,11 @@ class ChurchApi {
       final dateStr = m['date'] as String? ?? '';
       if (dateStr.isEmpty) continue;
       out.add({
+        'id': m['id'] == null ? null : '${m['id']}',
+        // Raw "HH:mm[:ss]" for reminders and calendar entries; null runs all day.
+        'startTime': (m['specificTime'] ?? m['specific_time'] ?? t['defaultTime'] ?? t['default_time'])
+            as String?,
+        'audience': t['audience'] as String? ?? 'ALL',
         'title': (t['title'] as String?)?.trim().isNotEmpty == true
             ? t['title'] as String
             : (m['title'] as String?) ?? 'Church event',

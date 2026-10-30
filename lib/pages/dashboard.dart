@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../services/member_events.dart';
 import '../services/prayer_wall_api.dart';
 import '../widgets/user_dashboard.dart';
 import '../theme/church_colors.dart';
 import 'sermons.dart';
+import 'event_detail_page.dart';
 import 'events_page.dart';
 import 'community_page.dart';
 import 'prayer_thread_page.dart';
@@ -16,6 +18,7 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+  static const int _eventsTab = 2;
   static const int _communityTab = 3;
 
   int _selectedIndex = 0;
@@ -24,14 +27,34 @@ class _DashboardState extends State<Dashboard> {
   void initState() {
     super.initState();
     PrayerWallApi.pendingThread.addListener(_openPendingThread);
+    MemberEvents.pendingEvent.addListener(_openPendingEvent);
     // A push tapped on a cold start lands before this screen exists.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingThread());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _openPendingThread();
+      _openPendingEvent();
+    });
   }
 
   @override
   void dispose() {
     PrayerWallApi.pendingThread.removeListener(_openPendingThread);
+    MemberEvents.pendingEvent.removeListener(_openPendingEvent);
     super.dispose();
+  }
+
+  /// Opens the event a tapped reminder or announcement is about.
+  Future<void> _openPendingEvent() async {
+    final id = MemberEvents.pendingEvent.value;
+    if (id == null || !mounted) return;
+    MemberEvents.pendingEvent.value = null;
+    setState(() => _selectedIndex = _eventsTab);
+    try {
+      final feed = await MemberEvents.load();
+      final event = feed.events.where((e) => e['id'] == id).firstOrNull;
+      if (event != null && mounted) openEventDetailPage(context, event);
+    } catch (e) {
+      debugPrint('Dashboard: could not open event $id: $e');
+    }
   }
 
   /// Opens the prayer request a tapped reply notification is about.

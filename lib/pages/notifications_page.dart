@@ -231,6 +231,7 @@ class _NotificationTile extends StatelessWidget {
     final icon = switch (item.type) {
       'attendance' => Icons.check_circle_outline_rounded,
       'prayer' => Icons.volunteer_activism_outlined,
+      'event' => Icons.event_outlined,
       _ => Icons.notifications_none_rounded,
     };
     return Container(

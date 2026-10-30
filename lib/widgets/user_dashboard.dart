@@ -10,11 +10,13 @@ import '../pages/notifications_page.dart';
 import '../pages/sermon_detail_page.dart';
 import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
+import '../services/member_events.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import 'church_app_bar.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/church_buttons.dart';
+import '../widgets/event_actions.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
@@ -35,9 +37,12 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardEventsLoad {
-  _DashboardEventsLoad({required this.items, this.error});
+  _DashboardEventsLoad({required this.items, this.error, this.meeting});
   final List<Map<String, dynamic>> items;
   final String? error;
+
+  /// The member's bacenta meeting, shown on Home only on the day it meets.
+  final BacentaMeetingInfo? meeting;
 }
 
 class _DashboardPageState extends State<DashboardPage> {
@@ -107,12 +112,15 @@ class _DashboardPageState extends State<DashboardPage> {
     return copy;
   }
 
-  /// `top4` when available, else first 4 of `upcoming` (see [ChurchApi.getDashboardEventInstances]).
+  /// The next four events this member can see — their bacenta's and
+  /// basontas' included — and their bacenta's meeting.
   Future<_DashboardEventsLoad> _fetchDashboardEventCards() async {
     try {
-      final raw = await ChurchApi.getDashboardEventInstances();
-      final list = ChurchApi.mapEventInstances(raw);
-      return _DashboardEventsLoad(items: list, error: null);
+      final feed = await MemberEvents.load();
+      return _DashboardEventsLoad(
+        items: feed.events.take(4).toList(),
+        meeting: feed.meeting,
+      );
     } catch (e) {
       return _DashboardEventsLoad(items: [], error: userFacingError(e));
     }
@@ -347,12 +355,26 @@ class _DashboardPageState extends State<DashboardPage> {
                           onViewAll: widget.onViewAllEvents,
                         );
                       }
+                      final meeting = data.meeting;
+                      final meetingToday = meeting != null && meeting.isToday
+                          ? Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: BacentaMeetingCard(meeting: meeting, onJoined: _refresh),
+                            )
+                          : null;
                       if (data.items.isEmpty) {
-                        return _DashboardEventsEmpty(onViewAll: widget.onViewAllEvents);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ?meetingToday,
+                            _DashboardEventsEmpty(onViewAll: widget.onViewAllEvents),
+                          ],
+                        );
                       }
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          ?meetingToday,
                           UpcomingEventsSection(events: data.items),
                           if (widget.onViewAllEvents != null) ...[
                             const SizedBox(height: 12),

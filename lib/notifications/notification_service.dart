@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import '../pages/notifications_page.dart';
+import '../services/member_events.dart';
 import '../services/prayer_wall_api.dart';
 import '../widgets/attendance_banner.dart';
 
@@ -67,12 +68,16 @@ class NotificationService {
         event.notification.display();
       });
 
-      // A tapped prayer-reply push opens that request once the tabs are up.
+      // A tapped prayer-reply or event push opens what it's about once the
+      // tabs are up.
       OneSignal.Notifications.addClickListener((event) {
         final data = event.notification.additionalData;
         final prayerId = data == null ? null : data['prayerId'];
+        final instanceId = data == null ? null : data['instanceId'];
         if (data?['type'] == 'prayer' && prayerId is String && prayerId.isNotEmpty) {
           PrayerWallApi.pendingThread.value = prayerId;
+        } else if (data?['type'] == 'event' && instanceId is String && instanceId.isNotEmpty) {
+          MemberEvents.pendingEvent.value = instanceId;
         }
       });
 

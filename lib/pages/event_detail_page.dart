@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../services/member_events.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/detail_page_hero.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/event_actions.dart';
 
 /// Full-screen event details with poster image; opened via [Navigator.push].
 class EventDetailPage extends StatelessWidget {
@@ -56,7 +58,15 @@ class EventDetailPage extends StatelessWidget {
                 DetailCategoryChip(label: category),
                 const SizedBox(height: 16),
                 if (when.isNotEmpty) DetailInfoRow(icon: Icons.event_rounded, text: when),
-                if (location.isNotEmpty) DetailInfoRow(icon: Icons.place_outlined, text: location),
+                if (location.isNotEmpty)
+                  DetailInfoRow(
+                    icon: MemberEvents.onlineLink(location) != null
+                        ? Icons.videocam_outlined
+                        : Icons.place_outlined,
+                    text: MemberEvents.placeLabel(location),
+                  ),
+                const SizedBox(height: 8),
+                EventActions(event: event),
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   const DashboardLabelText(label: 'Details'),
