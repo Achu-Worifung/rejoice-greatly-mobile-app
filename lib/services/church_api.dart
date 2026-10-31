@@ -213,11 +213,24 @@ class ChurchApi {
   /// Marks onboarding finished on-device without a facial scan — used when an
   /// age-gated minor or a member who chose "no thanks" skips face setup.
   ///
-  /// The backend only records `signupComplete` after a photo commit, so this
-  /// flag lives on-device; [restoreUserSession] keeps it sticky across cold
-  /// starts. The member can still add a photo later from their profile.
+  /// [restoreUserSession] keeps it sticky across cold starts. Prefer
+  /// [finishSignupWithoutFaceScan], which tells the server too. The member can
+  /// still add a photo later from their profile.
   static Future<void> markSignupCompleteLocally() =>
       persistAccountFromServer(const {'signupComplete': true});
+
+  /// `POST /member/signup/finish` — "Not now" on face check-in. Onboarding
+  /// ends without a face scan, on the server as well as this phone, so the
+  /// member isn't sent back through it on the next sign-in. Marks this phone
+  /// either way, so a dropped connection never strands them.
+  static Future<void> finishSignupWithoutFaceScan() async {
+    try {
+      final map = await _postMember('signup/finish', const {});
+      await _mergeIntoCachedAccount(map);
+    } finally {
+      await markSignupCompleteLocally();
+    }
+  }
 
   /// `POST /member/date-of-birth` — records the date of birth collected at the
   /// onboarding gate and returns the refreshed profile.

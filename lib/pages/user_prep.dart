@@ -131,9 +131,9 @@ class _UserPrepPageState extends State<UserPrepPage> {
 
     setState(() => _skipping = true);
     try {
-      await ChurchApi.markSignupCompleteLocally();
+      await ChurchApi.finishSignupWithoutFaceScan();
     } catch (e) {
-      debugPrint('UserPrepPage: markSignupCompleteLocally failed: $e');
+      debugPrint('UserPrepPage: finishSignupWithoutFaceScan failed: $e');
     }
     if (!mounted) return;
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
