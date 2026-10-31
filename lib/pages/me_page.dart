@@ -1,9 +1,13 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart' show navigatorKey;
@@ -211,8 +215,9 @@ class _MePageState extends State<MePage> {
     if (file == null || !mounted) return;
 
     _showBlockingProgress('Updating your photo…');
+    final picked = file;
     try {
-      final bytes = await file.readAsBytes();
+      final bytes = await picked.readAsBytes();
       // Just the photo people see: face check-in is a separate scan.
       final newUrl = await ProfilePictureUpload.upload(bytes, use: PictureUse.profile);
       final cached = await ChurchApi.getCachedAccountJson();
@@ -233,6 +238,23 @@ class _MePageState extends State<MePage> {
       if (!mounted) return;
       _dismissBlockingProgress();
       _showMessage('Could not update your photo. Please try again.', isError: true);
+    } finally {
+      unawaited(_deletePickedCopy(picked));
+    }
+  }
+
+  /// The picker leaves its own copy of the photo in the app's temporary
+  /// folder; once uploaded (or not), it has no reason to stay on the phone.
+  /// Only that copy — never a file outside the temporary folder.
+  Future<void> _deletePickedCopy(XFile picked) async {
+    try {
+      final tmp = await getTemporaryDirectory();
+      final file = File(picked.path);
+      if (file.absolute.path.startsWith(tmp.absolute.path) && await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('MePage: could not delete the picked photo: $e');
     }
   }
 
@@ -613,8 +635,8 @@ class _MePageState extends State<MePage> {
                           label: 'Finish signup',
                           // Through the notice and consent first: face
                           // scans aren't taken without it.
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/user-prep'),
+                          onPressed: () => Navigator.pushNamed(
+                              context, hasDateOfBirth ? '/user-prep' : '/date-of-birth'),
                         ),
                         // Members who joined before the date-of-birth gate have
                         // no age on file, so an under-18 member would be stuck
@@ -718,7 +740,10 @@ class _MePageState extends State<MePage> {
                     icon: Icons.face_outlined,
                     title: 'Face check-in',
                     subtitle: 'Set up or redo your face scan. The scan photos are deleted once check-in has learned your face.',
-                    onTap: () => Navigator.pushNamed(context, '/user-prep'),
+                    // Biometrics need a known birthday; the birthday screen
+                    // carries on to face setup for adults.
+                    onTap: () => Navigator.pushNamed(context,
+                        '${profile['dateOfBirth'] ?? ''}'.isEmpty ? '/date-of-birth' : '/user-prep'),
                   ),
                 _ActionTile(
                   icon: Icons.description_outlined,

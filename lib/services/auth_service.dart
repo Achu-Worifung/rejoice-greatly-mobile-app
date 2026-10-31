@@ -13,6 +13,8 @@ import 'church_api.dart';
 import 'user_session_store.dart';
 import '../main.dart' show navigatorKey;
 import 'user_facing_error.dart';
+import '../widgets/cached_image.dart';
+import 'biometric_consent.dart';
 
 /// Result of syncing the Firebase user to Postgres via `POST /auth/firebase`.
 class AuthSyncResult {
@@ -314,6 +316,10 @@ class AuthService {
   Future<void> logout() async {
     await NotificationService().logout();
     await UserSessionStore.clear();
+    // People's photos and the face-check-in agreement belong to this account,
+    // not to whoever signs in on this phone next.
+    await clearImageCaches();
+    await BiometricConsent.clear();
     // Home data (verse, sermons, events) is a global in-memory cache, not tied
     // to the session store — drop it so the next account never sees stale data.
     ChurchApi.invalidateHomeCache();

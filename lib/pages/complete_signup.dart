@@ -636,7 +636,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       PictureUploadException? faceRejection;
       for (final i in order) {
         try {
-          profileUrl = await ProfilePictureUpload.upload(_shots[i], use: firstUse);
+          profileUrl = await ProfilePictureUpload.upload(_shots[i], use: firstUse, forUid: user.uid);
           profileIndex = i;
           break;
         } on PictureUploadException catch (e) {
@@ -678,7 +678,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         for (var i = 0; i < _shots.length; i++)
           if (i != profileIndex) _shots[i],
       ];
-      if (mugs.isNotEmpty) unawaited(_uploadMugsInBackground(mugs));
+      if (mugs.isNotEmpty) unawaited(_uploadMugsInBackground(mugs, user.uid));
     } on PictureUploadException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -700,14 +700,22 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// mobile connection isn't hit with all of them at once. Fire-and-forget:
   /// failures are logged, not surfaced, and it never touches the widget, so it
   /// is safe to keep running after the member has moved on to the dashboard.
-  Future<void> _uploadMugsInBackground(List<Uint8List> mugs) async {
+  ///
+  /// Pinned to [uid]: the moment someone else is signed in (they signed out
+  /// and another person signed in on a shared phone), the rest are dropped
+  /// rather than filed under the wrong face.
+  Future<void> _uploadMugsInBackground(List<Uint8List> mugs, String uid) async {
     const maxConcurrent = 3;
     var next = 0;
     Future<void> worker() async {
       while (next < mugs.length) {
+        if (FirebaseAuth.instance.currentUser?.uid != uid) {
+          next = mugs.length;
+          return;
+        }
         final bytes = mugs[next++];
         try {
-          await ProfilePictureUpload.upload(bytes, use: PictureUse.faceScan);
+          await ProfilePictureUpload.upload(bytes, use: PictureUse.faceScan, forUid: uid);
         } catch (e) {
           debugPrint('Background mug upload failed: $e');
         }

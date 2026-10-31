@@ -118,20 +118,24 @@ class ProfilePictureUpload {
   /// for a face scan, which has nothing to show.
   ///
   /// Throws [PictureUploadException] with a member-facing message.
-  static Future<String?> upload(Uint8List jpegBytes, {PictureUse use = PictureUse.both}) async {
+  ///
+  /// [forUid] pins the upload to one signed-in account: if someone else is
+  /// signed in by the time a step runs (a background scan after sign-out on a
+  /// shared phone), it stops rather than file this face under them.
+  static Future<String?> upload(Uint8List jpegBytes, {PictureUse use = PictureUse.both, String? forUid}) async {
     try {
-      var grant = await _requestGrant();
+      var grant = await _requestGrant(forUid);
 
       // A grant that expired between issue and use is retried once with a
       // fresh one. Beyond that, something other than latency is wrong.
       if (!grant.isUsable) {
         debugPrint('ProfilePictureUpload: grant expired before use, reissuing');
-        grant = await _requestGrant();
+        grant = await _requestGrant(forUid);
       }
 
       final ciphertext = await _encrypt(jpegBytes, grant);
       await _putBlob(grant, ciphertext);
-      return await _commit(grant, use);
+      return await _commit(grant, use, forUid);
     } on PictureUploadException {
       rethrow;
     } catch (e, st) {
@@ -143,10 +147,22 @@ class ProfilePictureUpload {
     }
   }
 
-  static Future<_UploadGrant> _requestGrant() async {
+  /// The id token, as long as it's still [forUid]'s (when given).
+  static Future<String> _tokenFor(String? forUid) async {
     final tokenBundle = await ChurchApi.requireIdToken();
+    if (forUid != null && tokenBundle.user.uid != forUid) {
+      throw const PictureUploadException(
+        PictureUploadError.notAuthenticated,
+        'You signed out, so the upload stopped.',
+      );
+    }
+    return tokenBundle.token;
+  }
+
+  static Future<_UploadGrant> _requestGrant(String? forUid) async {
+    final idToken = await _tokenFor(forUid);
     final data = await _post('/auth/picture-upload/sas', {
-      'idToken': tokenBundle.token,
+      'idToken': idToken,
       'contentType': 'image/jpeg',
     });
 
@@ -247,10 +263,10 @@ class ProfilePictureUpload {
 
   /// Hands the blob back to the backend, which decrypts it, runs face
   /// validation, and publishes the servable image.
-  static Future<String?> _commit(_UploadGrant grant, PictureUse use) async {
-    final tokenBundle = await ChurchApi.requireIdToken();
+  static Future<String?> _commit(_UploadGrant grant, PictureUse use, String? forUid) async {
+    final idToken = await _tokenFor(forUid);
     final data = await _post('/auth/picture-upload/commit', {
-      'idToken': tokenBundle.token,
+      'idToken': idToken,
       'uploadToken': grant.uploadToken,
       'purpose': use.wire,
     });
@@ -340,6 +356,11 @@ class ProfilePictureUpload {
         return const PictureUploadException(
           PictureUploadError.notAllowed,
           'Members under 18 check in with their NFC tag, so there is no photo to set.',
+        );
+      case 'DATE_OF_BIRTH_REQUIRED':
+        return const PictureUploadException(
+          PictureUploadError.consentRequired,
+          'Please tell us your birthday before scanning your face.',
         );
       case 'BIOMETRIC_CONSENT_REQUIRED':
         // A 403, but the session is fine — the agreement just isn't on record.

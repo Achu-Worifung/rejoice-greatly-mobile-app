@@ -232,9 +232,10 @@ class PrivacyPage extends StatelessWidget {
             'Retention and destruction. We keep your biometric data only as long '
             'as it is needed for the purpose described above — recognizing you '
             'at church. Your face-scan photos are deleted as soon as your face '
-            'embedding has been created from them; the only photo we keep is the '
-            'profile picture you show in the app, which is not used for face '
-            'check-in. When that purpose ends, it is destroyed: if you delete '
+            'embedding has been created from them. The only photo we keep is the '
+            'profile picture you show in the app — at signup, your clearest scan '
+            'photo, kept as a separate copy that face check-in does not use. You '
+            'can replace it at any time. When that purpose ends, it is destroyed: if you delete '
             'your account or withdraw your consent, we permanently delete your '
             'enrollment images and face embeddings. You never have to wait for a '
             'clock to run out — ask us and we delete it.',

@@ -26,3 +26,17 @@ ImageProvider cachedImage(String url, {int? cacheWidth}) {
     CachedNetworkImageProvider(url, cacheKey: imageCacheKey(url)),
   );
 }
+
+/// Empties the on-disk and in-memory image caches — on sign-out, so people's
+/// photos (an admin's roster, the member's own) don't stay on the phone for
+/// whoever uses it next.
+Future<void> clearImageCaches() async {
+  PaintingBinding.instance.imageCache
+    ..clear()
+    ..clearLiveImages();
+  try {
+    await CachedNetworkImageProvider.defaultCacheManager.emptyCache();
+  } catch (e) {
+    debugPrint('clearImageCaches: $e');
+  }
+}

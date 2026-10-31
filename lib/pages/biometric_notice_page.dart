@@ -165,8 +165,9 @@ class BiometricNoticePage extends StatelessWidget {
                 'check-in system has created your face embedding from it. Until '
                 'then it sits in private storage that is never publicly accessible.',
             'Your profile picture is separate — the one photo we keep is the '
-                'profile picture you show in the app. It is not used for face '
-                'check-in, and you can change it at any time.',
+                'profile picture you show in the app. At signup it is your '
+                'clearest scan photo, kept as a separate copy that face check-in '
+                'does not use; you can replace it at any time.',
           ]),
         ]),
         LegalSection('Storage and protection', [
