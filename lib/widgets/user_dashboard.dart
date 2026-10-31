@@ -21,8 +21,10 @@ import '../widgets/event_actions.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
+import 'featured_events_banner.dart';
 import 'leader_card.dart';
 import 'milestone_widgets.dart';
+import 'year_review_card.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -40,9 +42,12 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardEventsLoad {
-  _DashboardEventsLoad({required this.items, this.error, this.meeting});
+  _DashboardEventsLoad({required this.items, this.error, this.meeting, this.featured = const []});
   final List<Map<String, dynamic>> items;
   final String? error;
+
+  /// What the church is featuring in the banner at the top.
+  final List<Map<String, dynamic>> featured;
 
   /// The member's bacenta meeting, shown on Home only on the day it meets.
   final BacentaMeetingInfo? meeting;
@@ -125,6 +130,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return _DashboardEventsLoad(
         items: feed.events.take(4).toList(),
         meeting: feed.meeting,
+        featured: feed.featured,
       );
     } catch (e) {
       return _DashboardEventsLoad(items: [], error: userFacingError(e));
@@ -264,6 +270,14 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Events the church wants people to notice.
+                  FutureBuilder<_DashboardEventsLoad>(
+                    future: _eventsFuture,
+                    builder: (context, snapshot) =>
+                        FeaturedEventsBanner(events: snapshot.data?.featured ?? const []),
+                  ),
+                  // December and January: their year, until they've looked.
+                  const YearReviewCard(),
                   // Only while there's a milestone they haven't seen yet.
                   const NewMilestoneCard(),
                   // Leaders only: their bacenta and what needs them.

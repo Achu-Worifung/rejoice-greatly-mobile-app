@@ -14,10 +14,13 @@ import '../main.dart' show navigatorKey;
 import '../services/auth_service.dart';
 import '../services/church_api.dart';
 import '../services/milestones.dart';
+import '../services/year_review.dart';
 import '../services/profile_picture_upload.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
+import 'notification_settings_page.dart';
+import 'year_review_page.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/display_section.dart';
@@ -733,6 +736,23 @@ class _MePageState extends State<MePage> {
                 ],
                 const SizedBox(height: 28),
                 const DashboardLabelText(label: 'Account'),
+                if (YearReviews.inSeason(DateTime.now()))
+                  _ActionTile(
+                    icon: Icons.auto_awesome_outlined,
+                    title: 'Your year at Rejoice Greatly',
+                    subtitle: 'A few things worth remembering.',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const YearReviewPage()),
+                    ),
+                  ),
+                _ActionTile(
+                  icon: Icons.notifications_none_rounded,
+                  title: 'Notifications',
+                  subtitle: 'Choose what buzzes your phone.',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const NotificationSettingsPage()),
+                  ),
+                ),
                 // Profile photos no longer enroll a face, so this is the way to
                 // set up face check-in later, or to redo the scan.
                 if (canUploadPhoto)

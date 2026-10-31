@@ -86,11 +86,21 @@ class BacentaJoin {
 
 @immutable
 class MemberEventsFeed {
-  const MemberEventsFeed(this.events, this.meeting);
+  const MemberEventsFeed(this.events, this.meeting, [this.featured = const []]);
 
   /// Upcoming events in [ChurchApi.mapEventInstances] shape.
   final List<Map<String, dynamic>> events;
   final BacentaMeetingInfo? meeting;
+
+  /// The events the church is featuring in the Home banner, soonest first.
+  final List<Map<String, dynamic>> featured;
+
+  /// [events] picked out by the ids in the feed's `featured`, in that order.
+  static List<Map<String, dynamic>> pickFeatured(List<Map<String, dynamic>> events, Object? ids) {
+    if (ids is! List) return const [];
+    final byId = {for (final e in events) '${e['id']}': e};
+    return [for (final id in ids) ?byId['$id']];
+  }
 }
 
 /// `/member/events` and friends: the member's own view of events — everyone's,
@@ -134,9 +144,11 @@ class MemberEvents {
         ? {for (final e in rem.entries) '${e.key}': (e.value as num).toInt()}
         : const {};
     final meeting = map['bacentaMeeting'];
+    final events = ChurchApi.mapEventInstances(raw is List ? raw : const []);
     return MemberEventsFeed(
-      ChurchApi.mapEventInstances(raw is List ? raw : const []),
+      events,
       meeting is Map ? BacentaMeetingInfo.fromJson(Map<String, dynamic>.from(meeting)) : null,
+      MemberEventsFeed.pickFeatured(events, map['featured']),
     );
   }
 

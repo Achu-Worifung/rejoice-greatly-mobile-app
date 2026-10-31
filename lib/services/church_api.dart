@@ -433,6 +433,21 @@ class ChurchApi {
     return _postMember(path.isEmpty ? 'leader' : 'leader/$path', extra);
   }
 
+  /// `POST /member/year-review` — the member's own year, for "Your year at
+  /// Rejoice Greatly". Wrapped by `YearReviews`.
+  static Future<Map<String, dynamic>> memberYearReview({int? year}) {
+    return _postMember('year-review', {'year': ?year});
+  }
+
+  /// `POST /member/notification-settings[/path]` — which notifications buzz
+  /// this member's phone. Used by `NotificationSettingsPage`.
+  static Future<Map<String, dynamic>> memberNotificationSettings(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'notification-settings' : 'notification-settings/$path', extra);
+  }
+
   /// `POST /member/biometric-consent` — their agreement to the biometric
   /// notice, kept with the account. Wrapped by `BiometricConsent`.
   static Future<Map<String, dynamic>> memberBiometricConsent(String version) {
