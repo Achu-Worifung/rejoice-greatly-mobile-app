@@ -452,6 +452,15 @@ class ChurchApi {
     return _postMember('year-review', {'year': ?year});
   }
 
+  /// `POST /member/comments/{path}` — comments on the verse and sermons, and
+  /// likes on the verse. Typed wrappers live in `CommentsApi`.
+  static Future<Map<String, dynamic>> memberComments(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember('comments/$path', extra);
+  }
+
   /// `POST /member/rides[/path]` — asking for a ride, and driving for the
   /// church. Typed wrappers live in `RidesApi`.
   static Future<Map<String, dynamic>> memberRides(

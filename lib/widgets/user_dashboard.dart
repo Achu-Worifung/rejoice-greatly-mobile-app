@@ -22,6 +22,7 @@ import '../widgets/event_actions.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
+import 'comments.dart';
 import 'featured_events_banner.dart';
 import 'leader_card.dart';
 import 'milestone_widgets.dart';
@@ -302,6 +303,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       final startVerse = v['startVerse'];
                       final endVerse = v['endVerse'];
                       return VerseOfTheWeekCard(
+                        verseId: v['id']?.toString(),
                         data: {
                           'text': v['content']?.toString() ?? '',
                           'version': v['version']?.toString() ?? '',
@@ -463,9 +465,15 @@ class _DashboardPageState extends State<DashboardPage> {
 // --- DASHBOARD COMPONENTS ---
 
 class VerseOfTheWeekCard extends StatelessWidget {
-  const VerseOfTheWeekCard({super.key, required this.data});
+  const VerseOfTheWeekCard({super.key, required this.data, this.verseId, this.commentsBackend = const CommentsBackend()});
 
   final Map<String, dynamic> data;
+
+  /// When set, members can like the verse and comment on it.
+  final String? verseId;
+
+  /// Stand-in for the comments API, for tests.
+  final CommentsBackend commentsBackend;
 
   @override
   Widget build(BuildContext context) {
@@ -503,6 +511,19 @@ class VerseOfTheWeekCard extends StatelessWidget {
               ),
             ],
           ),
+          if (verseId != null) ...[
+            const SizedBox(height: 10),
+            Divider(height: 1, color: ChurchColors.divider),
+            const SizedBox(height: 4),
+            Transform.translate(
+              offset: const Offset(-8, 0),
+              child: VerseReactions(
+                verseId: verseId!,
+                reference: data['reference'] as String? ?? 'Verse of the week',
+                backend: commentsBackend,
+              ),
+            ),
+          ],
         ],
       ),
     );
