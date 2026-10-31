@@ -231,7 +231,10 @@ class PrivacyPage extends StatelessWidget {
           const LegalParagraph(
             'Retention and destruction. We keep your biometric data only as long '
             'as it is needed for the purpose described above — recognizing you '
-            'at church. When that purpose ends, it is destroyed: if you delete '
+            'at church. Your face-scan photos are deleted as soon as your face '
+            'embedding has been created from them; the only photo we keep is the '
+            'profile picture you show in the app, which is not used for face '
+            'check-in. When that purpose ends, it is destroyed: if you delete '
             'your account or withdraw your consent, we permanently delete your '
             'enrollment images and face embeddings. You never have to wait for a '
             'clock to run out — ask us and we delete it.',

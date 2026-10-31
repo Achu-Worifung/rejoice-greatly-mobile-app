@@ -156,13 +156,17 @@ class BiometricNoticePage extends StatelessWidget {
                 'area. Anyone who intercepted the link would see only '
                 'ciphertext.',
             'Decrypted only in memory — we decrypt each photo just long enough '
-                'to confirm it contains a single, clear face, then save a private '
-                'image and create your face embedding.',
+                'to confirm it contains a single, clear face, then keep a private '
+                'copy only until your face embedding has been created from it.',
             'Staging cleaned up immediately — the temporary encrypted upload is '
                 'deleted right after; uploads abandoned partway are automatically '
                 'swept and deleted.',
-            'Kept private — stored images live in private storage that is never '
-                'publicly accessible.',
+            'Deleted once learned — each scan photo is deleted as soon as the '
+                'check-in system has created your face embedding from it. Until '
+                'then it sits in private storage that is never publicly accessible.',
+            'Your profile picture is separate — the one photo we keep is the '
+                'profile picture you show in the app. It is not used for face '
+                'check-in, and you can change it at any time.',
           ]),
         ]),
         LegalSection('Storage and protection', [
@@ -196,13 +200,15 @@ class BiometricNoticePage extends StatelessWidget {
         LegalSection('Retention and deletion', [
           const LegalParagraph(
             'We keep facial verification information only as long as it is needed '
-            'to recognize you at church.',
+            'to recognize you at church. Your scan photos are deleted as soon as '
+            'your face embedding has been created from them; the embedding is kept '
+            'until you withdraw your consent or delete your account.',
           ),
           const LegalCallout(
             icon: Icons.auto_delete_outlined,
             title: 'When that purpose ends, it is destroyed',
             text: 'If you withdraw your consent or delete your account, your '
-                'enrollment images and face embeddings are permanently deleted, '
+                'face embeddings (and any scan photo not yet deleted) are permanently deleted, '
                 'and the attendance cameras no longer match you. You do not have '
                 'to wait for any retention period to run out — ask us and we '
                 'delete it, unless a longer period is required by law.',

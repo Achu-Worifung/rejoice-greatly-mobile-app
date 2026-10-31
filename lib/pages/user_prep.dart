@@ -157,9 +157,9 @@ class _UserPrepPageState extends State<UserPrepPage> {
     },
     {
       'icon': Icons.visibility_off_outlined,
-      'title': 'Kept Private',
+      'title': 'Scan Photos Are Deleted',
       'description':
-          'Only your church administrators can see attendance records. Your facial data is never sold, traded, or visible to other members.',
+          'Your scan photos are deleted as soon as check-in has learned your face. Only the face pattern stays, and it is never sold, traded, or visible to other members.',
     },
     {
       'icon': Icons.delete_outline,

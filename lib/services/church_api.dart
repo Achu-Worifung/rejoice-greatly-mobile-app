@@ -433,6 +433,12 @@ class ChurchApi {
     return _postMember(path.isEmpty ? 'leader' : 'leader/$path', extra);
   }
 
+  /// `POST /member/biometric-consent` — their agreement to the biometric
+  /// notice, kept with the account. Wrapped by `BiometricConsent`.
+  static Future<Map<String, dynamic>> memberBiometricConsent(String version) {
+    return _postMember('biometric-consent', {'version': version});
+  }
+
   /// `POST /member/milestones[/path]` — the member's own milestones. Typed
   /// wrappers live in `Milestones`.
   static Future<Map<String, dynamic>> memberMilestones(

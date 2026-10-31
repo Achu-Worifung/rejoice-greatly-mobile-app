@@ -170,10 +170,10 @@ class _MePageState extends State<MePage> {
 
   // --- Change profile photo -------------------------------------------------
 
-  /// Replaces the profile photo from a single picked image (camera or library),
-  /// rather than the multi-angle enrolment sweep used at signup. The picked
-  /// frame runs through the same [ProfilePictureUpload] contract, so the
-  /// backend still validates the face and publishes a fresh `imgURL`.
+  /// Replaces the profile photo from a single picked image (camera or library).
+  /// It's only the photo people see — not enrolled for face check-in, which
+  /// is the separate scan from signup (or "Face check-in" below). The backend
+  /// still checks there's one face in it and publishes a fresh `imgURL`.
   Future<void> _changeProfilePhoto() async {
     // Belt and braces with the hidden affordance: no photo of an under-18
     // member is collected, and the backend refuses the upload as well.
@@ -213,7 +213,8 @@ class _MePageState extends State<MePage> {
     _showBlockingProgress('Updating your photo…');
     try {
       final bytes = await file.readAsBytes();
-      final newUrl = await ProfilePictureUpload.upload(bytes);
+      // Just the photo people see: face check-in is a separate scan.
+      final newUrl = await ProfilePictureUpload.upload(bytes, use: PictureUse.profile);
       final cached = await ChurchApi.getCachedAccountJson();
       await ChurchApi.persistAccountFromServer({
         if (cached != null) ...cached,
@@ -222,7 +223,7 @@ class _MePageState extends State<MePage> {
       if (!mounted) return;
       _dismissBlockingProgress();
       _reload();
-      _showMessage('Your profile photo has been updated.');
+      _showMessage('Your profile photo has been updated. Face check-in is unchanged.');
     } on PictureUploadException catch (e) {
       if (!mounted) return;
       _dismissBlockingProgress();
@@ -610,8 +611,10 @@ class _MePageState extends State<MePage> {
                         const SizedBox(height: 12),
                         ChurchPrimaryButton(
                           label: 'Finish signup',
+                          // Through the notice and consent first: face
+                          // scans aren't taken without it.
                           onPressed: () =>
-                              Navigator.pushNamed(context, '/complete-signup'),
+                              Navigator.pushNamed(context, '/user-prep'),
                         ),
                         // Members who joined before the date-of-birth gate have
                         // no age on file, so an under-18 member would be stuck
@@ -708,6 +711,15 @@ class _MePageState extends State<MePage> {
                 ],
                 const SizedBox(height: 28),
                 const DashboardLabelText(label: 'Account'),
+                // Profile photos no longer enroll a face, so this is the way to
+                // set up face check-in later, or to redo the scan.
+                if (canUploadPhoto)
+                  _ActionTile(
+                    icon: Icons.face_outlined,
+                    title: 'Face check-in',
+                    subtitle: 'Set up or redo your face scan. The scan photos are deleted once check-in has learned your face.',
+                    onTap: () => Navigator.pushNamed(context, '/user-prep'),
+                  ),
                 _ActionTile(
                   icon: Icons.description_outlined,
                   title: 'Terms of Use',

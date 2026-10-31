@@ -24,8 +24,30 @@ enum PictureUploadError {
   /// The account may not have a profile photo at all — members under 18 are
   /// identified by their NFC tag and no photo of them is collected.
   notAllowed,
+  /// A face scan before the member's agreement to the notice is on record.
+  consentRequired,
   network,
   unknown,
+}
+
+/// What an uploaded photo is for. The photo people see and the photos face
+/// check-in learns from are kept apart, so the scans can be deleted once the
+/// check-in system has learned the face.
+enum PictureUse {
+  /// The photo people see. Changing it never touches face check-in.
+  profile('PROFILE'),
+
+  /// One face-scan photo for check-in: never shown, deleted once learned.
+  faceScan('FACE_SCAN'),
+
+  /// Both, as separate copies — signup's best frontal shot.
+  both('BOTH');
+
+  const PictureUse(this.wire);
+
+  final String wire;
+
+  bool get showsAsProfile => this != PictureUse.faceScan;
 }
 
 class PictureUploadException implements Exception {
@@ -92,10 +114,11 @@ class ProfilePictureUpload {
 
   static final AesGcm _algorithm = AesGcm.with256bits();
 
-  /// Uploads [jpegBytes] and returns the published `imgURL`.
+  /// Uploads [jpegBytes] for [use] and returns the published `imgURL` — null
+  /// for a face scan, which has nothing to show.
   ///
   /// Throws [PictureUploadException] with a member-facing message.
-  static Future<String> upload(Uint8List jpegBytes) async {
+  static Future<String?> upload(Uint8List jpegBytes, {PictureUse use = PictureUse.both}) async {
     try {
       var grant = await _requestGrant();
 
@@ -108,7 +131,7 @@ class ProfilePictureUpload {
 
       final ciphertext = await _encrypt(jpegBytes, grant);
       await _putBlob(grant, ciphertext);
-      return await _commit(grant);
+      return await _commit(grant, use);
     } on PictureUploadException {
       rethrow;
     } catch (e, st) {
@@ -224,14 +247,16 @@ class ProfilePictureUpload {
 
   /// Hands the blob back to the backend, which decrypts it, runs face
   /// validation, and publishes the servable image.
-  static Future<String> _commit(_UploadGrant grant) async {
+  static Future<String?> _commit(_UploadGrant grant, PictureUse use) async {
     final tokenBundle = await ChurchApi.requireIdToken();
     final data = await _post('/auth/picture-upload/commit', {
       'idToken': tokenBundle.token,
       'uploadToken': grant.uploadToken,
+      'purpose': use.wire,
     });
 
     final imgUrl = data['imgURL'] as String?;
+    if (!use.showsAsProfile) return null;
     if (imgUrl == null || imgUrl.isEmpty) {
       throw const PictureUploadException(
         PictureUploadError.unknown,
@@ -315,6 +340,12 @@ class ProfilePictureUpload {
         return const PictureUploadException(
           PictureUploadError.notAllowed,
           'Members under 18 check in with their NFC tag, so there is no photo to set.',
+        );
+      case 'BIOMETRIC_CONSENT_REQUIRED':
+        // A 403, but the session is fine — the agreement just isn't on record.
+        return const PictureUploadException(
+          PictureUploadError.consentRequired,
+          'Please agree to the face check-in notice before scanning your face.',
         );
       case 'NOT_UPLOAD_OWNER':
         // Also a 403, but the session is fine — it is the grant that is wrong.

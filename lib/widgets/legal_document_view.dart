@@ -323,7 +323,7 @@ class LegalValues {
 
   static String get governingState => _env('GOVERNING_STATE', 'Arizona');
 
-  static String get lastUpdated => _env('LEGAL_EFFECTIVE_DATE', 'July 24, 2026');
+  static String get lastUpdated => _env('LEGAL_EFFECTIVE_DATE', 'October 31, 2026');
 
   static String _env(String key, String fallback) {
     // dotenv throws if `load` never ran (e.g. in a widget test), so guard it.
