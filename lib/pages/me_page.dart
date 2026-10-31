@@ -20,6 +20,7 @@ import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import 'notification_settings_page.dart';
+import 'rides_page.dart';
 import 'year_review_page.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
@@ -743,6 +744,16 @@ class _MePageState extends State<MePage> {
                     subtitle: 'A few things worth remembering.',
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(builder: (_) => const YearReviewPage()),
+                    ),
+                  ),
+                // Minors' rides are asked for by a parent.
+                if (profile['minor'] != true)
+                  _ActionTile(
+                    icon: Icons.directions_car_outlined,
+                    title: 'Rides to church',
+                    subtitle: 'Need a lift on Sunday? Someone from church nearby can pick you up.',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const RidesPage()),
                     ),
                   ),
                 _ActionTile(

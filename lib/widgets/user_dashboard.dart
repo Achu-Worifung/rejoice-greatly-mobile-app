@@ -7,6 +7,7 @@ import '../components/sermon_card.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
 import '../pages/notifications_page.dart';
+import '../pages/rides_page.dart';
 import '../pages/sermon_detail_page.dart';
 import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
@@ -415,6 +416,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     future: _eventsFuture,
                     builder: (context, snapshot) => WorshipWithUsCard(
                     events: snapshot.data?.items ?? const [],
+                    onNeedRide: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const RidesPage()),
+                    ),
                     data: {
                       'name': dotenv.env['CHURCH_NAME'] ?? 'REJOICE GREATLY PHX',
                       'address':

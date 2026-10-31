@@ -439,6 +439,15 @@ class ChurchApi {
     return _postMember('year-review', {'year': ?year});
   }
 
+  /// `POST /member/rides[/path]` — asking for a ride, and driving for the
+  /// church. Typed wrappers live in `RidesApi`.
+  static Future<Map<String, dynamic>> memberRides(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'rides' : 'rides/$path', extra);
+  }
+
   /// `POST /member/notification-settings[/path]` — which notifications buzz
   /// this member's phone. Used by `NotificationSettingsPage`.
   static Future<Map<String, dynamic>> memberNotificationSettings(
@@ -887,6 +896,9 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw _failure(r);
     }
+    // Endpoints with nothing to say (a cancel, a cleared reminder) answer
+    // with an empty 200, which isn't JSON.
+    if (r.body.trim().isEmpty) return <String, dynamic>{};
     try {
       return unwrapApiMap(r.body);
     } on FormatException {
