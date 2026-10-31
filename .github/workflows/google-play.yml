@@ -1,13 +1,15 @@
 name: Android CI/CD
 
-# PRs:            analyze + unit tests + debug APK compile check (no secrets needed).
-# Push to master: everything above, then a signed release AAB uploaded to Google Play.
-# Manual run:     same as master push, with a choice of Play track.
+# Runs only for master.
+# PRs into master: analyze + unit tests + debug APK compile check (no secrets needed).
+# Push to master:  everything above, then a signed release AAB uploaded to Google Play.
+# Manual run:      same as master push, with a choice of Play track.
 
 on:
   pull_request:
+    branches: [master]
   push:
-    branches: [master, main]
+    branches: [master]
   workflow_dispatch:
     inputs:
       track:

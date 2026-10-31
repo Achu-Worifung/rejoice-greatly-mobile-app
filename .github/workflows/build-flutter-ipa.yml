@@ -1,9 +1,19 @@
 name: Build Flutter IPA
 
+# Runs only for master.
+# PRs into master: an unsigned iOS build, to catch native breakage (no signing, no upload).
+# Push to master:  a signed IPA uploaded to TestFlight.
+
 on:
+  pull_request:
+    branches: [master]
   push:
-    branches: [master, main]
+    branches: [master]
   workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build-ios:
@@ -80,6 +90,7 @@ jobs:
         run: flutter pub get
 
       - name: Install Apple certificate and provisioning profile
+        if: github.event_name != 'pull_request'
         env:
           BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
           P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
@@ -118,6 +129,7 @@ jobs:
           echo "Installed profile: $PP_NAME ($PP_UUID)"
 
       - name: Create ExportOptions.plist
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           cat > ios/ExportOptions.plist <<EOF
@@ -145,6 +157,7 @@ jobs:
           sed -i '' 's/^[[:space:]]*//' ios/ExportOptions.plist
 
       - name: Configure Release signing for CI
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           # Ensure team is present even if pbxproj lagged behind local Xcode
@@ -181,7 +194,12 @@ jobs:
           rm -f Podfile.lock
           pod install --repo-update
 
+      - name: Compile check (unsigned, pull requests)
+        if: github.event_name == 'pull_request'
+        run: flutter build ios --release --no-codesign
+
       - name: Build IPA
+        if: github.event_name != 'pull_request'
         id: build_ipa
         run: |
           set -euo pipefail
@@ -243,6 +261,7 @@ jobs:
           path: build-ipa.log
 
       - name: Locate IPA
+        if: github.event_name != 'pull_request'
         id: ipa
         run: |
           set -euo pipefail
@@ -256,6 +275,7 @@ jobs:
           ls -la "$IPA_PATH"
 
       - name: Stage App Store Connect API key
+        if: github.event_name != 'pull_request'
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
@@ -271,6 +291,7 @@ jobs:
           chmod 600 "$KEY_DIR/AuthKey_${ASC_KEY_ID}.p8"
 
       - name: Upload to TestFlight
+        if: github.event_name != 'pull_request'
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
@@ -288,6 +309,7 @@ jobs:
             --apiIssuer "$ASC_ISSUER_ID"
 
       - name: Upload IPA artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v5
         with:
           name: flutter-app-ipa
