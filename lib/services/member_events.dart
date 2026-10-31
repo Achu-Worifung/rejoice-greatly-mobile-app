@@ -24,7 +24,7 @@ class BacentaMeetingInfo {
     final time = (json['time'] as String?)?.split(':');
     return BacentaMeetingInfo(
       bacentaId: '${json['bacentaId']}',
-      name: json['name'] as String? ?? 'Your bacenta',
+      name: json['name'] as String? ?? 'Your small group',
       leaderName: json['leaderName'] as String?,
       date: DateTime.tryParse('${json['date']}') ?? DateTime.now(),
       hour: time != null && time.length >= 2 ? int.tryParse(time[0]) : null,

@@ -85,12 +85,12 @@ class _LeaderBacentaPageState extends State<LeaderBacentaPage> {
       title: 'Add someone who isn’t on the app',
       hint: 'Their name',
       action: 'Add',
-      caption: 'They’ll be in your bacenta, so you can mark them present. When they sign up, the church joins the two.',
+      caption: 'They’ll be in your small group, so you can mark them present. When they sign up, the church joins the two.',
     );
     if (name == null || name.trim().isEmpty) return;
     try {
       _show(await LeaderApi.addPerson(widget.bacentaId, name.trim()));
-      _snack('${name.trim()} is in your bacenta.');
+      _snack('${name.trim()} is in your small group.');
     } catch (e) {
       _snack(userFacingError(e));
     }
@@ -223,7 +223,7 @@ class _LeaderBacentaPageState extends State<LeaderBacentaPage> {
     if (meeting == null) {
       return [
         ...widgets,
-        Text('Your bacenta has no meeting day yet. Ask a pastor to set one, then you can take attendance here.',
+        Text('Your small group has no meeting day yet. Ask a pastor to set one, then you can take attendance here.',
             style: ChurchType.body),
       ];
     }

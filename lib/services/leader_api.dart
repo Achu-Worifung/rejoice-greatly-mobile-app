@@ -37,7 +37,7 @@ class LedBacenta {
 
   factory LedBacenta.fromJson(Map<String, dynamic> j) => LedBacenta(
         id: '${j['id']}',
-        name: j['name'] as String? ?? 'Your bacenta',
+        name: j['name'] as String? ?? 'Your small group',
         meetingDay: dayLabel(j['meetingDay']),
         meetingTime: clockLabel(j['meetingTime']),
         members: (j['members'] as num?)?.toInt() ?? 0,
@@ -179,7 +179,7 @@ class LeaderView {
     final meeting = j['meeting'];
     return LeaderView(
       id: '${j['id']}',
-      name: j['name'] as String? ?? 'Your bacenta',
+      name: j['name'] as String? ?? 'Your small group',
       meetingDay: dayLabel(j['meetingDay']),
       meetingTime: clockLabel(j['meetingTime']),
       location: j['location'] as String?,

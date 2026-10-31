@@ -112,9 +112,9 @@ class ReminderItem {
     final n = targetIds.length;
     switch (targetedSendTo) {
       case 'BACENTAS':
-        return n == 1 ? '1 bacenta' : '$n bacentas';
+        return n == 1 ? '1 small group' : '$n small groups';
       case 'BASONTAS':
-        return n == 1 ? '1 basonta' : '$n basontas';
+        return n == 1 ? '1 ministry' : '$n ministries';
       case 'PEOPLE':
         return n == 1 ? '1 person' : '$n people';
     }
