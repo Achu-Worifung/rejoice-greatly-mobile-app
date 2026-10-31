@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/church_api.dart';
+import '../services/biometric_consent.dart';
 import '../services/profile_picture_upload.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -601,9 +602,30 @@ class _CompleteSignupState extends State<CompleteSignup> {
         return;
       }
 
-      // Upload the frontal shot for the profile first; if that one frame is
-      // rejected, fall back through the others until one lands. Only this
-      // upload is awaited — it's all sign-up needs to complete.
+      // Their agreement goes on record with the account before any scan;
+      // the server refuses scans without it.
+      try {
+        await BiometricConsent.sendToServer();
+      } on StateError {
+        if (!mounted) return;
+        setState(() => _error = 'Please agree to the face check-in notice first.');
+        return;
+      } catch (e) {
+        debugPrint('CompleteSignup: consent not recorded: $e');
+        if (!mounted) return;
+        setState(() => _error = 'We couldn’t reach the church server. Check your connection and try again.');
+        return;
+      }
+
+      // Someone redoing their scan keeps the profile photo they chose;
+      // otherwise the best frontal shot becomes it, as a separate copy.
+      final before = await ChurchApi.getCachedAccountJson();
+      final hasProfilePhoto = '${before?['imgURL'] ?? ''}'.isNotEmpty;
+      final firstUse = hasProfilePhoto ? PictureUse.faceScan : PictureUse.both;
+
+      // Upload the frontal shot first; if that one frame is rejected, fall
+      // back through the others until one lands. Only this upload is
+      // awaited — it's all sign-up needs to complete.
       final order = <int>[
         ?_frontalIndex,
         for (var i = 0; i < _shots.length; i++)
@@ -614,7 +636,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       PictureUploadException? faceRejection;
       for (final i in order) {
         try {
-          profileUrl = await ProfilePictureUpload.upload(_shots[i]);
+          profileUrl = await ProfilePictureUpload.upload(_shots[i], use: firstUse, forUid: user.uid);
           profileIndex = i;
           break;
         } on PictureUploadException catch (e) {
@@ -628,7 +650,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         }
       }
 
-      if (profileUrl == null) {
+      if (profileIndex < 0) {
         if (!mounted) return;
         setState(() {
           _error = faceRejection?.message ??
@@ -641,7 +663,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       final cached = await ChurchApi.getCachedAccountJson();
       final merged = <String, dynamic>{
         if (cached != null) ...cached,
-        'imgURL': profileUrl,
+        'imgURL': ?profileUrl,
         'signupComplete': true,
       };
       await ChurchApi.persistAccountFromServer(merged);
@@ -650,11 +672,13 @@ class _CompleteSignupState extends State<CompleteSignup> {
 
       // Enrich recognition with the other angles without blocking the member —
       // fire-and-forget, it keeps running even after they move to the dashboard.
+      // Scans only: they're never shown, and deleted once check-in has learned
+      // the face.
       final mugs = [
         for (var i = 0; i < _shots.length; i++)
           if (i != profileIndex) _shots[i],
       ];
-      if (mugs.isNotEmpty) unawaited(_uploadMugsInBackground(mugs));
+      if (mugs.isNotEmpty) unawaited(_uploadMugsInBackground(mugs, user.uid));
     } on PictureUploadException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -676,14 +700,22 @@ class _CompleteSignupState extends State<CompleteSignup> {
   /// mobile connection isn't hit with all of them at once. Fire-and-forget:
   /// failures are logged, not surfaced, and it never touches the widget, so it
   /// is safe to keep running after the member has moved on to the dashboard.
-  Future<void> _uploadMugsInBackground(List<Uint8List> mugs) async {
+  ///
+  /// Pinned to [uid]: the moment someone else is signed in (they signed out
+  /// and another person signed in on a shared phone), the rest are dropped
+  /// rather than filed under the wrong face.
+  Future<void> _uploadMugsInBackground(List<Uint8List> mugs, String uid) async {
     const maxConcurrent = 3;
     var next = 0;
     Future<void> worker() async {
       while (next < mugs.length) {
+        if (FirebaseAuth.instance.currentUser?.uid != uid) {
+          next = mugs.length;
+          return;
+        }
         final bytes = mugs[next++];
         try {
-          await ProfilePictureUpload.upload(bytes);
+          await ProfilePictureUpload.upload(bytes, use: PictureUse.faceScan, forUid: uid);
         } catch (e) {
           debugPrint('Background mug upload failed: $e');
         }
@@ -715,7 +747,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
   @override
   Widget build(BuildContext context) {
     if (_isRegisteringAccount) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: ChurchColors.bodyText,
         body: Center(
           child: Column(
@@ -758,7 +790,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: _ensurePostgresAccount,
-                    child: const Text(
+                    child: Text(
                       'Retry',
                       style: TextStyle(color: ChurchColors.button),
                     ),
@@ -782,7 +814,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
         ),
 
         if (!_isCameraReady)
-          const ColoredBox(
+          ColoredBox(
             color: ChurchColors.bodyText,
             child: Center(
               child: CircularProgressIndicator(color: ChurchColors.button),
@@ -810,7 +842,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _circleButton(Icons.arrow_back, _goBack, false),
-                    const Text(
+                    Text(
                       "TAKE A SELFIE",
                       style: TextStyle(
                         color: ChurchColors.buttonText,
@@ -902,7 +934,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
               value: progress,
               backgroundColor: ChurchColors.buttonText.withValues(alpha: 0.2),
               valueColor:
-                  const AlwaysStoppedAnimation<Color>(ChurchColors.button),
+                  AlwaysStoppedAnimation<Color>(ChurchColors.button),
             ),
           ),
         ),
@@ -957,12 +989,12 @@ class _CompleteSignupState extends State<CompleteSignup> {
               _profileAvatar(120),
               const SizedBox(height: 28),
               if (_error == null) ...[
-                const CircularProgressIndicator(color: ChurchColors.button),
+                CircularProgressIndicator(color: ChurchColors.button),
                 const SizedBox(height: 20),
                 Text(
                   _uploadStatus ?? 'Finishing up…',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: ChurchColors.buttonText,
                     fontSize: 15,
                   ),
@@ -996,7 +1028,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
             const Spacer(),
             _profileAvatar(150),
             const SizedBox(height: 32),
-            const Icon(Icons.check_circle,
+            Icon(Icons.check_circle,
                 color: ChurchColors.card, size: 40),
             const SizedBox(height: 16),
             Text(
@@ -1006,7 +1038,9 @@ class _CompleteSignupState extends State<CompleteSignup> {
             ),
             const SizedBox(height: 12),
             Text(
-              "Your profile is ready. Welcome to Rejoice Greatly — we're\nglad you're here.",
+              "Your profile is ready. Welcome to Rejoice Greatly — we're glad you're here.\n\n"
+              "Your scan photos are deleted once check-in has learned your face. "
+              "This photo is your profile picture; change it any time on your profile.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: ChurchColors.buttonText.withValues(alpha: 0.75),
@@ -1044,7 +1078,7 @@ class _CompleteSignupState extends State<CompleteSignup> {
       ),
       child: _capturedBytes != null
           ? Image.memory(_capturedBytes!, fit: BoxFit.cover)
-          : const Icon(Icons.person, color: ChurchColors.button, size: 64),
+          : Icon(Icons.person, color: ChurchColors.button, size: 64),
     );
   }
 
@@ -1074,9 +1108,10 @@ class _CompleteSignupState extends State<CompleteSignup> {
     required VoidCallback? onTap,
     required Color color,
     Color? border,
-    Color textColor = ChurchColors.buttonText,
+    Color? textColor,
     bool isLoading = false,
   }) {
+    textColor ??= ChurchColors.buttonText;
     return GestureDetector(
       onTap: onTap,
       child: Container(

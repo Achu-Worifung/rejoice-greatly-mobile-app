@@ -64,7 +64,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       appBar: ChurchAppBar.of(
         title: const SizedBox.shrink(),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
+          icon: Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
           onPressed: _goBack,
         ),
       ),
@@ -73,12 +73,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
           children: [
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Reset your password',
               style: ChurchType.display,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               "Enter your email and we'll send you a link to reset your password.",
               style: TextStyle(
                 fontSize: 14,
@@ -110,7 +110,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             autofocus: true,
             textInputAction: TextInputAction.done,
             onFieldSubmitted: (_) => _send(),
-            style: const TextStyle(color: ChurchColors.bodyText),
+            style: TextStyle(color: ChurchColors.bodyText),
             decoration: authInputDecoration(
               label: 'Email',
               icon: Icons.email_outlined,
@@ -132,7 +132,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         Center(
           child: GestureDetector(
             onTap: _goBack,
-            child: const Text(
+            child: Text(
               'Back to sign in',
               style: TextStyle(
                 color: ChurchColors.accent,
@@ -160,14 +160,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               color: ChurchColors.button.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.mark_email_read_outlined,
               color: ChurchColors.button,
               size: 32,
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Check your inbox',
             style: ChurchType.headline,
           ),
@@ -175,14 +175,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           Text(
             'A password reset link has been sent to\n$email',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               color: ChurchColors.muted,
               height: 1.5,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             "If it doesn't arrive within a few minutes, check your spam folder.",
             textAlign: TextAlign.center,
             style: TextStyle(

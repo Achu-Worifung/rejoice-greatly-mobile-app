@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/church_colors.dart';
 
 /// Shared visual language for the app's cold-start "Warm Welcome" surface.
 ///
@@ -7,9 +6,10 @@ import '../theme/church_colors.dart';
 /// this same resting composition — emblem, scripture, and a calm progress
 /// line on Roasted Cocoa. That's deliberate: the launch should read as one
 /// continuous moment (brown → richer brown → app), never a brown splash
-/// flashing into a bare white spinner.
-const Color kSplashBackground = ChurchColors.button; // Roasted Cocoa #633A02
-const Color kSplashCream = ChurchColors.card; //        Candlelight Cream #FFF7EB
+/// flashing into a bare white spinner. It keeps the brand colours in dark
+/// mode too: it's the app's cover.
+const Color kSplashBackground = Color(0xFF633A02); // Roasted Cocoa
+const Color kSplashCream = Color(0xFFFFF7EB); //      Candlelight Cream
 // Matches the native splash's rendered size (splash_logo.png 640px ÷ 4 ≈ 160dp)
 // so the emblem never changes size across the native → Flutter handoff.
 const double kEmblemSize = 160;

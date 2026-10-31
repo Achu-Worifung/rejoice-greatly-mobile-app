@@ -7,10 +7,10 @@ import '../theme/church_type.dart';
 class ChurchAppBar {
   ChurchAppBar._();
 
-  static const TextStyle titleStyle = ChurchType.headline;
+  static TextStyle get titleStyle => ChurchType.headline;
 
   /// The mono micro-label above or beside a title.
-  static const TextStyle kickerStyle = ChurchType.eyebrow;
+  static TextStyle get kickerStyle => ChurchType.eyebrow;
 
   static AppBar of({
     required Widget title,
@@ -36,7 +36,7 @@ class ChurchAppBar {
       automaticallyImplyLeading: automaticallyImplyLeading,
       actions: actions,
       bottom: bottom,
-      iconTheme: const IconThemeData(color: ChurchColors.accent, size: 24),
+      iconTheme: IconThemeData(color: ChurchColors.accent, size: 24),
     );
   }
 

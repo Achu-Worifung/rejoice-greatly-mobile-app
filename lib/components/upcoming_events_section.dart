@@ -113,7 +113,7 @@ class _PosterImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (url == null || url!.isEmpty) {
-      return const Center(
+      return Center(
         child: Icon(Icons.event, size: 40, color: ChurchColors.muted),
       );
     }
@@ -123,7 +123,7 @@ class _PosterImage extends StatelessWidget {
       height: double.infinity,
       fit: BoxFit.contain,
       alignment: Alignment.center,
-      errorBuilder: (c, e, s) => const Center(
+      errorBuilder: (c, e, s) => Center(
         child: Icon(Icons.event, size: 40, color: ChurchColors.muted),
       ),
     );

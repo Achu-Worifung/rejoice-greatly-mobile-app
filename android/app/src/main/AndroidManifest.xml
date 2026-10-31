@@ -3,6 +3,10 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.NFC"/>
+    <!-- Read once, when a check-in tag that only works near it is tapped.
+         Never in the background. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- Sermon audio keeps playing with the screen off / app backgrounded,
          served by audio_service's foreground media service (just_audio_background). -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>

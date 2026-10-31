@@ -4,16 +4,19 @@ import 'church_colors.dart';
 import 'church_type.dart';
 import 'page_transitions.dart';
 
-/// The app theme: the register look on the app's own palette.
+/// The app theme: the register look on one of the app's palettes.
 ///
 /// Everything here reads from [ChurchColors], [ChurchType] and [ChurchRadius]
 /// so that a widget reaching for `Theme.of(context)` lands on the same faces
-/// and edges as one built from the tokens directly. The palette is unchanged
-/// from before; what this sets is typography, shape and the ruled borders.
-ThemeData buildChurchTheme() {
+/// and edges as one built from the tokens directly. Built once per palette —
+/// light and dark — with that palette showing while it's built.
+ThemeData buildChurchTheme([ChurchPalette palette = ChurchPalette.light]) =>
+    ChurchColors.paint(palette, () => _buildTheme(palette.brightness));
+
+ThemeData _buildTheme(Brightness brightness) {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: ChurchColors.button,
-    brightness: Brightness.light,
+    brightness: brightness,
     primary: ChurchColors.button,
     onPrimary: ChurchColors.buttonText,
     surface: ChurchColors.background,
@@ -38,7 +41,7 @@ ThemeData buildChurchTheme() {
     dividerColor: ChurchColors.divider,
     splashFactory: InkSparkle.splashFactory,
 
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: ChurchColors.background,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
@@ -60,7 +63,7 @@ ThemeData buildChurchTheme() {
       ),
     ),
 
-    dividerTheme: const DividerThemeData(
+    dividerTheme: DividerThemeData(
       color: ChurchColors.divider,
       thickness: 1,
       space: 1,
@@ -136,7 +139,7 @@ ThemeData buildChurchTheme() {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     ),
 
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
       backgroundColor: ChurchColors.background,
       elevation: 0,
       type: BottomNavigationBarType.fixed,
@@ -153,7 +156,7 @@ ThemeData buildChurchTheme() {
       ),
     ),
 
-    bottomSheetTheme: const BottomSheetThemeData(
+    bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: ChurchColors.background,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -189,13 +192,13 @@ ThemeData buildChurchTheme() {
       dividerColor: ChurchColors.divider,
     ),
 
-    listTileTheme: const ListTileThemeData(
+    listTileTheme: ListTileThemeData(
       titleTextStyle: ChurchType.bodyStrong,
       subtitleTextStyle: ChurchType.label,
       iconColor: ChurchColors.accent,
     ),
 
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
+    progressIndicatorTheme: ProgressIndicatorThemeData(
       color: ChurchColors.accent,
     ),
   );

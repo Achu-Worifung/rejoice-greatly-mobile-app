@@ -115,21 +115,21 @@ class AttendanceBanner {
   static _BannerPalette _paletteFor(AttendanceBannerTone tone) {
     switch (tone) {
       case AttendanceBannerTone.success:
-        return const _BannerPalette(
-          background: Color(0xFFEAF6EC),
-          foreground: Color(0xFF1B5E20),
+        return _BannerPalette(
+          background: ChurchColors.successSurface,
+          foreground: ChurchColors.successInk,
           icon: Icons.check_circle_rounded,
         );
       case AttendanceBannerTone.info:
-        return const _BannerPalette(
+        return _BannerPalette(
           background: ChurchColors.card,
           foreground: ChurchColors.accent,
           icon: Icons.event_available_rounded,
         );
       case AttendanceBannerTone.error:
-        return const _BannerPalette(
-          background: Color(0xFFFDECEA),
-          foreground: Color(0xFFB3261E),
+        return _BannerPalette(
+          background: ChurchColors.errorSurface,
+          foreground: ChurchColors.errorInk,
           icon: Icons.error_outline_rounded,
         );
     }

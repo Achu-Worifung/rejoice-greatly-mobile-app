@@ -136,7 +136,7 @@ class LatestSermonCard extends StatelessWidget {
   Widget _placeholder() {
     return Container(
       color: ChurchColors.button.withValues(alpha: 0.08),
-      child: const Icon(Icons.mic, color: ChurchColors.accent, size: 32),
+      child: Icon(Icons.mic, color: ChurchColors.accent, size: 32),
     );
   }
 }

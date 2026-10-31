@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../services/member_events.dart';
+import '../services/prayer_wall_api.dart';
 import '../widgets/user_dashboard.dart';
 import '../theme/church_colors.dart';
 import 'sermons.dart';
+import 'event_detail_page.dart';
 import 'events_page.dart';
-import 'cafe.dart';
+import 'community_page.dart';
+import 'prayer_thread_page.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -14,7 +18,54 @@ class Dashboard extends StatefulWidget {
 }
 
 class _DashboardState extends State<Dashboard> {
+  static const int _eventsTab = 2;
+  static const int _communityTab = 3;
+
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    PrayerWallApi.pendingThread.addListener(_openPendingThread);
+    MemberEvents.pendingEvent.addListener(_openPendingEvent);
+    // A push tapped on a cold start lands before this screen exists.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _openPendingThread();
+      _openPendingEvent();
+    });
+  }
+
+  @override
+  void dispose() {
+    PrayerWallApi.pendingThread.removeListener(_openPendingThread);
+    MemberEvents.pendingEvent.removeListener(_openPendingEvent);
+    super.dispose();
+  }
+
+  /// Opens the event a tapped reminder or announcement is about.
+  Future<void> _openPendingEvent() async {
+    final id = MemberEvents.pendingEvent.value;
+    if (id == null || !mounted) return;
+    MemberEvents.pendingEvent.value = null;
+    setState(() => _selectedIndex = _eventsTab);
+    try {
+      final feed = await MemberEvents.load();
+      final event = feed.events.where((e) => e['id'] == id).firstOrNull;
+      if (event != null && mounted) openEventDetailPage(context, event);
+    } catch (e) {
+      debugPrint('Dashboard: could not open event $id: $e');
+    }
+  }
+
+  /// Opens the prayer request a tapped prayer notification is about, or
+  /// just the prayer wall when it isn't about one.
+  void _openPendingThread() {
+    final id = PrayerWallApi.pendingThread.value;
+    if (id == null || !mounted) return;
+    PrayerWallApi.pendingThread.value = null;
+    setState(() => _selectedIndex = _communityTab);
+    if (id.isNotEmpty) openPrayerThread(context, id);
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -23,7 +74,8 @@ class _DashboardState extends State<Dashboard> {
   }
 
   BottomNavigationBarItem _buildNavItem(String assetPath, String label, int index) {
-    final Color unselectedColor = Colors.grey.shade400;
+    // Muted brown, not light grey: the unselected tabs still need AA contrast.
+    final Color unselectedColor = ChurchColors.muted;
     final Color color = _selectedIndex == index ? ChurchColors.accent : unselectedColor;
 
     return BottomNavigationBarItem(
@@ -49,10 +101,7 @@ class _DashboardState extends State<Dashboard> {
       ),
       const SermonsPage(),
       const EventsPage(),
-      Cafe(
-        isActive: _selectedIndex == 3,
-        onExit: () => setState(() => _selectedIndex = 0),
-      ),
+      CommunityPage(isActive: _selectedIndex == _communityTab),
     ];
 
     return Scaffold(
@@ -65,13 +114,13 @@ class _DashboardState extends State<Dashboard> {
         decoration: BoxDecoration(
           color: ChurchColors.background,
           // The register's rule closes the page above the nav.
-          border: const Border(top: BorderSide(color: ChurchColors.divider)),
+          border: Border(top: BorderSide(color: ChurchColors.divider)),
         ),
         child: BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           backgroundColor: ChurchColors.background,
           selectedItemColor: ChurchColors.accent,
-          unselectedItemColor: Colors.grey.shade400,
+          unselectedItemColor: ChurchColors.muted,
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
           elevation: 0,
@@ -80,10 +129,10 @@ class _DashboardState extends State<Dashboard> {
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
           items: [
-            _buildNavItem('assets/icons/dashboard.svg', 'Dashboard', 0),
+            _buildNavItem('assets/icons/dashboard.svg', 'Home', 0),
             _buildNavItem('assets/icons/microphone.svg', 'Sermons', 1),
             _buildNavItem('assets/icons/announcement.svg', 'Events', 2),
-            _buildNavItem('assets/icons/cafe.svg', 'Cafe', 3),
+            _buildNavItem('assets/icons/users.svg', 'Community', _communityTab),
           ],
         ),
       ),

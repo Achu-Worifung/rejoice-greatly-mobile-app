@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'event_detail_page.dart';
-import '../services/church_api.dart';
+import '../services/member_events.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
@@ -11,6 +11,7 @@ import '../widgets/church_buttons.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
 import '../widgets/cached_image.dart';
+import '../widgets/event_actions.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -24,6 +25,7 @@ class _EventsPageState extends State<EventsPage> {
   String _selectedFilter = 'All';
 
   List<Map<String, dynamic>> _rawEvents = [];
+  BacentaMeetingInfo? _meeting;
   Map<String, List<Map<String, dynamic>>> _grouped = {};
   bool _loading = true;
   String? _error;
@@ -47,11 +49,11 @@ class _EventsPageState extends State<EventsPage> {
       _error = null;
     });
     try {
-      final list = await ChurchApi.getUpcomingEvents();
-      final out = ChurchApi.mapEventInstances(list);
+      final feed = await MemberEvents.load();
       if (!mounted) return;
       setState(() {
-        _rawEvents = out;
+        _rawEvents = feed.events;
+        _meeting = feed.meeting;
         _applyFilters();
         _loading = false;
       });
@@ -137,7 +139,7 @@ class _EventsPageState extends State<EventsPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_outlined, size: 48, color: ChurchColors.muted),
+              Icon(Icons.cloud_off_outlined, size: 48, color: ChurchColors.muted),
               const SizedBox(height: 12),
               Text(
                 "Couldn't load events",
@@ -150,7 +152,7 @@ class _EventsPageState extends State<EventsPage> {
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
+                style: TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -165,43 +167,51 @@ class _EventsPageState extends State<EventsPage> {
         ),
       );
     }
-    if (_grouped.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.event_available_outlined, size: 56, color: ChurchColors.muted.withValues(alpha: 0.6)),
-              const SizedBox(height: 16),
-              const Text(
-                'No upcoming events match your filters',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                  color: ChurchColors.bodyText,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Try another category or clear search.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: ChurchColors.muted, fontSize: 14),
-              ),
-            ],
-          ),
+    final filtered = _searchQuery.isNotEmpty || _selectedFilter != 'All';
+    final meeting = filtered ? null : _meeting;
+    if (_grouped.isEmpty && meeting == null) {
+      return RefreshIndicator(
+        color: ChurchColors.button,
+        onRefresh: _load,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(32, 96, 32, 32),
+          children: [
+            Icon(Icons.event_available_outlined, size: 56, color: ChurchColors.muted.withValues(alpha: 0.6)),
+            const SizedBox(height: 16),
+            Text(
+              filtered ? 'No upcoming events match your filters' : 'Nothing on the calendar yet',
+              textAlign: TextAlign.center,
+              style: ChurchType.title,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              filtered
+                  ? 'Try another category or clear search.'
+                  : 'When the church plans something, it will show up here.',
+              textAlign: TextAlign.center,
+              style: ChurchType.body.copyWith(color: ChurchColors.muted),
+            ),
+          ],
         ),
       );
     }
+    final lead = meeting == null ? 0 : 1;
     return RefreshIndicator(
       color: ChurchColors.button,
       onRefresh: _load,
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 24),
-        itemCount: _grouped.length,
+        itemCount: _grouped.length + lead,
         itemBuilder: (context, index) {
-          final key = _grouped.keys.elementAt(index);
+          if (index < lead) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: BacentaMeetingCard(meeting: meeting!, onJoined: _load),
+            );
+          }
+          final key = _grouped.keys.elementAt(index - lead);
           return _buildDateSection(key, _grouped[key]!);
         },
       ),
@@ -304,7 +314,7 @@ class _EventsPageState extends State<EventsPage> {
                         fit: BoxFit.cover,
                         errorBuilder: (BuildContext c, Object e, StackTrace? s) => Container(
                           color: ChurchColors.button.withValues(alpha: 0.08),
-                          child: const Icon(Icons.event, color: ChurchColors.accent, size: 32),
+                          child: Icon(Icons.event, color: ChurchColors.accent, size: 32),
                         ),
                       ),
                     ),
@@ -321,11 +331,25 @@ class _EventsPageState extends State<EventsPage> {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            const Icon(Icons.schedule, size: 15, color: ChurchColors.muted),
+                            Icon(Icons.schedule, size: 15, color: ChurchColors.muted),
                             const SizedBox(width: 4),
                             Text(
                               event['time'] as String? ?? 'Time TBA',
                               style: ChurchType.dataSmall,
+                            ),
+                            ValueListenableBuilder<Map<String, int>>(
+                              valueListenable: MemberEvents.reminders,
+                              builder: (context, reminders, _) => reminders.containsKey(event['id'])
+                                  ? Padding(
+                                      padding: EdgeInsets.only(left: 8),
+                                      child: Icon(
+                                        Icons.notifications_active_rounded,
+                                        size: 15,
+                                        color: ChurchColors.accent,
+                                        semanticLabel: 'Reminder set',
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                           ],
                         ),
@@ -334,15 +358,15 @@ class _EventsPageState extends State<EventsPage> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Padding(
+                              Padding(
                                 padding: EdgeInsets.only(top: 2),
                                 child: Icon(Icons.place_outlined, size: 15, color: ChurchColors.muted),
                               ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  event['location'] as String,
-                                  style: const TextStyle(
+                                  MemberEvents.placeLabel(event['location'] as String),
+                                  style: TextStyle(
                                     color: ChurchColors.muted,
                                     fontSize: 12,
                                     height: 1.3,
@@ -376,7 +400,7 @@ class _EventsPageState extends State<EventsPage> {
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: ChurchColors.muted),
+                  Icon(Icons.chevron_right, color: ChurchColors.muted),
                 ],
               ),
             ),

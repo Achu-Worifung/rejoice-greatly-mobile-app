@@ -10,7 +10,7 @@ import '../theme/church_type.dart';
 ///   ruled rather than lifted.
 /// - Danger: flat outlined red for destructive actions (no gradient, no glow).
 
-const Color _danger = Color(0xFFC62828);
+Color get _danger => ChurchColors.danger;
 
 /// The one "do this" action.
 class ChurchPrimaryButton extends StatelessWidget {
@@ -31,12 +31,13 @@ class ChurchPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: height,
+    // A minimum, not a fixed height: with larger text a label can wrap.
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: double.infinity, minHeight: height),
       child: ElevatedButton(
         onPressed: loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           backgroundColor: ChurchColors.button,
           foregroundColor: ChurchColors.buttonText,
           disabledBackgroundColor: ChurchColors.button,
@@ -47,7 +48,7 @@ class ChurchPrimaryButton extends StatelessWidget {
           ),
         ),
         child: loading
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
@@ -78,12 +79,13 @@ class ChurchSecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: height,
+    // A minimum, not a fixed height: with larger text a label can wrap.
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: double.infinity, minHeight: height),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           backgroundColor: ChurchColors.card,
           foregroundColor: ChurchColors.bodyText,
           disabledBackgroundColor: ChurchColors.card,
@@ -116,15 +118,16 @@ class ChurchDangerButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: height,
+    // A minimum, not a fixed height: with larger text a label can wrap.
+    return ConstrainedBox(
+      constraints: BoxConstraints(minWidth: double.infinity, minHeight: height),
       child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           foregroundColor: _danger,
           backgroundColor: _danger.withValues(alpha: 0.05),
-          side: const BorderSide(color: _danger, width: 1.4),
+          side: BorderSide(color: _danger, width: 1.4),
           shape: const RoundedRectangleBorder(
             borderRadius: ChurchRadius.mdAll,
           ),

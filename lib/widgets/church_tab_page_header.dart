@@ -104,7 +104,7 @@ class _SearchField extends StatelessWidget {
           hintStyle: ChurchType.body.copyWith(
             color: ChurchColors.muted.withValues(alpha: 0.7),
           ),
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.search_rounded,
             color: ChurchColors.muted,
             size: 20,

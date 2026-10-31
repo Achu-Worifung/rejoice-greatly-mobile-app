@@ -14,15 +14,15 @@ export 'church_buttons.dart' show ChurchPrimaryButton;
 /// DESIGN.md (primary = crisp radius, flat; secondary = cream, ruled, flat).
 
 // The warm-rose error palette (DESIGN.md error-callout tokens).
-const Color _errorSurface = Color(0xFFFFF1EE);
-const Color _errorBorder = Color(0xFFE1B0A9);
-const Color _errorInk = Color(0xFF8A2C1F);
+Color get _errorSurface => ChurchColors.errorSurface;
+Color get _errorBorder => ChurchColors.errorBorder;
+Color get _errorInk => ChurchColors.errorInk;
 
 /// Screen title for auth pages ("Let's Get Started!", "Reset your password").
-const TextStyle kAuthTitleStyle = ChurchType.display;
+TextStyle get kAuthTitleStyle => ChurchType.display;
 
 /// Supporting line beneath the title.
-const TextStyle kAuthSubtitleStyle = ChurchType.label;
+TextStyle get kAuthSubtitleStyle => ChurchType.label;
 
 /// The one input decoration every auth field uses: muted label + icon, and
 /// the ruled, crisp-cornered box from the app theme (sand rule at rest, cocoa
@@ -59,12 +59,12 @@ class AuthErrorCallout extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded, color: _errorInk, size: 18),
+          Icon(Icons.error_outline_rounded, color: _errorInk, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 color: _errorInk,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -100,7 +100,7 @@ class ChurchSocialButton extends StatelessWidget {
   });
 
   /// The cream-bordered ghost variant for dark (brown) surfaces.
-  const ChurchSocialButton.ghost({
+  ChurchSocialButton.ghost({
     super.key,
     required this.label,
     required this.icon,

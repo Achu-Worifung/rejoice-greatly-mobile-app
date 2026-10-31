@@ -87,20 +87,20 @@ class _UserPrepPageState extends State<UserPrepPage> {
                   color: ChurchColors.button.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.no_photography_outlined,
                   color: ChurchColors.accent,
                   size: 28,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Skip face check-in?',
                 textAlign: TextAlign.center,
                 style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "You can explore the app right away. Without a face photo the "
                 "cameras won't check you in — you can still tap the NFC tag at "
                 "the entrance or check in with a greeter, and you can set up "
@@ -145,9 +145,9 @@ class _UserPrepPageState extends State<UserPrepPage> {
   final List<Map<String, dynamic>> _slides = [
     {
       'icon': Icons.lock_outline,
-      'title': 'Encrypted End to End',
+      'title': 'Encrypted From Your Phone',
       'description':
-          'Each photo is encrypted on your phone (AES-256-GCM) before it is uploaded, and stays encrypted in transit and at rest. Only ciphertext ever leaves your device.',
+          'Each photo is encrypted on your phone (AES-256-GCM) before it is uploaded, and stays encrypted in transit and in storage. Only the church\u2019s system can open it, to check it and to recognise you at check-in.',
     },
     {
       'icon': Icons.how_to_reg_outlined,
@@ -157,9 +157,9 @@ class _UserPrepPageState extends State<UserPrepPage> {
     },
     {
       'icon': Icons.visibility_off_outlined,
-      'title': 'Kept Private',
+      'title': 'Scan Photos Are Deleted',
       'description':
-          'Only your church administrators can see attendance records. Your facial data is never sold, traded, or visible to other members.',
+          'Your scan photos are deleted as soon as check-in has learned your face. Only the face pattern stays, and it is never sold, traded, or visible to other members.',
     },
     {
       'icon': Icons.delete_outline,
@@ -191,20 +191,20 @@ class _UserPrepPageState extends State<UserPrepPage> {
                   onPressed: _goBack,
                   padding: EdgeInsets.zero,
                   alignment: Alignment.centerLeft,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back,
                     color: ChurchColors.bodyText,
                   ),
                 ),
                 const SizedBox(height: 8),
 
-                const Text(
+                Text(
                   "Set Up Facial Recognition",
                   style: ChurchType.display,
                 ),
                 const SizedBox(height: 12),
 
-                const Text(
+                Text(
                   "To take attendance with your face, we need to register your facial data. Don't worry, it's quick and secure!",
                   style: TextStyle(
                     fontSize: 15,
@@ -259,7 +259,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                 Center(
                   child: Text(
                     "${_currentIndex + 1} of ${_slides.length}",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: ChurchColors.muted,
                     ),
@@ -373,7 +373,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               Icon(Icons.place_outlined, size: 18, color: ChurchColors.accent),
               SizedBox(width: 8),
               Expanded(
@@ -389,7 +389,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             ],
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Facial recognition is available only to eligible members attending '
             'participating church locations. If you are under 18, are outside a '
             'participating church, or are in a jurisdiction where this feature '
@@ -427,7 +427,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     ? null
                     : (val) => setState(() => _consented = val ?? false),
                 activeColor: ChurchColors.button,
-                side: const BorderSide(color: ChurchColors.muted, width: 1.5),
+                side: BorderSide(color: ChurchColors.muted, width: 1.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(5),
                 ),
@@ -439,7 +439,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             Expanded(
               child: Text.rich(
                 TextSpan(
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     color: ChurchColors.muted,
                     height: 1.45,
@@ -448,7 +448,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
                     const TextSpan(text: 'I have read the '),
                     TextSpan(
                       text: 'Biometric Information Notice',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: ChurchColors.accent,
                         fontWeight: FontWeight.w700,
                         decoration: TextDecoration.underline,
@@ -508,7 +508,7 @@ class _UserPrepPageState extends State<UserPrepPage> {
             child: AutoSizeText(
               slide['description'] as String,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: ChurchColors.muted,
                 height: 1.4,

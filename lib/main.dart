@@ -5,11 +5,15 @@ import 'routes.dart';
 import 'pages/splash_screen.dart';
 import 'theme/church_colors.dart';
 import 'theme/church_theme.dart';
+import 'theme/display_settings.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'notifications/notification_service.dart';
 import 'services/user_session_store.dart';
 import 'services/nfc_deep_link_service.dart';
+import 'services/milestones.dart';
+import 'services/sermon_downloads.dart';
+import 'services/sermon_progress.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'services/user_facing_error.dart';
 
@@ -25,9 +29,17 @@ void main() async {
       if (Firebase.apps.isEmpty)
         Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
       _loadEnv(),
+      // Text size and light/dark, so the first frame is already right.
+      DisplaySettings.load(),
+      // Where sermons were left off, and which are downloaded.
+      SermonProgress.load(),
+      SermonDownloads.load(),
     ]);
 
     await UserSessionStore.initialize();
+
+    // A sermon heard to the end may be a milestone.
+    SermonProgress.onFinished = Milestones.sermonFinished;
 
     // Registers this device with OneSignal so backend push/email reminders
     // are actually delivered. Not awaited: the OS permission prompt must not
@@ -96,19 +108,28 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static final ThemeData _lightTheme = buildChurchTheme(ChurchPalette.light);
+  static final ThemeData _darkTheme = buildChurchTheme(ChurchPalette.dark);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Rejoice Greatly',
-      navigatorKey: navigatorKey,
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      initialRoute: '/',
-      theme: buildChurchTheme(),
-      routes: {
-        '/': (context) => const SplashScreen(),
-        ...AppRoutes.getRoutes(),
-      },
-      debugShowCheckedModeBanner: false,
+    return ListenableBuilder(
+      listenable: Listenable.merge([DisplaySettings.current, DisplaySettings.lightOnlyScreens]),
+      builder: (context, _) => MaterialApp(
+        title: 'Rejoice Greatly',
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        initialRoute: '/',
+        theme: _lightTheme,
+        darkTheme: _darkTheme,
+        themeMode: DisplaySettings.themeMode,
+        builder: (context, child) => DisplayScope(child: child ?? const SizedBox.shrink()),
+        routes: {
+          '/': (context) => const SplashScreen(),
+          ...AppRoutes.getRoutes(),
+        },
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
@@ -129,13 +150,13 @@ class StartupErrorApp extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   size: 48,
                   color: ChurchColors.muted,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Could not start the app',
                   style: TextStyle(
                     fontSize: 18,
@@ -147,7 +168,7 @@ class StartupErrorApp extends StatelessWidget {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: ChurchColors.muted,
                     fontSize: 14,
                   ),

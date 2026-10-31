@@ -1,480 +1,339 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/member_events.dart';
 import '../theme/church_colors.dart';
-import '../widgets/dashboard_label_title.dart';
+import '../theme/church_type.dart';
 import '../widgets/cached_image.dart';
+import '../widgets/church_buttons.dart';
+import '../widgets/dashboard_label_title.dart';
+import '../widgets/event_actions.dart' show openExternal;
 
+/// The next service, with the church, how to get there, and a way to put it
+/// in the calendar or send it to someone. The date comes from the events
+/// feed when the service is on it, otherwise from the church's usual time.
 class WorshipWithUsCard extends StatelessWidget {
+  const WorshipWithUsCard({super.key, required this.data, this.events = const []});
+
+  /// `name`, `address`, `serviceTimes` (e.g. "10:00 AM"), `mapPreviewUrl`.
   final Map<String, dynamic> data;
 
-  const WorshipWithUsCard({super.key, required this.data});
+  /// Upcoming events the member can see; the first service among them wins.
+  final List<Map<String, dynamic>> events;
 
-  // ── Directions ──────────────────────────────────────────────────────────────
-  Future<void> _openDirections(BuildContext context) async {
-    final address = data['address'] as String? ?? '';
-    if (address.isEmpty) return;
+  String get _name => data['name'] as String? ?? 'Rejoice Greatly';
+  String get _address => data['address'] as String? ?? '';
+  String get _times => data['serviceTimes'] as String? ?? '';
 
-    final encodedAddress = Uri.encodeComponent(address);
-
-    Uri uri;
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
-      // Apple Maps: daddr = destination address
-      uri = Uri.parse('https://maps.apple.com/?daddr=$encodedAddress');
-    } else {
-      // Android: geo intent or google maps url
-      // Use the google maps web URL which Android intercepts perfectly
-      uri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$encodedAddress',
-      );
-    }
-
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Could not launch $uri';
+  /// The next service as an event: the feed's own when it has one (so "Add
+  /// to calendar" uses the real occurrence), else the next Sunday at the
+  /// church's usual time.
+  @visibleForTesting
+  static Map<String, dynamic> nextService({
+    required List<Map<String, dynamic>> events,
+    required String usualTime,
+    required String churchName,
+    required String address,
+    required DateTime now,
+  }) {
+    for (final e in events) {
+      final title = (e['title'] as String? ?? '').toLowerCase();
+      final start = MemberEvents.startOf(e);
+      if (title.contains('service') && start != null && start.add(const Duration(hours: 2)).isAfter(now)) {
+        return e;
       }
-    } catch (e) {
+    }
+    final time = _parseTime(usualTime);
+    var day = DateTime(now.year, now.month, now.day);
+    while (day.weekday != DateTime.sunday) {
+      day = day.add(const Duration(days: 1));
+    }
+    // Today's has finished: next week's.
+    final startsToday = DateTime(day.year, day.month, day.day, time?.$1 ?? 23, time?.$2 ?? 59);
+    if (startsToday.add(const Duration(hours: 2)).isBefore(now)) {
+      day = day.add(const Duration(days: 7));
+    }
+    return {
+      'title': 'Sunday service at $churchName',
+      'date': DateFormat('yyyy-MM-dd').format(day),
+      if (time != null) 'startTime': '${time.$1.toString().padLeft(2, '0')}:${time.$2.toString().padLeft(2, '0')}:00',
+      'location': address,
+    };
+  }
+
+  /// "10:00 AM" (or the first of "9:00 AM & 11:00 AM") as hour and minute.
+  static (int, int)? _parseTime(String text) {
+    final m = RegExp(r'(\d{1,2}):(\d{2})\s*([AaPp][Mm])?').firstMatch(text);
+    if (m == null) return null;
+    var hour = int.parse(m.group(1)!);
+    final minute = int.parse(m.group(2)!);
+    final ampm = m.group(3)?.toLowerCase();
+    if (ampm == 'pm' && hour < 12) hour += 12;
+    if (ampm == 'am' && hour == 12) hour = 0;
+    return (hour, minute);
+  }
+
+  /// "Happening now", "Starts in 40 minutes", "Today at 10:00 AM", "Tomorrow at 10:00 AM", "In 3 days".
+  @visibleForTesting
+  static String whenLabel(DateTime start, bool hasTime, DateTime now) {
+    final time = DateFormat('h:mm a').format(start);
+    if (hasTime && !now.isBefore(start) && now.isBefore(start.add(const Duration(hours: 2)))) {
+      return 'Happening now';
+    }
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(start.year, start.month, start.day);
+    final days = day.difference(today).inDays;
+    if (days == 0) {
+      final until = start.difference(now);
+      if (hasTime && until.inMinutes < 60) return 'Starts in ${until.inMinutes.clamp(1, 59)} minutes';
+      if (hasTime && until.inHours < 3) return 'Starts in ${until.inHours} hour${until.inHours == 1 ? '' : 's'}';
+      return hasTime ? 'Today at $time' : 'Today';
+    }
+    if (days == 1) return hasTime ? 'Tomorrow at $time' : 'Tomorrow';
+    return 'In $days days';
+  }
+
+  Uri get _mapsUri => defaultTargetPlatform == TargetPlatform.iOS
+      ? Uri.parse('https://maps.apple.com/?daddr=${Uri.encodeComponent(_address)}')
+      : Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(_address)}');
+
+  Future<void> _directions(BuildContext context) async {
+    if (_address.isEmpty) return;
+    try {
+      await launchUrl(_mapsUri, mode: LaunchMode.externalApplication);
+    } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: Could not open maps.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Couldn’t open maps.')));
       }
     }
   }
 
-  // ── Share ────────────────────────────────────────────────────────────────────
-  Future<void> _shareChurch(BuildContext context) async {
-    final name = data['name'] as String? ?? 'Our Church';
-    final address = data['address'] as String? ?? '';
-    final times = data['serviceTimes'] as String? ?? '';
-
-    final mapsLink =
-        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
-    final message = [
-      'Join us for worship at $name!',
-      if (address.isNotEmpty) '📍 $address',
-      if (times.isNotEmpty) '🕐 $times',
-      mapsLink,
+  Future<void> _share(BuildContext context, DateTime? start, bool hasTime) async {
+    final when = start == null
+        ? _times
+        : '${DateFormat('EEEE, MMMM d').format(start)}${hasTime ? ' at ${DateFormat('h:mm a').format(start)}' : ''}';
+    final text = [
+      'Come to church with me at $_name!',
+      if (when.isNotEmpty) when,
+      if (_address.isNotEmpty) _address,
+      if (_address.isNotEmpty) 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(_address)}',
     ].join('\n');
-
     try {
-      await Share.shareUri(Uri.parse(mapsLink)); // fallback if text share fails
+      await Share.share(text, subject: 'Church at $_name');
     } catch (_) {
-      // share plain text if shareUri isn't supported
-      try {
-        await Share.share(message, subject: 'Worship with us at $name');
-      } catch (_) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not open share sheet. Please try again.'),
-            ),
-          );
-        }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Couldn’t open sharing.')));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const DashboardLabelText(label: 'WORSHIP WITH US'),
-        const SizedBox(height: 10),
+    final service = nextService(
+      events: events,
+      usualTime: _times,
+      churchName: _name,
+      address: _address,
+      now: DateTime.now(),
+    );
+    final start = MemberEvents.startOf(service);
+    final hasTime = (service['startTime'] as String?)?.isNotEmpty == true;
+    final calendar = MemberEvents.calendarUri(service);
+    final label = start == null ? null : whenLabel(start, hasTime, DateTime.now());
+    final live = label == 'Happening now';
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const DashboardLabelText(label: 'Worship with us'),
         Container(
-          width: double.infinity,
           clipBehavior: Clip.antiAlias,
-          decoration: ChurchColors.cardDecoration(
-            color: ChurchColors.card,
-            shadow: [
-              BoxShadow(
-                color: const Color(0xFF633A02).withValues(alpha: 0.07),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
+          decoration: ChurchColors.cardDecoration(),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GestureDetector(
-                onTap: () => _openDirections(context),
-                child: _MapPreview(
-                  address: data['address'] as String? ?? '',
-                  staticMapUrl: data['mapPreviewUrl'] as String?,
-                  onTap: () => _openDirections(context),
-                ),
+              _MapPreview(
+                staticMapUrl: data['mapPreviewUrl'] as String?,
+                onTap: () => _directions(context),
               ),
-              Container(height: 3, color: ChurchColors.button),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _InfoRow(
-                      icon: Icons.church_outlined,
-                      label: 'CHURCH',
-                      value: data['name'] ?? '',
-                    ),
-                    const _RowDivider(),
-                    _InfoRow(
-                      icon: Icons.location_on_outlined,
-                      label: 'ADDRESS',
-                      value: data['address'] ?? '',
-                    ),
-                    const _RowDivider(),
-                    _InfoRow(
-                      icon: Icons.access_time_rounded,
-                      label: 'SERVICE TIMES',
-                      value: data['serviceTimes'] ?? '',
-                    ),
+                    ChurchEyebrow('Next service', color: ChurchColors.accent),
+                    const SizedBox(height: 6),
+                    if (start != null) ...[
+                      Text(DateFormat('EEEE, MMMM d').format(start), style: ChurchType.headline),
+                      const SizedBox(height: 2),
+                      Text(
+                        // "Today at 10:00 AM" already says the time.
+                        label != null && hasTime && label.contains(DateFormat('h:mm a').format(start))
+                            ? label
+                            : [if (hasTime) DateFormat('h:mm a').format(start), ?label].join(' · '),
+                        style: ChurchType.body.copyWith(
+                          color: live ? ChurchColors.accent : ChurchColors.muted,
+                          fontWeight: live ? FontWeight.w600 : null,
+                        ),
+                      ),
+                    ] else
+                      Text(_times.isEmpty ? 'Sundays' : 'Sundays · $_times', style: ChurchType.headline),
+                    const SizedBox(height: 14),
+                    Divider(height: 1, color: ChurchColors.divider),
+                    const SizedBox(height: 14),
+                    Text(_name, style: ChurchType.bodyStrong),
+                    if (_address.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(_address, style: ChurchType.label),
+                    ],
+                    if (_times.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text('Every Sunday · $_times', style: ChurchType.label),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
         ),
-
         const SizedBox(height: 12),
-
         Row(
           children: [
             Expanded(
-              child: _PrimaryButton(
-                label: 'GET DIRECTIONS',
+              child: ChurchPrimaryButton(
+                label: 'Directions',
                 icon: Icons.directions_outlined,
-                onTap: () => _openDirections(context),
+                height: 48,
+                onPressed: _address.isEmpty ? null : () => _directions(context),
               ),
             ),
-            const SizedBox(width: 8),
-            _IconOutlineButton(
-              icon: Icons.share_outlined,
-              onTap: () => _shareChurch(context),
-            ),
+            if (calendar != null) ...[
+              const SizedBox(width: 8),
+              Expanded(
+                child: ChurchSecondaryButton(
+                  label: 'Add to calendar',
+                  icon: Icons.event_available_outlined,
+                  height: 48,
+                  onPressed: () => openExternal(context, calendar),
+                ),
+              ),
+            ],
           ],
+        ),
+        const SizedBox(height: 4),
+        Center(
+          child: TextButton.icon(
+            onPressed: () => _share(context, start, hasTime),
+            icon: const Icon(Icons.ios_share_rounded, size: 18),
+            label: const Text('Invite someone to come with you'),
+          ),
         ),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────
-// Sub-widgets
-// ─────────────────────────────────────────────
+/// The map at the top of the card: the church's map image when one is set,
+/// else a quiet drawn map. Tapping opens directions.
 class _MapPreview extends StatelessWidget {
-  final String address;
+  const _MapPreview({this.staticMapUrl, required this.onTap});
+
   final String? staticMapUrl;
   final VoidCallback onTap;
 
-  const _MapPreview({
-    required this.address,
-    this.staticMapUrl,
-    required this.onTap,
-  });
-
-  bool get _hasMapImage =>
-      staticMapUrl != null && staticMapUrl!.trim().isNotEmpty;
-
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
+    final url = staticMapUrl?.trim();
+    return Semantics(
+      button: true,
+      label: 'Open directions',
       child: InkWell(
         onTap: onTap,
-        splashColor: Colors.white.withOpacity(0.2),
-        highlightColor: Colors.black.withOpacity(0.05),
-        child: Stack(
-          children: [
-            SizedBox(
-              height: 190,
-              width: double.infinity,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: _hasMapImage
-                    ? Image(
-                        image: cachedImage(staticMapUrl!),
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, progress) {
-                          if (progress == null) return child;
-                          return _fallbackMap();
-                        },
-                        errorBuilder: (_, __, ___) => _fallbackMap(),
-                      )
-                    : _fallbackMap(),
-              ),
-            ),
-
-            // 🌫 Gradient overlay
-            Container(
-              height: 190,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withOpacity(0.05),
-                    Colors.black.withOpacity(0.45),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+        child: SizedBox(
+          height: 140,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (url != null && url.isNotEmpty)
+                Image(
+                  image: cachedImage(url),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const _DrawnMap(),
+                )
+              else
+                const _DrawnMap(),
+              Positioned(
+                right: 10,
+                bottom: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: ChurchColors.background,
+                    borderRadius: ChurchRadius.mdAll,
+                    border: Border.all(color: ChurchColors.divider),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.location_on_outlined, size: 16, color: ChurchColors.accent),
+                      const SizedBox(width: 4),
+                      Text('Open in Maps', style: ChurchType.caption.copyWith(color: ChurchColors.accent)),
+                    ],
+                  ),
                 ),
               ),
-            ),
-
-            // 📍 Floating CTA
-            Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.location_on, size: 18, color: ChurchColors.button),
-                    SizedBox(width: 6),
-                    Text(
-                      'VIEW ON MAP',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                        color: ChurchColors.button,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // 🧊 Bottom glass info strip
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.place, size: 16, color: ChurchColors.button),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        address,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _fallbackMap() {
+class _DrawnMap extends StatelessWidget {
+  const _DrawnMap();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       color: ChurchColors.card,
       child: CustomPaint(
-        painter: _MapGridPainter(),
-        child: const Center(
-          child: Icon(Icons.map_outlined, size: 40, color: ChurchColors.accent),
-        ),
+        painter: _MapGridPainter(ChurchColors.button),
+        child: Center(child: Icon(Icons.church_outlined, size: 36, color: ChurchColors.accent)),
       ),
     );
   }
 }
 
 class _MapGridPainter extends CustomPainter {
+  _MapGridPainter(this.ink);
+
+  final Color ink;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = ChurchColors.button.withValues(alpha: 0.08)
+    final grid = Paint()
+      ..color = ink.withValues(alpha: 0.08)
       ..strokeWidth = 1;
-
     const step = 24.0;
     for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
     }
     for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }
-
-    final roadPaint = Paint()
-      ..color = ChurchColors.button.withValues(alpha: 0.15)
+    final road = Paint()
+      ..color = ink.withValues(alpha: 0.15)
       ..strokeWidth = 6
       ..strokeCap = StrokeCap.round;
-
-    canvas.drawLine(
-      Offset(size.width * 0.2, 0),
-      Offset(size.width * 0.35, size.height),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(0, size.height * 0.45),
-      Offset(size.width, size.height * 0.6),
-      roadPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.6, 0),
-      Offset(size.width * 0.7, size.height),
-      roadPaint,
-    );
+    canvas.drawLine(Offset(size.width * 0.2, 0), Offset(size.width * 0.35, size.height), road);
+    canvas.drawLine(Offset(0, size.height * 0.45), Offset(size.width, size.height * 0.6), road);
+    canvas.drawLine(Offset(size.width * 0.6, 0), Offset(size.width * 0.7, size.height), road);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: ChurchColors.button.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 18, color: ChurchColors.accent),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF6B6B6B),
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF1A1A1A),
-                  height: 1.45,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RowDivider extends StatelessWidget {
-  const _RowDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 14),
-      child: Divider(height: 1, color: Color(0xFFF0F0F0)),
-    );
-  }
-}
-
-class _PrimaryButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _PrimaryButton({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, size: 16),
-        label: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: ChurchColors.button,
-          foregroundColor: ChurchColors.buttonText,
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconOutlineButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _IconOutlineButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
-      width: 52,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: ChurchColors.button,
-          side: const BorderSide(color: ChurchColors.button, width: 1.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: EdgeInsets.zero,
-        ),
-        child: Icon(icon, size: 20),
-      ),
-    );
-  }
+  bool shouldRepaint(covariant _MapGridPainter old) => old.ink != ink;
 }

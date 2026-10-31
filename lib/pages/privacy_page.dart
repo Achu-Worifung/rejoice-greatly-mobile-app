@@ -76,6 +76,14 @@ class PrivacyPage extends StatelessWidget {
             'and reads nothing off your person.',
           ),
           const LegalParagraph(
+            'Location at check-in. Some tags only check people in near where '
+            'the tag is, so a copied check-in link cannot be used from '
+            'somewhere else. When you tap one of those, and only if you allow '
+            'it, the app reads your location once and sends it with that '
+            'check-in. We keep only how far you were from the tag, never where '
+            'you were, and the app does not read your location at any other time.',
+          ),
+          const LegalParagraph(
             'Attendance and activity. We collect records of when you were '
             'recognized or checked in present, your attendance and absence '
             'counts, your current and longest streaks, saved sermons, and your '
@@ -223,7 +231,11 @@ class PrivacyPage extends StatelessWidget {
           const LegalParagraph(
             'Retention and destruction. We keep your biometric data only as long '
             'as it is needed for the purpose described above — recognizing you '
-            'at church. When that purpose ends, it is destroyed: if you delete '
+            'at church. Your face-scan photos are deleted as soon as your face '
+            'embedding has been created from them. The only photo we keep is the '
+            'profile picture you show in the app — at signup, your clearest scan '
+            'photo, kept as a separate copy that face check-in does not use. You '
+            'can replace it at any time. When that purpose ends, it is destroyed: if you delete '
             'your account or withdraw your consent, we permanently delete your '
             'enrollment images and face embeddings. You never have to wait for a '
             'clock to run out — ask us and we delete it.',

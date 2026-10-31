@@ -10,14 +10,19 @@ import '../pages/notifications_page.dart';
 import '../pages/sermon_detail_page.dart';
 import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
+import '../services/member_events.dart';
+import '../services/milestones.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import 'church_app_bar.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/church_buttons.dart';
+import '../widgets/event_actions.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
+import 'leader_card.dart';
+import 'milestone_widgets.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -35,9 +40,12 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardEventsLoad {
-  _DashboardEventsLoad({required this.items, this.error});
+  _DashboardEventsLoad({required this.items, this.error, this.meeting});
   final List<Map<String, dynamic>> items;
   final String? error;
+
+  /// The member's bacenta meeting, shown on Home only on the day it meets.
+  final BacentaMeetingInfo? meeting;
 }
 
 class _DashboardPageState extends State<DashboardPage> {
@@ -57,6 +65,7 @@ class _DashboardPageState extends State<DashboardPage> {
     _sermonFuture = _fetchSermonsNewestFirst();
     _eventsFuture = _fetchDashboardEventCards();
     _syncUserAccountAndAvatar();
+    Milestones.refresh();
   }
 
   Future<void> _syncUserAccountAndAvatar() async {
@@ -93,6 +102,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _sermonFuture,
       _eventsFuture,
       _syncUserAccountAndAvatar(),
+      Milestones.refresh(),
     ]);
   }
 
@@ -107,12 +117,15 @@ class _DashboardPageState extends State<DashboardPage> {
     return copy;
   }
 
-  /// `top4` when available, else first 4 of `upcoming` (see [ChurchApi.getDashboardEventInstances]).
+  /// The next four events this member can see — their bacenta's and
+  /// basontas' included — and their bacenta's meeting.
   Future<_DashboardEventsLoad> _fetchDashboardEventCards() async {
     try {
-      final raw = await ChurchApi.getDashboardEventInstances();
-      final list = ChurchApi.mapEventInstances(raw);
-      return _DashboardEventsLoad(items: list, error: null);
+      final feed = await MemberEvents.load();
+      return _DashboardEventsLoad(
+        items: feed.events.take(4).toList(),
+        meeting: feed.meeting,
+      );
     } catch (e) {
       return _DashboardEventsLoad(items: [], error: userFacingError(e));
     }
@@ -251,6 +264,10 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Only while there's a milestone they haven't seen yet.
+                  const NewMilestoneCard(),
+                  // Leaders only: their bacenta and what needs them.
+                  const LeaderCard(),
                   const SizedBox(height: 16),
                   const DashboardLabelText(label: 'Verse of the week'),
                   FutureBuilder<Map<String, dynamic>>(
@@ -347,12 +364,26 @@ class _DashboardPageState extends State<DashboardPage> {
                           onViewAll: widget.onViewAllEvents,
                         );
                       }
+                      final meeting = data.meeting;
+                      final meetingToday = meeting != null && meeting.isToday
+                          ? Padding(
+                              padding: const EdgeInsets.only(bottom: 20),
+                              child: BacentaMeetingCard(meeting: meeting, onJoined: _refresh),
+                            )
+                          : null;
                       if (data.items.isEmpty) {
-                        return _DashboardEventsEmpty(onViewAll: widget.onViewAllEvents);
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ?meetingToday,
+                            _DashboardEventsEmpty(onViewAll: widget.onViewAllEvents),
+                          ],
+                        );
                       }
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          ?meetingToday,
                           UpcomingEventsSection(events: data.items),
                           if (widget.onViewAllEvents != null) ...[
                             const SizedBox(height: 12),
@@ -366,7 +397,10 @@ class _DashboardPageState extends State<DashboardPage> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  WorshipWithUsCard(
+                  FutureBuilder<_DashboardEventsLoad>(
+                    future: _eventsFuture,
+                    builder: (context, snapshot) => WorshipWithUsCard(
+                    events: snapshot.data?.items ?? const [],
                     data: {
                       'name': dotenv.env['CHURCH_NAME'] ?? 'REJOICE GREATLY PHX',
                       'address':
@@ -376,6 +410,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         dotenv.env['CHURCH_ADDRESS'] ?? '2323 E Magnolia St, Phoenix, AZ 85012',
                       ),
                     },
+                    ),
                   ),
                 ],
               ),
@@ -470,10 +505,10 @@ class _ErrorCard extends StatelessWidget {
       decoration: ChurchColors.cardDecoration(),
       child: Column(
         children: [
-          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: ChurchColors.muted)),
+          Text(message, textAlign: TextAlign.center, style: TextStyle(color: ChurchColors.muted)),
           TextButton(
             onPressed: () => onRetry(),
-            child: const Text('Try again', style: TextStyle(color: ChurchColors.accent, fontWeight: FontWeight.w600)),
+            child: Text('Try again', style: TextStyle(color: ChurchColors.accent, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -495,7 +530,7 @@ class _EmptyInlineCard extends StatelessWidget {
       child: Center(
         child: Text(
           message,
-          style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
+          style: TextStyle(color: ChurchColors.muted, fontSize: 14),
         ),
       ),
     );
@@ -525,9 +560,9 @@ class _DashboardEventsError extends StatelessWidget {
           decoration: ChurchColors.cardDecoration(),
           child: Column(
             children: [
-              const Icon(Icons.wifi_tethering_error_outlined, color: ChurchColors.muted, size: 32),
+              Icon(Icons.wifi_tethering_error_outlined, color: ChurchColors.muted, size: 32),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 "Couldn't load events",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
@@ -538,7 +573,7 @@ class _DashboardEventsError extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
+                style: TextStyle(fontSize: 12, color: ChurchColors.muted),
               ),
               const SizedBox(height: 12),
               Row(
@@ -546,13 +581,13 @@ class _DashboardEventsError extends StatelessWidget {
                 children: [
                   TextButton(
                     onPressed: () => onRetry(),
-                    child: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
+                    child: Text('Retry', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
                   ),
                   if (onViewAll != null) ...[
-                    const Text('|', style: TextStyle(color: ChurchColors.muted)),
+                    Text('|', style: TextStyle(color: ChurchColors.muted)),
                     TextButton(
                       onPressed: onViewAll,
-                      child: const Text('Open Events tab', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
+                      child: Text('Open Events tab', style: TextStyle(fontWeight: FontWeight.w700, color: ChurchColors.accent)),
                     ),
                   ],
                 ],
@@ -582,9 +617,9 @@ class _DashboardEventsEmpty extends StatelessWidget {
           decoration: ChurchColors.cardDecoration(),
           child: Column(
             children: [
-              const Icon(Icons.event_busy_outlined, size: 36, color: ChurchColors.muted),
+              Icon(Icons.event_busy_outlined, size: 36, color: ChurchColors.muted),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'No upcoming events right now',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -593,7 +628,7 @@ class _DashboardEventsEmpty extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'When your church adds events, they will show up here. Check the Events tab for the full schedule.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.35),

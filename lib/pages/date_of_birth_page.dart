@@ -73,7 +73,7 @@ class _DobPageState extends State<DobPage> {
       helpText: 'Select your date of birth',
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(
+          colorScheme: ColorScheme.light(
             primary: ChurchColors.button,
             onPrimary: ChurchColors.buttonText,
             onSurface: ChurchColors.bodyText,
@@ -168,7 +168,7 @@ class _DobPageState extends State<DobPage> {
                 onPressed: _working ? null : _goBack,
                 padding: EdgeInsets.zero,
                 alignment: Alignment.centerLeft,
-                icon: const Icon(Icons.arrow_back, color: ChurchColors.bodyText),
+                icon: Icon(Icons.arrow_back, color: ChurchColors.bodyText),
               ),
               const SizedBox(height: 8),
               Container(
@@ -178,19 +178,19 @@ class _DobPageState extends State<DobPage> {
                   color: ChurchColors.button.withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.cake_outlined,
                   size: 32,
                   color: ChurchColors.accent,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'When were you born?',
                 style: ChurchType.display,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "We ask so we can set up the right experience for you. Members "
                 "under 18 skip the face check-in and head straight in.",
                 style: TextStyle(
@@ -209,7 +209,7 @@ class _DobPageState extends State<DobPage> {
                   decoration: ChurchColors.cardDecoration(shadow: const []),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.calendar_today_outlined,
                         size: 20,
                         color: ChurchColors.accent,
@@ -227,7 +227,7 @@ class _DobPageState extends State<DobPage> {
                           ),
                         ),
                       ),
-                      const Icon(Icons.expand_more_rounded,
+                      Icon(Icons.expand_more_rounded,
                           color: ChurchColors.muted),
                     ],
                   ),
@@ -237,9 +237,9 @@ class _DobPageState extends State<DobPage> {
                 const SizedBox(height: 16),
                 Text(
                   _error!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFFC62828),
+                    color: ChurchColors.danger,
                     height: 1.4,
                   ),
                 ),

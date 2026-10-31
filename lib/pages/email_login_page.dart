@@ -87,7 +87,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
         toolbarHeight: 56,
         title: const SizedBox.shrink(),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
+          icon: Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
           onPressed: _goBack,
         ),
       ),
@@ -96,9 +96,9 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           children: [
-            const Text("Welcome back", style: kAuthTitleStyle),
+            Text("Welcome back", style: kAuthTitleStyle),
             const SizedBox(height: 6),
-            const Text("Sign in to your account", style: kAuthSubtitleStyle),
+            Text("Sign in to your account", style: kAuthSubtitleStyle),
             const SizedBox(height: 24),
             if (_error != null) ...[
               AuthErrorCallout(_error!),
@@ -111,7 +111,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                 children: [
                   TextFormField(
                     controller: _emailController,
-                    style: const TextStyle(color: ChurchColors.bodyText),
+                    style: TextStyle(color: ChurchColors.bodyText),
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     decoration: authInputDecoration(
@@ -128,7 +128,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    style: const TextStyle(color: ChurchColors.bodyText),
+                    style: TextStyle(color: ChurchColors.bodyText),
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _emailLogin(),
                     decoration: authInputDecoration(
@@ -214,7 +214,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   "Don't have an account?",
                   style: TextStyle(color: ChurchColors.bodyText, fontSize: 15),
                 ),
@@ -223,7 +223,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
                   onTap: () =>
                       Navigator.pushReplacementNamed(context, '/email-signup'),
                   behavior: HitTestBehavior.opaque,
-                  child: const Text(
+                  child: Text(
                     "Sign up",
                     style: TextStyle(
                       color: ChurchColors.button,
@@ -243,7 +243,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
   Widget _orDivider() {
     return Row(
       children: [
-        const Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
+        Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
@@ -256,7 +256,7 @@ class _EmailLoginPageState extends State<EmailLoginPage> {
             ),
           ),
         ),
-        const Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
+        Expanded(child: Divider(color: ChurchColors.divider, thickness: 1)),
       ],
     );
   }

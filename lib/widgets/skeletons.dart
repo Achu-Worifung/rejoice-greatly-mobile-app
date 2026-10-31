@@ -25,8 +25,8 @@ class Skeleton extends StatefulWidget {
 
 class _SkeletonState extends State<Skeleton>
     with SingleTickerProviderStateMixin {
-  static const Color _base = Color(0xFFEDE4D6); // warm sand
-  static const Color _highlight = Color(0xFFF8F2E8);
+  static Color get _base => ChurchColors.skeleton; // warm sand
+  static Color get _highlight => ChurchColors.skeletonHighlight;
 
   late final AnimationController _c;
   bool _animate = true;
@@ -86,7 +86,7 @@ class _SkeletonState extends State<Skeleton>
             shape: widget.shape,
             borderRadius: borderRadius,
             gradient: LinearGradient(
-              colors: const [_base, _highlight, _base],
+              colors: [_base, _highlight, _base],
               stops: const [0.35, 0.5, 0.65],
               begin: Alignment(dx - 0.3, 0),
               end: Alignment(dx + 0.3, 0),

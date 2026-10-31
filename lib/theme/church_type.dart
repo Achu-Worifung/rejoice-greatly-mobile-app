@@ -48,7 +48,7 @@ class ChurchType {
   // ── Headings (serif) ──────────────────────────────────────────────────
 
   /// The one large headline a screen gets, inside its page hero.
-  static const TextStyle display = TextStyle(
+  static TextStyle get display => TextStyle(
     fontFamily: ChurchFonts.serif,
     fontSize: 28,
     fontWeight: FontWeight.w600,
@@ -58,7 +58,7 @@ class ChurchType {
   );
 
   /// App-bar titles and section-opening headings.
-  static const TextStyle headline = TextStyle(
+  static TextStyle get headline => TextStyle(
     fontFamily: ChurchFonts.serif,
     fontSize: 20,
     fontWeight: FontWeight.w600,
@@ -68,7 +68,7 @@ class ChurchType {
   );
 
   /// Card titles — a sermon or event name. Cap at two lines.
-  static const TextStyle title = TextStyle(
+  static TextStyle get title => TextStyle(
     fontFamily: ChurchFonts.serif,
     fontSize: 17,
     fontWeight: FontWeight.w600,
@@ -78,7 +78,7 @@ class ChurchType {
 
   // ── Body (sans) ───────────────────────────────────────────────────────
 
-  static const TextStyle body = TextStyle(
+  static TextStyle get body => TextStyle(
     fontFamily: ChurchFonts.sans,
     fontSize: 15,
     fontWeight: FontWeight.w400,
@@ -86,7 +86,7 @@ class ChurchType {
     color: ChurchColors.bodyText,
   );
 
-  static const TextStyle bodyStrong = TextStyle(
+  static TextStyle get bodyStrong => TextStyle(
     fontFamily: ChurchFonts.sans,
     fontSize: 15,
     fontWeight: FontWeight.w600,
@@ -95,7 +95,7 @@ class ChurchType {
   );
 
   /// Button labels.
-  static const TextStyle button = TextStyle(
+  static TextStyle get button => TextStyle(
     fontFamily: ChurchFonts.sans,
     fontSize: 15,
     fontWeight: FontWeight.w600,
@@ -103,7 +103,7 @@ class ChurchType {
   );
 
   /// Secondary text: subtitles, captions, input labels.
-  static const TextStyle label = TextStyle(
+  static TextStyle get label => TextStyle(
     fontFamily: ChurchFonts.sans,
     fontSize: 13,
     fontWeight: FontWeight.w500,
@@ -111,7 +111,7 @@ class ChurchType {
     color: ChurchColors.muted,
   );
 
-  static const TextStyle caption = TextStyle(
+  static TextStyle get caption => TextStyle(
     fontFamily: ChurchFonts.sans,
     fontSize: 12,
     fontWeight: FontWeight.w400,
@@ -123,7 +123,7 @@ class ChurchType {
 
   /// The small uppercase line above a heading or a section: "LATEST SERMON".
   /// Callers pass the text already upper-cased, or use [ChurchEyebrow].
-  static const TextStyle eyebrow = TextStyle(
+  static TextStyle get eyebrow => TextStyle(
     fontFamily: ChurchFonts.mono,
     fontSize: 12,
     fontWeight: FontWeight.w500,
@@ -133,7 +133,7 @@ class ChurchType {
   );
 
   /// A focal number — a streak, a count, an attendance rate.
-  static const TextStyle data = TextStyle(
+  static TextStyle get data => TextStyle(
     fontFamily: ChurchFonts.mono,
     fontSize: 28,
     fontWeight: FontWeight.w600,
@@ -144,7 +144,7 @@ class ChurchType {
   );
 
   /// Dates, times, durations and counts set inline with body text.
-  static const TextStyle dataSmall = TextStyle(
+  static TextStyle get dataSmall => TextStyle(
     fontFamily: ChurchFonts.mono,
     fontSize: 13,
     fontWeight: FontWeight.w500,
@@ -155,7 +155,7 @@ class ChurchType {
 
   /// The Material text theme built from the same styles, so widgets that read
   /// `Theme.of(context).textTheme` land on the register faces too.
-  static TextTheme get textTheme => const TextTheme(
+  static TextTheme get textTheme => TextTheme(
         displayLarge: display,
         displayMedium: display,
         displaySmall: headline,
@@ -180,7 +180,7 @@ class ChurchRules {
   ChurchRules._();
 
   /// The one recurring border colour: a 1px "rule" in warm sand.
-  static const BorderSide hairline = BorderSide(color: ChurchColors.divider);
+  static BorderSide get hairline => BorderSide(color: ChurchColors.divider);
 
   /// The ink a double rule is drawn in.
   static Color get inkRule => ChurchColors.bodyText.withValues(alpha: 0.6);

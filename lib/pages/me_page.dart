@@ -1,21 +1,29 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../main.dart' show navigatorKey;
 import '../services/auth_service.dart';
 import '../services/church_api.dart';
+import '../services/milestones.dart';
 import '../services/profile_picture_upload.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
 import '../widgets/church_buttons.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/display_section.dart';
+import '../widgets/household_section.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/milestone_widgets.dart';
 import '../widgets/skeletons.dart';
 
 class MePage extends StatefulWidget {
@@ -38,6 +46,7 @@ class _MePageState extends State<MePage> {
     setState(() {
       _pageFuture = ChurchApi.loadMePage(forceRefresh: forceRefresh);
     });
+    if (forceRefresh) Milestones.refresh();
   }
 
   void _onBack() {
@@ -49,7 +58,7 @@ class _MePageState extends State<MePage> {
     }
   }
 
-  static const Color _danger = Color(0xFFC62828);
+  static Color get _danger => ChurchColors.danger;
 
   Widget _meSkeleton() {
     return ListView(
@@ -118,20 +127,20 @@ class _MePageState extends State<MePage> {
                   color: ChurchColors.button.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.power_settings_new_rounded,
                   color: ChurchColors.accent,
                   size: 28,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Leave this account?',
                 textAlign: TextAlign.center,
                 style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'You will be signed out of Rejoice Greatly and the cafe tab. '
                 'You must sign in again to check in or view your stats.',
                 textAlign: TextAlign.center,
@@ -165,10 +174,10 @@ class _MePageState extends State<MePage> {
 
   // --- Change profile photo -------------------------------------------------
 
-  /// Replaces the profile photo from a single picked image (camera or library),
-  /// rather than the multi-angle enrolment sweep used at signup. The picked
-  /// frame runs through the same [ProfilePictureUpload] contract, so the
-  /// backend still validates the face and publishes a fresh `imgURL`.
+  /// Replaces the profile photo from a single picked image (camera or library).
+  /// It's only the photo people see — not enrolled for face check-in, which
+  /// is the separate scan from signup (or "Face check-in" below). The backend
+  /// still checks there's one face in it and publishes a fresh `imgURL`.
   Future<void> _changeProfilePhoto() async {
     // Belt and braces with the hidden affordance: no photo of an under-18
     // member is collected, and the backend refuses the upload as well.
@@ -206,9 +215,11 @@ class _MePageState extends State<MePage> {
     if (file == null || !mounted) return;
 
     _showBlockingProgress('Updating your photo…');
+    final picked = file;
     try {
-      final bytes = await file.readAsBytes();
-      final newUrl = await ProfilePictureUpload.upload(bytes);
+      final bytes = await picked.readAsBytes();
+      // Just the photo people see: face check-in is a separate scan.
+      final newUrl = await ProfilePictureUpload.upload(bytes, use: PictureUse.profile);
       final cached = await ChurchApi.getCachedAccountJson();
       await ChurchApi.persistAccountFromServer({
         if (cached != null) ...cached,
@@ -217,7 +228,7 @@ class _MePageState extends State<MePage> {
       if (!mounted) return;
       _dismissBlockingProgress();
       _reload();
-      _showMessage('Your profile photo has been updated.');
+      _showMessage('Your profile photo has been updated. Face check-in is unchanged.');
     } on PictureUploadException catch (e) {
       if (!mounted) return;
       _dismissBlockingProgress();
@@ -227,6 +238,23 @@ class _MePageState extends State<MePage> {
       if (!mounted) return;
       _dismissBlockingProgress();
       _showMessage('Could not update your photo. Please try again.', isError: true);
+    } finally {
+      unawaited(_deletePickedCopy(picked));
+    }
+  }
+
+  /// The picker leaves its own copy of the photo in the app's temporary
+  /// folder; once uploaded (or not), it has no reason to stay on the phone.
+  /// Only that copy — never a file outside the temporary folder.
+  Future<void> _deletePickedCopy(XFile picked) async {
+    try {
+      final tmp = await getTemporaryDirectory();
+      final file = File(picked.path);
+      if (file.absolute.path.startsWith(tmp.absolute.path) && await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('MePage: could not delete the picked photo: $e');
     }
   }
 
@@ -242,7 +270,7 @@ class _MePageState extends State<MePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Change profile photo',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
@@ -251,7 +279,7 @@ class _MePageState extends State<MePage> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(horizontal: 28),
                 child: Text(
                   'Use a clear, well-lit photo of your face so you can still be '
@@ -315,16 +343,16 @@ class _MePageState extends State<MePage> {
                   color: _danger.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.delete_forever_rounded, color: _danger, size: 28),
+                child: Icon(Icons.delete_forever_rounded, color: _danger, size: 28),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Delete your account',
                 textAlign: TextAlign.center,
                 style: ChurchType.headline,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'To keep your facial recognition data safe, account deletion is '
                 "reviewed personally by the church team. We'll take you to our "
                 'website, where you sign in and tell us what to delete.',
@@ -390,12 +418,12 @@ class _MePageState extends State<MePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(color: ChurchColors.button),
+              CircularProgressIndicator(color: ChurchColors.button),
               const SizedBox(height: 18),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: ChurchColors.bodyText,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -490,11 +518,11 @@ class _MePageState extends State<MePage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.person_off_outlined, size: 48, color: ChurchColors.muted),
+                    Icon(Icons.person_off_outlined, size: 48, color: ChurchColors.muted),
                     const SizedBox(height: 12),
                     Text(
                       signedIn ? 'Could not load your church account' : 'No account connected',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                         color: ChurchColors.bodyText,
@@ -506,7 +534,7 @@ class _MePageState extends State<MePage> {
                           ? 'You are signed in, but we could not reach the church server. Check your connection and try again.'
                           : 'Sign in to connect your profile and see attendance stats.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: ChurchColors.muted, fontSize: 14),
+                      style: TextStyle(color: ChurchColors.muted, fontSize: 14),
                     ),
                     const SizedBox(height: 20),
                     if (signedIn) ...[
@@ -572,7 +600,7 @@ class _MePageState extends State<MePage> {
                     ),
                     child: Text(
                       'Could not refresh profile. Pull down to retry.\n$syncError',
-                      style: const TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
+                      style: TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
                     ),
                   ),
                 ],
@@ -589,7 +617,7 @@ class _MePageState extends State<MePage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Complete your profile',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
@@ -598,15 +626,17 @@ class _MePageState extends State<MePage> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        const Text(
+                        Text(
                           'Add a profile photo to unlock attendance stats and your check-in history.',
                           style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
                         ),
                         const SizedBox(height: 12),
                         ChurchPrimaryButton(
                           label: 'Finish signup',
-                          onPressed: () =>
-                              Navigator.pushNamed(context, '/complete-signup'),
+                          // Through the notice and consent first: face
+                          // scans aren't taken without it.
+                          onPressed: () => Navigator.pushNamed(
+                              context, hasDateOfBirth ? '/user-prep' : '/date-of-birth'),
                         ),
                         // Members who joined before the date-of-birth gate have
                         // no age on file, so an under-18 member would be stuck
@@ -639,9 +669,9 @@ class _MePageState extends State<MePage> {
                       currentStreak: _i(stats['currentStreak']),
                       longestStreak: _i(stats['longestStreak']),
                       totalAttendance: _i(stats['totalAttendance']),
-                      totalAbsences: _i(stats['totalAbsences']),
-                      absenceStreak: _i(stats['absenceStreak']),
                     ),
+                    const SizedBox(height: 24),
+                    const MilestonesShelf(),
                   ],
                 ] else ...[
                   if (syncError != null) ...[
@@ -656,7 +686,7 @@ class _MePageState extends State<MePage> {
                       ),
                       child: Text(
                         'Some data could not refresh. Pull down to try again.\n$syncError',
-                        style: const TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
+                        style: TextStyle(fontSize: 12, color: ChurchColors.muted, height: 1.35),
                       ),
                     ),
                   ],
@@ -668,17 +698,17 @@ class _MePageState extends State<MePage> {
                       currentStreak: _i(stats['currentStreak']),
                       longestStreak: _i(stats['longestStreak']),
                       totalAttendance: _i(stats['totalAttendance']),
-                      totalAbsences: _i(stats['totalAbsences']),
-                      absenceStreak: _i(stats['absenceStreak']),
                     )
                   else
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Text(
                         'Stats unavailable. Pull down to refresh.',
                         style: TextStyle(color: ChurchColors.muted, fontSize: 13),
                       ),
                     ),
+                  const SizedBox(height: 24),
+                  const MilestonesShelf(),
                   const SizedBox(height: 28),
                   Text(
                     _syncStatusText(result),
@@ -695,7 +725,26 @@ class _MePageState extends State<MePage> {
                   ),
                 ],
                 const SizedBox(height: 28),
+                const DisplaySection(),
+                // Parents check their children in alongside themselves.
+                if (profile['minor'] != true) ...[
+                  const SizedBox(height: 28),
+                  const HouseholdSection(),
+                ],
+                const SizedBox(height: 28),
                 const DashboardLabelText(label: 'Account'),
+                // Profile photos no longer enroll a face, so this is the way to
+                // set up face check-in later, or to redo the scan.
+                if (canUploadPhoto)
+                  _ActionTile(
+                    icon: Icons.face_outlined,
+                    title: 'Face check-in',
+                    subtitle: 'Set up or redo your face scan. The scan photos are deleted once check-in has learned your face.',
+                    // Biometrics need a known birthday; the birthday screen
+                    // carries on to face setup for adults.
+                    onTap: () => Navigator.pushNamed(context,
+                        '${profile['dateOfBirth'] ?? ''}'.isEmpty ? '/date-of-birth' : '/user-prep'),
+                  ),
                 _ActionTile(
                   icon: Icons.description_outlined,
                   title: 'Terms of Use',
@@ -723,9 +772,9 @@ class _MePageState extends State<MePage> {
                   onTap: () => _requestAccountDeletion(),
                 ),
                 const SizedBox(height: 36),
-                const Divider(color: ChurchColors.divider, height: 1),
+                Divider(color: ChurchColors.divider, height: 1),
                 const SizedBox(height: 20),
-                const DashboardLabelText(label: 'Session', color: _danger),
+                DashboardLabelText(label: 'Session', color: _danger),
                 ChurchDangerButton(
                   label: 'Log out of account',
                   icon: Icons.power_settings_new_rounded,
@@ -800,13 +849,13 @@ class _ProfileHeader extends StatelessWidget {
                         email,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, color: ChurchColors.muted),
+                        style: TextStyle(fontSize: 13, color: ChurchColors.muted),
                       ),
                     ],
                     const SizedBox(height: 6),
                     Text(
                       churchLine,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: ChurchColors.accent,
@@ -843,7 +892,7 @@ class _ProfileHeader extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: ChurchColors.card, width: 2),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.photo_camera_rounded,
                 size: 14,
                 color: ChurchColors.buttonText,
@@ -872,7 +921,7 @@ class _ActionTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool danger;
 
-  static const Color _danger = Color(0xFFC62828);
+  static Color get _danger => ChurchColors.danger;
 
   @override
   Widget build(BuildContext context) {
@@ -914,7 +963,7 @@ class _ActionTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
                           color: ChurchColors.muted,
                           height: 1.35,
@@ -955,7 +1004,7 @@ class _AttendanceActivityList extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: ChurchColors.cardDecoration(shadow: const []),
-        child: const Text(
+        child: Text(
           'No services recorded yet. Your attendance history will appear here once services begin.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, color: ChurchColors.muted, height: 1.4),
@@ -990,10 +1039,10 @@ class _ActivityRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPresent = activity.isPresent;
-    final iconColor = isPresent ? ChurchColors.button : const Color(0xFFC62828);
+    final iconColor = isPresent ? ChurchColors.button : ChurchColors.danger;
     final bgColor = isPresent
         ? ChurchColors.button.withValues(alpha: 0.12)
-        : const Color(0xFFC62828).withValues(alpha: 0.08);
+        : ChurchColors.danger.withValues(alpha: 0.08);
 
     return Container(
       width: double.infinity,
@@ -1024,13 +1073,13 @@ class _ActivityRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isPresent ? ChurchColors.bodyText : const Color(0xFFC62828),
+                    color: isPresent ? ChurchColors.bodyText : ChurchColors.danger,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   dateFmt.format(activity.date),
-                  style: const TextStyle(fontSize: 12, color: ChurchColors.muted),
+                  style: TextStyle(fontSize: 12, color: ChurchColors.muted),
                 ),
               ],
             ),
@@ -1046,16 +1095,14 @@ class _StatGrid extends StatelessWidget {
     required this.currentStreak,
     required this.longestStreak,
     required this.totalAttendance,
-    required this.totalAbsences,
-    required this.absenceStreak,
   });
 
   final int currentStreak;
   final int longestStreak;
   final int totalAttendance;
-  final int totalAbsences;
-  final int absenceStreak;
 
+  // Only what they did. Absences stay with the pastors (the follow-up list);
+  // counting them back at a member is the shame the app avoids.
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -1080,26 +1127,14 @@ class _StatGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _StatTile(
-                label: 'Total attendances',
-                value: '$totalAttendance',
-                icon: Icons.check_circle_outline,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatTile(
-                label: 'Total absences',
-                value: '$totalAbsences',
-                icon: Icons.remove_circle_outline,
-              ),
-            ),
-          ],
+        SizedBox(
+          width: double.infinity,
+          child: _StatTile(
+            label: 'Times at church',
+            value: '$totalAttendance',
+            icon: Icons.check_circle_outline,
+          ),
         ),
-        
       ],
     );
   }

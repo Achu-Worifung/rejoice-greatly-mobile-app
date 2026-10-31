@@ -94,10 +94,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Clear all notifications?',
+              Text('Clear all notifications?',
                   textAlign: TextAlign.center, style: ChurchType.headline),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'They will be removed from this inbox for good.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: ChurchColors.muted, height: 1.45, fontSize: 14),
@@ -152,7 +152,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Widget _body(List<InboxNotification>? items) {
     if (items == null && _error == null) {
-      return const Center(child: CircularProgressIndicator(color: ChurchColors.button));
+      return Center(child: CircularProgressIndicator(color: ChurchColors.button));
     }
     if (items == null || items.isEmpty) {
       return ListView(
@@ -170,10 +170,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
           const SizedBox(height: 6),
           Text(
             _error == null
-                ? 'Reminders and check-in confirmations will stay here for 90 days.'
+                ? 'Reminders, check-ins and prayer replies will stay here for 90 days.'
                 : 'Pull down to try again.',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: ChurchColors.muted, height: 1.45, fontSize: 14),
+            style: TextStyle(color: ChurchColors.muted, height: 1.45, fontSize: 14),
           ),
         ],
       );
@@ -195,7 +195,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               color: ChurchColors.muted.withValues(alpha: 0.12),
               borderRadius: ChurchColors.borderRadiusCard,
             ),
-            child: const Icon(Icons.delete_outline_rounded, color: ChurchColors.muted),
+            child: Icon(Icons.delete_outline_rounded, color: ChurchColors.muted),
           ),
           onDismissed: (_) {
             setState(() => items.removeAt(i));
@@ -228,9 +228,14 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = item.type == 'attendance'
-        ? Icons.check_circle_outline_rounded
-        : Icons.notifications_none_rounded;
+    final icon = switch (item.type) {
+      'attendance' => Icons.check_circle_outline_rounded,
+      'prayer' => Icons.volunteer_activism_outlined,
+      'event' => Icons.event_outlined,
+      'birthday' => Icons.cake_outlined,
+      'bacenta' => Icons.groups_2_outlined,
+      _ => Icons.notifications_none_rounded,
+    };
     return Container(
       decoration: ChurchColors.cardDecoration(
         color: item.read ? ChurchColors.background : ChurchColors.card,
@@ -271,7 +276,7 @@ class _NotificationTile extends StatelessWidget {
                                 width: 8,
                                 height: 8,
                                 margin: const EdgeInsets.only(left: 8),
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: ChurchColors.accent,
                                   shape: BoxShape.circle,
                                 ),
@@ -283,13 +288,13 @@ class _NotificationTile extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           item.body,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 13.5, color: ChurchColors.bodyText, height: 1.4),
                         ),
                       ],
                       const SizedBox(height: 6),
                       Text(_when(item.createdAt),
-                          style: const TextStyle(fontSize: 12, color: ChurchColors.muted)),
+                          style: TextStyle(fontSize: 12, color: ChurchColors.muted)),
                     ],
                   ),
                 ),

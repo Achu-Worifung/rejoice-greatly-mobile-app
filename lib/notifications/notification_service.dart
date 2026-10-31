@@ -3,7 +3,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
 import '../pages/notifications_page.dart';
+import '../services/member_events.dart';
+import '../services/prayer_wall_api.dart';
 import '../widgets/attendance_banner.dart';
+import '../widgets/milestone_widgets.dart';
 
 /// Wires up the OneSignal SDK so this device registers a push subscription
 /// and can receive the notifications the backend sends/schedules via the
@@ -60,10 +63,25 @@ class NotificationService {
                 'You’re marked present for today.',
             tone: AttendanceBannerTone.success,
           );
+          celebrateAfterCheckIn();
           return;
         }
 
         event.notification.display();
+      });
+
+      // A tapped prayer-reply or event push opens what it's about once the
+      // tabs are up.
+      OneSignal.Notifications.addClickListener((event) {
+        final data = event.notification.additionalData;
+        final prayerId = data == null ? null : data['prayerId'];
+        final instanceId = data == null ? null : data['instanceId'];
+        if (data?['type'] == 'prayer') {
+          // The weekly note about several requests has no one request to open.
+          PrayerWallApi.pendingThread.value = prayerId is String ? prayerId : '';
+        } else if (data?['type'] == 'event' && instanceId is String && instanceId.isNotEmpty) {
+          MemberEvents.pendingEvent.value = instanceId;
+        }
       });
 
       await OneSignal.Notifications.requestPermission(true);

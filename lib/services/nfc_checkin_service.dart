@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 
+import 'checkin_location.dart';
 import 'church_api.dart';
+import 'household_api.dart';
 
 /// Why an NFC check-in did not succeed. Callers use this to react distinctly —
 /// e.g. prompt re-login on [unauthorized], vs. surface a network hint on
@@ -27,6 +29,10 @@ enum NfcCheckinErrorKind {
   /// Could not reach the church server (timeout / no connection).
   network,
 
+  /// 403 LOCATION_REQUIRED — this tag only checks people in near it, and no
+  /// position came with the check-in. Ask for location, then try again.
+  needsLocation,
+
   /// Any other server-side failure (400, 5xx, unexpected shape).
   server,
 }
@@ -42,6 +48,7 @@ class NfcCheckinResult {
     this.name,
     this.attendedAt,
     this.errorKind,
+    this.household = const [],
   });
 
   final bool success;
@@ -51,11 +58,26 @@ class NfcCheckinResult {
   final String? attendedAt;
   final NfcCheckinErrorKind? errorKind;
 
+  /// Children the member can check in alongside themselves.
+  final List<HouseholdChild> household;
+
+  /// The same outcome, worded differently — e.g. once their children are in too.
+  NfcCheckinResult withMessage(String message, {bool? alreadyPresent}) => NfcCheckinResult._(
+        success: success,
+        message: message,
+        alreadyPresent: alreadyPresent ?? this.alreadyPresent,
+        name: name,
+        attendedAt: attendedAt,
+        errorKind: errorKind,
+        household: household,
+      );
+
   factory NfcCheckinResult.ok({
     required String message,
     required bool alreadyPresent,
     String? name,
     String? attendedAt,
+    List<HouseholdChild> household = const [],
   }) =>
       NfcCheckinResult._(
         success: true,
@@ -63,6 +85,7 @@ class NfcCheckinResult {
         alreadyPresent: alreadyPresent,
         name: name,
         attendedAt: attendedAt,
+        household: household,
       );
 
   factory NfcCheckinResult.failure(
@@ -116,7 +139,10 @@ class NfcCheckinService {
   /// deep-link flow (`NfcAutoCheckinPage`), where the OS already handed the
   /// app the tag id from the tapped link, so no on-device NFC session is
   /// needed — the physical tap itself is the read.
-  static Future<NfcCheckinResult> checkInWithTagId(String tagId) {
+  ///
+  /// [position] goes with it when the tag has asked to see the phone is near
+  /// it (a [NfcCheckinErrorKind.needsLocation] result the first time).
+  static Future<NfcCheckinResult> checkInWithTagId(String tagId, {CheckinPosition? position}) {
     final trimmed = tagId.trim();
     if (trimmed.isEmpty) {
       return Future.value(NfcCheckinResult.failure(
@@ -124,12 +150,12 @@ class NfcCheckinService {
         'That check-in link is missing its tag id.',
       ));
     }
-    return _submitCheckin(trimmed);
+    return _submitCheckin(trimmed, position);
   }
 
-  static Future<NfcCheckinResult> _submitCheckin(String tagId) async {
+  static Future<NfcCheckinResult> _submitCheckin(String tagId, CheckinPosition? position) async {
     try {
-      final data = await ChurchApi.nfcCheckin(tagId);
+      final data = await ChurchApi.nfcCheckin(tagId, location: position?.toJson());
       final alreadyPresent = data['alreadyPresent'] == true;
       final serverMessage = (data['message'] as String?)?.trim();
       return NfcCheckinResult.ok(
@@ -141,6 +167,7 @@ class NfcCheckinService {
         alreadyPresent: alreadyPresent,
         name: (data['name'] as String?)?.trim(),
         attendedAt: (data['attendedAt'] as String?)?.trim(),
+        household: parseHousehold(data['household']),
       );
     } on ChurchApiException catch (e) {
       return _resultForApiError(e);
@@ -240,9 +267,15 @@ class NfcCheckinService {
           _serverOr(e, 'That tag couldn’t be read. Please try again.'),
         );
       case 403:
-        // Not a service day, or outside the service-hours window (see
-        // NfcService on the backend) — the server's message names the days
-        // or hours check-in is open, so show it rather than our fallback.
+        if (e.errorCode == 'LOCATION_REQUIRED') {
+          return NfcCheckinResult.failure(
+            NfcCheckinErrorKind.needsLocation,
+            _serverOr(e, 'This tag needs your location to check you in.'),
+          );
+        }
+        // Not a service day, outside the service-hours window, or not near
+        // a tag that has a place (see NfcService on the backend) — the
+        // server's message says what to do, so show it rather than ours.
         return NfcCheckinResult.failure(
           NfcCheckinErrorKind.server,
           _serverOr(e, 'NFC check-in isn’t available right now.'),

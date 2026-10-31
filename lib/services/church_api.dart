@@ -385,6 +385,83 @@ class ChurchApi {
     return _postMember(path, {'ids': ?ids});
   }
 
+  /// `POST /member/events[/path]` — the member's events and reminders. Typed
+  /// wrappers live in `MemberEvents`.
+  static Future<Map<String, dynamic>> memberEvents(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'events' : 'events/$path', extra);
+  }
+
+  /// `POST /member/bacenta/join` — an online bacenta meeting's link, marking
+  /// the member present while the meeting is on.
+  static Future<Map<String, dynamic>> joinBacentaMeeting() =>
+      _postMember('bacenta/join', const {});
+
+  /// `POST /member/household[/path]` — the children a member checks in.
+  /// Returns the unwrapped payload: a list for the household, a map for one
+  /// child. Typed wrappers live in `HouseholdApi`.
+  static Future<Object?> memberHousehold(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) async {
+    final tokenBundle = await requireIdToken();
+    final uri = Uri.parse('$baseUrl/member/${path.isEmpty ? 'household' : 'household/$path'}');
+    final r = await httpClient
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'idToken': tokenBundle.token, ...extra}),
+        )
+        .timeout(_httpTimeout);
+    debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
+    if (r.statusCode != 200) throw _failure(r);
+    try {
+      return unwrapApiBody(r.body);
+    } on FormatException {
+      throw ChurchApiException(r.statusCode);
+    }
+  }
+
+  /// `POST /member/leader[/path]` — a bacenta leader's tools. Typed wrappers
+  /// live in `LeaderApi`.
+  static Future<Map<String, dynamic>> memberLeader(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'leader' : 'leader/$path', extra);
+  }
+
+  /// `POST /member/biometric-consent` — their agreement to the biometric
+  /// notice, kept with the account. Wrapped by `BiometricConsent`.
+  static Future<Map<String, dynamic>> memberBiometricConsent(String version) {
+    return _postMember('biometric-consent', {'version': version});
+  }
+
+  /// `POST /member/milestones[/path]` — the member's own milestones. Typed
+  /// wrappers live in `Milestones`.
+  static Future<Map<String, dynamic>> memberMilestones(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'milestones' : 'milestones/$path', extra);
+  }
+
+  /// `POST /member/sermons/{id}/finished` — heard to the end; returns their milestones.
+  static Future<Map<String, dynamic>> memberSermonFinished(String sermonId) {
+    return _postMember('sermons/${Uri.encodeComponent(sermonId)}/finished', const {});
+  }
+
+  /// `POST /member/prayers[/path]` — the prayer wall. Typed wrappers live in
+  /// `PrayerWallApi`; this only adds the id token.
+  static Future<Map<String, dynamic>> memberPrayers(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'prayers' : 'prayers/$path', extra);
+  }
+
   static Future<ProfileLoadResult> loadMemberProfile() async {
     final user = await waitForSignedInUser();
     if (user == null) {
@@ -700,14 +777,16 @@ class ChurchApi {
   /// the unwrapped success `data` map (`message`, `name`, `attendedAt`,
   /// `alreadyPresent`). Throws [ChurchApiException] carrying the HTTP status on
   /// a non-200 response so the caller can react to 401/404 distinctly.
-  static Future<Map<String, dynamic>> nfcCheckin(String tagId) async {
+  /// [location] is the phone's position, for a tag that only checks people
+  /// in near it; see `CheckinPosition`.
+  static Future<Map<String, dynamic>> nfcCheckin(String tagId, {Map<String, dynamic>? location}) async {
     final tokenBundle = await requireIdToken();
     final uri = Uri.parse('$baseUrl/attendance/nfc/checkin');
     final r = await httpClient
         .post(
           uri,
           headers: {'Content-Type': 'application/json'},
-          body: json.encode({'idToken': tokenBundle.token, 'tagId': tagId}),
+          body: json.encode({'idToken': tokenBundle.token, 'tagId': tagId, ...?location}),
         )
         .timeout(_httpTimeout);
 
@@ -724,6 +803,31 @@ class ChurchApi {
     }
 
     throw _failure(r);
+  }
+
+  /// `POST /attendance/nfc/checkin/children` — checks in the children a
+  /// parent brought, under the same tag and place rules as their own tap.
+  static Future<Map<String, dynamic>> nfcCheckinChildren(
+    String tagId,
+    List<String> childIds, {
+    Map<String, dynamic>? location,
+  }) async {
+    final tokenBundle = await requireIdToken();
+    final uri = Uri.parse('$baseUrl/attendance/nfc/checkin/children');
+    final r = await httpClient
+        .post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'idToken': tokenBundle.token, 'tagId': tagId, 'childIds': childIds, ...?location}),
+        )
+        .timeout(_httpTimeout);
+    debugPrint('ChurchApi: POST ${uri.path} -> ${r.statusCode}');
+    if (r.statusCode != 200) throw _failure(r);
+    try {
+      return unwrapApiMap(r.body);
+    } on FormatException {
+      throw ChurchApiException(r.statusCode);
+    }
   }
 
   /// A non-200 response as a [ChurchApiException], keeping the status and the
@@ -914,8 +1018,6 @@ class ChurchApi {
     _sermonsCachedAt = null;
     _latestSermonCache = null;
     _latestSermonCachedAt = null;
-    _dashboardEventsCache = null;
-    _dashboardEventsCachedAt = null;
   }
 
   // --- In-memory caches for home data (1-hour TTL) ---
@@ -930,8 +1032,6 @@ class ChurchApi {
   static List<dynamic>? _latestSermonCache;
   static DateTime? _latestSermonCachedAt;
 
-  static List<dynamic>? _dashboardEventsCache;
-  static DateTime? _dashboardEventsCachedAt;
 
   static Future<Map<String, dynamic>> getCurrentVerse() async {
     final cachedAt = _verseCachedAt;
@@ -960,44 +1060,6 @@ class ChurchApi {
       throw _failure(r);
     }
     return unwrapApiList(r.body);
-  }
-
-  static Future<List<dynamic>> getDashboardEventInstances() async {
-    final cachedAt = _dashboardEventsCachedAt;
-    if (_dashboardEventsCache != null &&
-        cachedAt != null &&
-        DateTime.now().difference(cachedAt) < _homeCacheDuration) {
-      return _dashboardEventsCache!;
-    }
-    List<dynamic> result;
-    try {
-      final top = await getTop4Events();
-      if (top.isNotEmpty) {
-        result = top;
-      } else {
-        result = await _fetchUpcoming4();
-      }
-    } catch (_) {
-      result = await _fetchUpcoming4();
-    }
-    _dashboardEventsCache = result;
-    _dashboardEventsCachedAt = DateTime.now();
-    return result;
-  }
-
-  static Future<List<dynamic>> _fetchUpcoming4() async {
-    final upcoming = await getUpcomingEvents();
-    if (upcoming.isEmpty) return [];
-    final list = List<dynamic>.from(upcoming);
-    list.sort((a, b) {
-      String dateOf(Object? x) {
-        if (x is! Map) return '';
-        return x['date'] as String? ?? '';
-      }
-
-      return dateOf(a).compareTo(dateOf(b));
-    });
-    return list.length <= 4 ? list : list.sublist(0, 4);
   }
 
   static Future<List<dynamic>> getUpcomingEvents() async {
@@ -1084,6 +1146,11 @@ class ChurchApi {
       final dateStr = m['date'] as String? ?? '';
       if (dateStr.isEmpty) continue;
       out.add({
+        'id': m['id'] == null ? null : '${m['id']}',
+        // Raw "HH:mm[:ss]" for reminders and calendar entries; null runs all day.
+        'startTime': (m['specificTime'] ?? m['specific_time'] ?? t['defaultTime'] ?? t['default_time'])
+            as String?,
+        'audience': t['audience'] as String? ?? 'ALL',
         'title': (t['title'] as String?)?.trim().isNotEmpty == true
             ? t['title'] as String
             : (m['title'] as String?) ?? 'Church event',

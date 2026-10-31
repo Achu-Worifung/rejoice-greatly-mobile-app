@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'sermon_detail_page.dart';
 import '../services/church_api.dart';
 import '../services/church_audio_player.dart';
+import '../services/sermon_downloads.dart';
+import '../services/sermon_progress.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/church_app_bar.dart';
@@ -36,7 +38,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _loadSaved();
     _fetchSermons();
   }
@@ -161,7 +163,9 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
           indicatorWeight: 2,
           tabs: const [
             Tab(text: 'All'),
+            Tab(text: 'Series'),
             Tab(text: 'Saved'),
+            Tab(text: 'Downloads'),
           ],
         ),
       ),
@@ -169,7 +173,9 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         controller: _tabController,
         children: [
           _buildSermonList(onlySaved: false),
+          _buildSeries(),
           _buildSermonList(onlySaved: true),
+          _buildDownloads(),
         ],
       ),
     );
@@ -186,9 +192,9 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.wifi_off_outlined, size: 48, color: ChurchColors.muted),
+              Icon(Icons.wifi_off_outlined, size: 48, color: ChurchColors.muted),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "Couldn't load sermons",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
@@ -200,7 +206,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
               Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: ChurchColors.muted, fontSize: 13),
+                style: TextStyle(color: ChurchColors.muted, fontSize: 13),
               ),
               const SizedBox(height: 16),
               SizedBox(
@@ -210,6 +216,14 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
                   onPressed: _fetchSermons,
                 ),
               ),
+              if (SermonDownloads.all.value.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: () => _tabController.animateTo(3),
+                  icon: const Icon(Icons.download_done_rounded),
+                  label: const Text('Your downloads still play'),
+                ),
+              ],
             ],
           ),
         ),
@@ -225,7 +239,7 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
                 ? 'Save sermons with the bookmark to see them here.'
                 : 'No sermons match your search.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: ChurchColors.muted,
               fontSize: 15,
               height: 1.4,
@@ -234,26 +248,103 @@ class _SermonsPageState extends State<SermonsPage> with SingleTickerProviderStat
         ),
       );
     }
+    final showContinue = !onlySaved && _search.isEmpty;
     return RefreshIndicator(
       color: ChurchColors.button,
       onRefresh: _fetchSermons,
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-        itemCount: list.length,
-        separatorBuilder: (context, _) => const SizedBox(height: 12),
-        itemBuilder: (context, i) {
-          final row = list[i];
-          return _SermonRow(
-            data: row,
-            isSaved: _savedIds.contains(_idOf(row)),
-            onSave: () => _toggleSave(row),
-            onOpen: () => _openSermon(row),
-            onPlayTap: () => _toggleSermonAudio(row),
+      child: ValueListenableBuilder<Map<String, SermonListen>>(
+        valueListenable: SermonProgress.all,
+        builder: (context, _, _) {
+          final resume = showContinue ? SermonProgress.inProgress : const <SermonListen>[];
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            children: [
+              if (resume.isNotEmpty) ...[
+                _ContinueListening(items: resume, onOpen: _openSermon),
+                const SizedBox(height: 16),
+              ],
+              for (final row in list) ...[
+                _row(row),
+                const SizedBox(height: 12),
+              ],
+            ],
           );
         },
       ),
     );
   }
+
+  Widget _row(Map<String, dynamic> row) => _SermonRow(
+        data: row,
+        isSaved: _savedIds.contains(_idOf(row)),
+        onSave: () => _toggleSave(row),
+        onOpen: () => _openSermon(row),
+        onPlayTap: () => _toggleSermonAudio(row),
+      );
+
+  /// Sermons grouped by series, newest series first.
+  Widget _buildSeries() {
+    if (_loading) return const SkeletonList(count: 4, thumbSize: 76);
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final s in _sermons) {
+      final name = (s['series'] as String?)?.trim();
+      if (name != null && name.isNotEmpty) groups.putIfAbsent(name, () => []).add(s);
+    }
+    if (groups.isEmpty) {
+      return _quiet('When sermons are preached as a series, they’ll be gathered here.');
+    }
+    // _sermons is newest first, so each group's first sermon is its latest.
+    final names = groups.keys.toList()
+      ..sort((a, b) => '${groups[b]!.first['datePreached']}'.compareTo('${groups[a]!.first['datePreached']}'));
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      itemCount: names.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, i) {
+        final name = names[i];
+        final parts = groups[name]!.reversed.toList(); // oldest first: the order they were preached
+        return _SeriesCard(
+          name: name,
+          parts: parts,
+          onOpen: () => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => _SeriesPage(name: name, parts: parts, rowBuilder: _row),
+          )),
+        );
+      },
+    );
+  }
+
+  /// What's on this phone, from the copy kept with each download, so it
+  /// works with no connection at all.
+  Widget _buildDownloads() {
+    return ValueListenableBuilder<Map<String, SermonDownload>>(
+      valueListenable: SermonDownloads.all,
+      builder: (context, downloads, _) {
+        if (downloads.isEmpty) {
+          return _quiet('Download a sermon from its page to listen without a connection.');
+        }
+        final rows = downloads.values.map((d) => d.sermon).toList()
+          ..sort((a, b) => '${b['datePreached']}'.compareTo('${a['datePreached']}'));
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+          itemCount: rows.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, i) => _row(rows[i]),
+        );
+      },
+    );
+  }
+
+  Widget _quiet(String text) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: ChurchColors.muted, fontSize: 15, height: 1.4),
+          ),
+        ),
+      );
 
   void _openSermon(Map<String, dynamic> s) {
     openSermonDetailPage(context, Map<String, dynamic>.from(s));
@@ -331,6 +422,7 @@ class _SermonRow extends StatelessWidget {
                         ].whereType<String>().join(' · '),
                         style: ChurchType.dataSmall,
                       ),
+                      _RowListenState(sermon: data),
                     ],
                   ),
                 ),
@@ -373,7 +465,7 @@ class _SermonRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right, size: 22, color: ChurchColors.muted),
+                Icon(Icons.chevron_right, size: 22, color: ChurchColors.muted),
               ],
             ),
           ),
@@ -385,7 +477,7 @@ class _SermonRow extends StatelessWidget {
   Widget _ph() {
     return Container(
       color: ChurchColors.button.withValues(alpha: 0.1),
-      child: const Icon(Icons.mic, color: ChurchColors.accent, size: 28),
+      child: Icon(Icons.mic, color: ChurchColors.accent, size: 28),
     );
   }
 
@@ -398,5 +490,215 @@ class _SermonRow extends StatelessWidget {
     } catch (_) {
       return s;
     }
+  }
+}
+
+/// How far they got (a thin bar) and whether it's downloaded, under a row's title.
+class _RowListenState extends StatelessWidget {
+  const _RowListenState({required this.sermon});
+
+  final Map<String, dynamic> sermon;
+
+  @override
+  Widget build(BuildContext context) {
+    final key = ChurchAudioPlayer.sermonKey(sermon);
+    if (key == null) return const SizedBox.shrink();
+    return ListenableBuilder(
+      listenable: Listenable.merge([SermonProgress.all, SermonDownloads.all]),
+      builder: (context, _) {
+        final listen = SermonProgress.all.value[key];
+        final downloaded = SermonDownloads.all.value.containsKey(key);
+        if (listen == null && !downloaded) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(
+            children: [
+              if (listen != null)
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: ChurchRadius.smAll,
+                    child: LinearProgressIndicator(
+                      value: listen.fraction,
+                      minHeight: 3,
+                      color: ChurchColors.accent,
+                      backgroundColor: ChurchColors.divider,
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
+              if (downloaded) ...[
+                const SizedBox(width: 8),
+                Icon(Icons.download_done_rounded, size: 16, color: ChurchColors.muted, semanticLabel: 'Downloaded'),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// "Continue listening": sermons they started, most recent first.
+class _ContinueListening extends StatelessWidget {
+  const _ContinueListening({required this.items, required this.onOpen});
+
+  final List<SermonListen> items;
+  final ValueChanged<Map<String, dynamic>> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ChurchEyebrow('Continue listening'),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 112,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            itemBuilder: (context, i) {
+              final listen = items[i];
+              final s = listen.sermon;
+              return SizedBox(
+                width: 220,
+                child: Material(
+                  color: ChurchColors.card,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: ChurchRadius.lgAll,
+                    side: BorderSide(color: ChurchColors.divider),
+                  ),
+                  child: InkWell(
+                    borderRadius: ChurchRadius.lgAll,
+                    onTap: () => onOpen(s),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            s['title'] as String? ?? 'Sermon',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: ChurchType.bodyStrong.copyWith(fontSize: 15),
+                          ),
+                          const Spacer(),
+                          Text('${listen.remaining.inMinutes} min left', style: ChurchType.dataSmall),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: ChurchRadius.smAll,
+                            child: LinearProgressIndicator(
+                              value: listen.fraction,
+                              minHeight: 3,
+                              color: ChurchColors.accent,
+                              backgroundColor: ChurchColors.divider,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One series on the Series tab: its name, how many parts, and when.
+class _SeriesCard extends StatelessWidget {
+  const _SeriesCard({required this.name, required this.parts, required this.onOpen});
+
+  final String name;
+
+  /// Oldest first.
+  final List<Map<String, dynamic>> parts;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final cover = parts.reversed
+        .map((p) => p['imageUrl'] as String?)
+        .firstWhere((u) => u != null && u.isNotEmpty, orElse: () => null);
+    return Material(
+      color: ChurchColors.card,
+      shape: RoundedRectangleBorder(borderRadius: ChurchRadius.lgAll, side: BorderSide(color: ChurchColors.divider)),
+      child: InkWell(
+        borderRadius: ChurchRadius.lgAll,
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: ChurchRadius.mdAll,
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: cover != null
+                      ? Image(image: cachedImage(cover, cacheWidth: 256), fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _seriesPlaceholder())
+                      : _seriesPlaceholder(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: ChurchType.title),
+                    const SizedBox(height: 4),
+                    Text('${parts.length} sermon${parts.length == 1 ? '' : 's'}', style: ChurchType.dataSmall),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, size: 22, color: ChurchColors.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _seriesPlaceholder() => Container(
+        color: ChurchColors.button.withValues(alpha: 0.1),
+        child: Icon(Icons.collections_bookmark_outlined, color: ChurchColors.accent),
+      );
+}
+
+/// A series' sermons in the order they were preached.
+class _SeriesPage extends StatelessWidget {
+  const _SeriesPage({required this.name, required this.parts, required this.rowBuilder});
+
+  final String name;
+  final List<Map<String, dynamic>> parts;
+  final Widget Function(Map<String, dynamic>) rowBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: ChurchColors.background,
+      appBar: AppBar(title: Text(name, style: ChurchType.headline)),
+      body: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        itemCount: parts.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, i) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6, left: 2),
+              child: ChurchEyebrow('Part ${i + 1}'),
+            ),
+            rowBuilder(parts[i]),
+          ],
+        ),
+      ),
+    );
   }
 }

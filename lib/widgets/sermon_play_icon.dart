@@ -28,7 +28,7 @@ class SermonPlayIcon extends StatelessWidget {
             height: spinnerSize,
             child: Padding(
               padding: EdgeInsets.all(spinnerSize * 0.14),
-              child: const CircularProgressIndicator(
+              child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: ChurchColors.button,
               ),

@@ -3,10 +3,12 @@ import 'package:intl/intl.dart';
 
 import '../services/church_api.dart';
 import '../services/church_audio_player.dart';
+import '../services/sermon_progress.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
 import '../widgets/detail_page_hero.dart';
 import '../widgets/dashboard_label_title.dart';
+import '../widgets/sermon_listen_controls.dart';
 
 /// Full-screen sermon (no bottom nav shell); opened via [Navigator.push].
 class SermonDetailPage extends StatefulWidget {
@@ -64,6 +66,8 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
     final audio = m['audioUrl'] as String?;
     final dateLine = _dateStr(m['datePreached'] as String?);
     final duration = m['duration'] != null ? '${m['duration']}'.trim() : '';
+    final series = (m['series'] as String?)?.trim();
+    final key = ChurchAudioPlayer.sermonKey(m);
 
     return Scaffold(
       backgroundColor: ChurchColors.background,
@@ -87,7 +91,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                 ),
                 const SizedBox(height: 16),
                 if (_loading)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: CircularProgressIndicator(color: ChurchColors.button),
@@ -98,9 +102,17 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                     DetailInfoRow(icon: Icons.person_outline, text: speaker),
                   if (dateLine.isNotEmpty)
                     DetailInfoRow(icon: Icons.event_rounded, text: dateLine),
+                  if (series != null && series.isNotEmpty)
+                    DetailInfoRow(icon: Icons.collections_bookmark_outlined, text: 'Series: $series'),
                   if (audio != null && audio.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     _AudioPlayButton(sermon: m),
+                    if (key != null) ...[
+                      SermonResumeNote(sermonKey: key),
+                      SermonListenControls(sermonKey: key),
+                      const SizedBox(height: 4),
+                      SermonDownloadButton(sermonKey: key, sermon: m),
+                    ],
                   ],
                   if (description.isNotEmpty) ...[
                     const SizedBox(height: 20),
@@ -146,7 +158,7 @@ class _AudioPlayButton extends StatelessWidget {
 
         Widget leadingIcon() {
           if (loading) {
-            return const SizedBox(
+            return SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
@@ -165,11 +177,12 @@ class _AudioPlayButton extends StatelessWidget {
           );
         }
 
+        final key = ChurchAudioPlayer.sermonKey(sermon);
         final label = loading
             ? 'Loading audio…'
             : playing
                 ? 'Pause'
-                : paused
+                : paused || (key != null && SermonProgress.resumeAt(key) != null)
                     ? 'Resume'
                     : 'Listen to sermon';
 

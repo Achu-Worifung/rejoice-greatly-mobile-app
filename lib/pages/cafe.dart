@@ -127,11 +127,14 @@ class _CafeState extends State<Cafe> {
         return;
       }
 
+      // Only mint a sign-in token while the WebView is on the cafe itself; a
+      // page the member navigated away to must never receive it.
+      if (!await CafeSsoService.isOnCafe(controller)) return;
       final customToken = await CafeSsoService.fetchCustomToken();
       if (!mounted) return;
       if (customToken == null || customToken.isEmpty) return;
 
-      await CafeSsoService.applyToWebView(controller, customToken: customToken);
+      if (!await CafeSsoService.applyToWebView(controller, customToken: customToken)) return;
       _syncedUid = user.uid;
       await CafeSsoService.writeLastCafeUid(user.uid);
     } on SessionInvalidException catch (e) {
@@ -184,7 +187,7 @@ class _CafeState extends State<Cafe> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
+                Text(
                   'Open the cafe on your phone',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -208,7 +211,7 @@ class _CafeState extends State<Cafe> {
     }
 
     if (controller == null) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(
           child: CircularProgressIndicator(color: ChurchColors.button),
         ),
@@ -226,7 +229,7 @@ class _CafeState extends State<Cafe> {
         appBar: ChurchAppBar.pageTitle(
           'Mood Changing Cafe',
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
+            icon: Icon(Icons.arrow_back_rounded, color: ChurchColors.accent),
             onPressed: () => _handleBack(context),
           ),
         ),
@@ -234,7 +237,7 @@ class _CafeState extends State<Cafe> {
           children: [
             WebViewWidget(controller: controller),
             if (_syncing)
-              const Align(
+              Align(
                 alignment: Alignment.topCenter,
                 child: LinearProgressIndicator(
                   color: ChurchColors.button,

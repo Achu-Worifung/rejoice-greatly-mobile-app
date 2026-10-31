@@ -13,6 +13,8 @@ import 'church_api.dart';
 import 'user_session_store.dart';
 import '../main.dart' show navigatorKey;
 import 'user_facing_error.dart';
+import '../widgets/cached_image.dart';
+import 'biometric_consent.dart';
 
 /// Result of syncing the Firebase user to Postgres via `POST /auth/firebase`.
 class AuthSyncResult {
@@ -263,11 +265,11 @@ class AuthService {
     );
 
     final idToken = appleCredential.identityToken;
+    // debugPrint still prints in release builds, so no identifiers or email.
     debugPrint(
       'AuthService: Apple credential received '
       '(hasIdToken=${idToken != null && idToken.isNotEmpty}, '
-      'userIdentifier=${appleCredential.userIdentifier}, '
-      'email=${appleCredential.email})',
+      'hasEmail=${appleCredential.email != null})',
     );
     if (idToken == null || idToken.isEmpty) {
       throw FirebaseAuthException(
@@ -314,6 +316,10 @@ class AuthService {
   Future<void> logout() async {
     await NotificationService().logout();
     await UserSessionStore.clear();
+    // People's photos and the face-check-in agreement belong to this account,
+    // not to whoever signs in on this phone next.
+    await clearImageCaches();
+    await BiometricConsent.clear();
     // Home data (verse, sermons, events) is a global in-memory cache, not tied
     // to the session store — drop it so the next account never sees stale data.
     ChurchApi.invalidateHomeCache();
@@ -365,16 +371,13 @@ class AuthService {
       );
 
       final firebaseUid = userData['firebaseUid'] ?? '';
-      final extractedName = userData['name'] ?? 'User';
       if ('$firebaseUid'.isNotEmpty) {
         // Fire-and-forget: push registration must not block or fail sign-in.
         NotificationService().login('$firebaseUid', email: active.email);
       }
 
       final persisted = await UserSessionStore.hasPersistedSession();
-      debugPrint(
-        'AuthService: synced $extractedName with backend (persisted=$persisted)',
-      );
+      debugPrint('AuthService: synced with backend (persisted=$persisted)');
       if (!persisted) {
         debugPrint('WARNING: account data was not written to device storage.');
       }
