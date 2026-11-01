@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../services/auth_service.dart';
 import '../theme/church_type.dart';
+import '../widgets/branded_loader.dart';
 import '../widgets/auth_ui.dart';
 import '../main.dart' show navigatorKey;
 import '../services/user_facing_error.dart';
@@ -70,9 +71,10 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    // The front door keeps the brand colours in dark mode too, like the splash.
-    const cream = Color(0xFFFFF7EB);
-    const cocoa = Color(0xFF633A02);
+    // The front door keeps the brand colours in dark mode too, like the splash,
+    // and reads them from the same place.
+    const cream = kSplashCream;
+    const cocoa = kSplashBackground;
     final busy = _busy != null;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
