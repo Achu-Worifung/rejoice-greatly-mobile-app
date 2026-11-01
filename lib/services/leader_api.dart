@@ -66,14 +66,13 @@ class LeaderMeeting {
     required this.cancelled,
     required this.present,
     this.time,
-    this.closesAt,
   });
 
   factory LeaderMeeting.fromJson(Map<String, dynamic> j) => LeaderMeeting(
         date: DateTime.parse('${j['date']}'),
         time: clockLabel(j['time']),
+        // False only before the meeting's day: once it has happened it stays open.
         recordable: j['recordable'] as bool? ?? false,
-        closesAt: _date(j['closesAt']),
         cancelled: j['cancelled'] as bool? ?? false,
         present: {for (final id in (j['present'] as List? ?? const [])) '$id'},
       );
@@ -81,7 +80,6 @@ class LeaderMeeting {
   final DateTime date;
   final String? time;
   final bool recordable;
-  final DateTime? closesAt;
   final bool cancelled;
   final Set<String> present;
 
