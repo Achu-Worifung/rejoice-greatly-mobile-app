@@ -22,7 +22,8 @@ before designing or changing any UI. In short:
 - **Principles:** sermon/event come first · warmth through restraint · nudge,
   never nag · greeted, not processed · unhurried and legible (WCAG AA contrast).
 
-Visual tokens live in `lib/theme/church_colors.dart` (cream card `#FFF7EB`,
-deep-brown action `#633A02`) and `lib/theme/church_type.dart` (the serif /
-mono / sans type scale and the 3 / 6 / 8px radius scale). A `DESIGN.md` at the root
+Visual tokens live in `lib/theme/church_colors.dart` (a neutral palette any
+church can use: paper card `#F6F6F3`, graphite action `#2B2B29`) and
+`lib/theme/church_type.dart` (the serif / mono / sans type scale and the
+3 / 6 / 8px radius scale). A `DESIGN.md` at the root
 captures the full visual system when present.
