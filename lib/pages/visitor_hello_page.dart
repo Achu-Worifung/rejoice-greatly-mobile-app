@@ -7,7 +7,7 @@ import '../theme/church_type.dart';
 import '../widgets/church_buttons.dart';
 
 /// "I'm new here": a first-time visitor says hello without making an
-/// account. The pastors see it and, if asked, reach out.
+/// account. The church team sees it and, if asked, reaches out.
 class VisitorHelloPage extends StatefulWidget {
   const VisitorHelloPage({super.key});
 
@@ -186,7 +186,7 @@ class _VisitorHelloPageState extends State<VisitorHelloPage> {
         ChurchPrimaryButton(label: 'Say hello', loading: _sending, onPressed: _send),
         const SizedBox(height: 10),
         Text(
-          'Only the pastoral team sees this. We’ll never share it.',
+          'Only our church team sees this. We’ll never share it.',
           style: ChurchType.caption,
           textAlign: TextAlign.center,
         ),
