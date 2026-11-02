@@ -238,13 +238,16 @@ class _LeaderBacentaPageState extends State<LeaderBacentaPage> {
         style: ChurchType.title));
     widgets.add(const SizedBox(height: 4));
 
+    // A meeting stays open once it has happened, so the only one that can't be
+    // taken yet is a future one. (A server from before that could still say a
+    // past meeting is closed; the last branch covers it.)
     if (!meeting.recordable) {
       widgets.add(Text(
         date.isAfter(today)
             ? 'You can take attendance on the day.'
             : meeting.recorded
-                ? (meeting.cancelled ? 'Recorded as not meeting.' : '${meeting.present.length} were there. This meeting is closed now.')
-                : 'This meeting has closed: attendance can be taken until 12 hours after it starts.',
+                ? (meeting.cancelled ? 'Recorded as not meeting.' : '${meeting.present.length} were there.')
+                : 'Attendance for this meeting can’t be changed here right now.',
         style: ChurchType.label,
       ));
       return widgets;
@@ -253,7 +256,7 @@ class _LeaderBacentaPageState extends State<LeaderBacentaPage> {
     widgets.add(Text(
       meeting.cancelled
           ? 'Recorded as not meeting. Tick who came to change that.'
-          : 'Tick who’s here. You can change it until 12 hours after the meeting starts.',
+          : 'Tick who was there. You can come back and change it any time.',
       style: ChurchType.label,
     ));
     widgets.add(const SizedBox(height: 8));
