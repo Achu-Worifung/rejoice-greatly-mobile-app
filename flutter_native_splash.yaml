@@ -1,6 +1,6 @@
 flutter_native_splash:
-  # Roasted Cocoa — must match the Flutter splash background (ChurchColors.button).
-  color: "#633A02"
+  # Graphite — must match the Flutter splash background (kSplashBackground).
+  color: "#2B2B29"
 
   # A pre-sized 640px source. flutter_native_splash treats the image as the
   # xxxhdpi (4x) asset, so 640 / 4 renders the emblem at ~160dp — big enough to
@@ -19,5 +19,5 @@ flutter_native_splash:
   # platform's stated safe zone). Using the edge-to-edge splash_logo here
   # crops the gold rim and the "Rejoice Greatly" wordmark.
   android_12:
-    color: "#633A02"
+    color: "#2B2B29"
     image: assets/images/splash_android12.png

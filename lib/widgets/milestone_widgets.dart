@@ -20,7 +20,7 @@ import 'dashboard_label_title.dart';
   if (key.startsWith('SERMONS_') && count != null) return (number: '$count', icon: null, caption: 'Sermons');
   return switch (key) {
     'FIRST_SUNDAY' => (number: null, icon: Icons.door_front_door_outlined, caption: 'Welcome'),
-    'FIRST_BACENTA' => (number: null, icon: Icons.groups_2_outlined, caption: 'Bacenta'),
+    'FIRST_BACENTA' => (number: null, icon: Icons.groups_2_outlined, caption: 'Group'),
     'FULL_MONTH' => (number: null, icon: Icons.calendar_month_outlined, caption: 'A month'),
     'FIRST_SERMON' => (number: null, icon: Icons.headphones_outlined, caption: 'Sermon'),
     'SERIES' => (number: null, icon: Icons.auto_stories_outlined, caption: 'Series'),
@@ -37,15 +37,18 @@ String milestoneDate(DateTime d, {DateTime? now}) {
 /// A milestone as an ink stamp in the register: a double-ruled square in the
 /// accent, set a degree or so off true the way a hand-pressed stamp lands.
 class MilestoneSeal extends StatelessWidget {
-  const MilestoneSeal({super.key, required this.milestoneKey, this.size = 52});
+  const MilestoneSeal({super.key, required this.milestoneKey, this.size = 52, this.color});
 
   final String milestoneKey;
   final double size;
 
+  /// The ink; the palette's accent when not given (the year review sets its own).
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final face = _face(milestoneKey);
-    final ink = ChurchColors.accent;
+    final ink = color ?? ChurchColors.accent;
     // −1.5° to +1.5°, fixed per milestone so it doesn't wobble on rebuild.
     final angle = ((milestoneKey.codeUnits.fold<int>(0, (a, b) => a + b) % 7) - 3) * 0.0087;
     final scale = size / 52;

@@ -213,11 +213,24 @@ class ChurchApi {
   /// Marks onboarding finished on-device without a facial scan — used when an
   /// age-gated minor or a member who chose "no thanks" skips face setup.
   ///
-  /// The backend only records `signupComplete` after a photo commit, so this
-  /// flag lives on-device; [restoreUserSession] keeps it sticky across cold
-  /// starts. The member can still add a photo later from their profile.
+  /// [restoreUserSession] keeps it sticky across cold starts. Prefer
+  /// [finishSignupWithoutFaceScan], which tells the server too. The member can
+  /// still add a photo later from their profile.
   static Future<void> markSignupCompleteLocally() =>
       persistAccountFromServer(const {'signupComplete': true});
+
+  /// `POST /member/signup/finish` — "Not now" on face check-in. Onboarding
+  /// ends without a face scan, on the server as well as this phone, so the
+  /// member isn't sent back through it on the next sign-in. Marks this phone
+  /// either way, so a dropped connection never strands them.
+  static Future<void> finishSignupWithoutFaceScan() async {
+    try {
+      final map = await _postMember('signup/finish', const {});
+      await _mergeIntoCachedAccount(map);
+    } finally {
+      await markSignupCompleteLocally();
+    }
+  }
 
   /// `POST /member/date-of-birth` — records the date of birth collected at the
   /// onboarding gate and returns the refreshed profile.
@@ -431,6 +444,39 @@ class ChurchApi {
     Map<String, dynamic> extra = const {},
   ]) {
     return _postMember(path.isEmpty ? 'leader' : 'leader/$path', extra);
+  }
+
+  /// `POST /member/year-review` — the member's own year, for "Your year at
+  /// Rejoice Greatly". Wrapped by `YearReviews`.
+  static Future<Map<String, dynamic>> memberYearReview({int? year}) {
+    return _postMember('year-review', {'year': ?year});
+  }
+
+  /// `POST /member/comments/{path}` — comments on the verse and sermons, and
+  /// likes on the verse. Typed wrappers live in `CommentsApi`.
+  static Future<Map<String, dynamic>> memberComments(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember('comments/$path', extra);
+  }
+
+  /// `POST /member/rides[/path]` — asking for a ride, and driving for the
+  /// church. Typed wrappers live in `RidesApi`.
+  static Future<Map<String, dynamic>> memberRides(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'rides' : 'rides/$path', extra);
+  }
+
+  /// `POST /member/notification-settings[/path]` — which notifications buzz
+  /// this member's phone. Used by `NotificationSettingsPage`.
+  static Future<Map<String, dynamic>> memberNotificationSettings(
+    String path, [
+    Map<String, dynamic> extra = const {},
+  ]) {
+    return _postMember(path.isEmpty ? 'notification-settings' : 'notification-settings/$path', extra);
   }
 
   /// `POST /member/biometric-consent` — their agreement to the biometric
@@ -872,6 +918,9 @@ class ChurchApi {
     if (r.statusCode != 200) {
       throw _failure(r);
     }
+    // Endpoints with nothing to say (a cancel, a cleared reminder) answer
+    // with an empty 200, which isn't JSON.
+    if (r.body.trim().isEmpty) return <String, dynamic>{};
     try {
       return unwrapApiMap(r.body);
     } on FormatException {

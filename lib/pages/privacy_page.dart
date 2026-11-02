@@ -81,13 +81,33 @@ class PrivacyPage extends StatelessWidget {
             'somewhere else. When you tap one of those, and only if you allow '
             'it, the app reads your location once and sends it with that '
             'check-in. We keep only how far you were from the tag, never where '
-            'you were, and the app does not read your location at any other time.',
+            'you were. Otherwise the app reads your location only when you tap '
+            'to pin a ride pickup spot, described below.',
           ),
           const LegalParagraph(
             'Attendance and activity. We collect records of when you were '
             'recognized or checked in present, your attendance and absence '
             'counts, your current and longest streaks, saved sermons, and your '
             'interactions with events and reminders.',
+          ),
+          const LegalParagraph(
+            'Rides to church, only if you use them. When you ask for a '
+            'ride, we collect the pickup address, a phone number, anything '
+            'you add for the driver, and, only if you tap to pin it, your '
+            'phone’s location at that moment. Drivers the church approves '
+            'give where they usually start from, a phone number, and their '
+            'car. These details are stored encrypted and seen only by the '
+            'church’s transport coordinator and the people sharing that ride: '
+            'your driver sees your pickup details, and riders see their '
+            'driver’s name, car, and phone. A rider’s address and phone are deleted the day '
+            'after the ride; a driver’s are deleted when they leave the '
+            'driving team.',
+          ),
+          const LegalParagraph(
+            'Event sign-ups. If you sign up for an event, we record that '
+            'you’re coming, how many guests you’re bringing, your answer to '
+            'the event’s question if it has one, and whether you came, for '
+            'the church team organizing it.',
           ),
           const LegalParagraph(
             'Device and technical information. We may automatically collect '
@@ -324,7 +344,9 @@ class PrivacyPage extends StatelessWidget {
                 '— including Google Firebase (authentication), Google and Apple '
                 '(the "Sign in with" option you choose), Microsoft Azure '
                 '(encrypted image storage and key protection), OneSignal (push '
-                'and email reminders), and the Mood Changing Café (the connected '
+                'and email reminders), OpenStreetMap (placing ride addresses on '
+                'the transport coordinator’s map; only the address text is sent), '
+                'and the Mood Changing Café (the connected '
                 'café opened from the app)',
             'When required by law, or in response to a valid legal request',
             'To protect members, investigate fraud, or enforce our agreements',

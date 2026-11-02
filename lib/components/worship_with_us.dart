@@ -16,13 +16,16 @@ import '../widgets/event_actions.dart' show openExternal;
 /// in the calendar or send it to someone. The date comes from the events
 /// feed when the service is on it, otherwise from the church's usual time.
 class WorshipWithUsCard extends StatelessWidget {
-  const WorshipWithUsCard({super.key, required this.data, this.events = const []});
+  const WorshipWithUsCard({super.key, required this.data, this.events = const [], this.onNeedRide});
 
   /// `name`, `address`, `serviceTimes` (e.g. "10:00 AM"), `mapPreviewUrl`.
   final Map<String, dynamic> data;
 
   /// Upcoming events the member can see; the first service among them wins.
   final List<Map<String, dynamic>> events;
+
+  /// Opens "Rides to church"; the link is left out when null.
+  final VoidCallback? onNeedRide;
 
   String get _name => data['name'] as String? ?? 'Rejoice Greatly';
   String get _address => data['address'] as String? ?? '';
@@ -224,12 +227,21 @@ class WorshipWithUsCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        Center(
-          child: TextButton.icon(
-            onPressed: () => _share(context, start, hasTime),
-            icon: const Icon(Icons.ios_share_rounded, size: 18),
-            label: const Text('Invite someone to come with you'),
-          ),
+        Wrap(
+          alignment: WrapAlignment.center,
+          children: [
+            TextButton.icon(
+              onPressed: () => _share(context, start, hasTime),
+              icon: const Icon(Icons.ios_share_rounded, size: 18),
+              label: const Text('Invite someone to come with you'),
+            ),
+            if (onNeedRide != null)
+              TextButton.icon(
+                onPressed: onNeedRide,
+                icon: const Icon(Icons.directions_car_outlined, size: 18),
+                label: const Text('Need a ride?'),
+              ),
+          ],
         ),
       ],
     );

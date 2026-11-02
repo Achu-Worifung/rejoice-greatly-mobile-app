@@ -7,6 +7,7 @@ import '../theme/church_type.dart';
 import '../widgets/detail_page_hero.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/event_actions.dart';
+import '../widgets/event_signup_card.dart';
 
 /// Full-screen event details with poster image; opened via [Navigator.push].
 class EventDetailPage extends StatelessWidget {
@@ -67,6 +68,7 @@ class EventDetailPage extends StatelessWidget {
                   ),
                 const SizedBox(height: 8),
                 EventActions(event: event),
+                if (event['id'] is String) EventSignupCard(instanceId: event['id'] as String),
                 if (description.isNotEmpty) ...[
                   const SizedBox(height: 20),
                   const DashboardLabelText(label: 'Details'),

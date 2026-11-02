@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 ///
 /// Both the animated [SplashScreen] and RootPage's loading state resolve to
 /// this same resting composition — emblem, scripture, and a calm progress
-/// line on Roasted Cocoa. That's deliberate: the launch should read as one
-/// continuous moment (brown → richer brown → app), never a brown splash
-/// flashing into a bare white spinner. It keeps the brand colours in dark
-/// mode too: it's the app's cover.
-const Color kSplashBackground = Color(0xFF633A02); // Roasted Cocoa
-const Color kSplashCream = Color(0xFFFFF7EB); //      Candlelight Cream
+/// line on graphite. That's deliberate: the launch should read as one
+/// continuous moment (graphite → app), never a dark splash flashing into a
+/// bare white spinner. It keeps these colours in dark mode too: it's the
+/// app's cover. Must match the native splash (flutter_native_splash.yaml).
+const Color kSplashBackground = Color(0xFF2B2B29); // Graphite
+const Color kSplashCream = Color(0xFFF7F7F5); //      Paper (text on graphite)
 // Matches the native splash's rendered size (splash_logo.png 640px ÷ 4 ≈ 160dp)
 // so the emblem never changes size across the native → Flutter handoff.
 const double kEmblemSize = 160;

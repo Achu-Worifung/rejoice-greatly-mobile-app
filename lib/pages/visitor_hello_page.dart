@@ -7,7 +7,7 @@ import '../theme/church_type.dart';
 import '../widgets/church_buttons.dart';
 
 /// "I'm new here": a first-time visitor says hello without making an
-/// account. The pastors see it and, if asked, reach out.
+/// account. The church team sees it and, if asked, reaches out.
 class VisitorHelloPage extends StatefulWidget {
   const VisitorHelloPage({super.key});
 
@@ -170,13 +170,21 @@ class _VisitorHelloPageState extends State<VisitorHelloPage> {
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(labelText: 'Anything you’d like us to know, or pray about?'),
         ),
-        CheckboxListTile(
-          value: _wantsContact,
-          onChanged: (v) => setState(() => _wantsContact = v ?? false),
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          activeColor: ChurchColors.button,
-          title: Text('I’d like someone from the church to reach out', style: ChurchType.body),
+        ValueListenableBuilder<TextEditingValue>(
+          valueListenable: _email,
+          builder: (context, email, _) => CheckboxListTile(
+            value: _wantsContact,
+            onChanged: (v) => setState(() => _wantsContact = v ?? false),
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            activeColor: ChurchColors.button,
+            title: Text('I’d like someone from the church to reach out', style: ChurchType.body),
+            // Say what the email address will be used for, before they send it.
+            subtitle: _wantsContact && email.text.trim().isNotEmpty
+                ? Text('We’ll also email a short welcome tomorrow and a reminder before next Sunday. Just those two.',
+                    style: ChurchType.label)
+                : null,
+          ),
         ),
         if (_error != null) ...[
           const SizedBox(height: 8),
@@ -186,7 +194,7 @@ class _VisitorHelloPageState extends State<VisitorHelloPage> {
         ChurchPrimaryButton(label: 'Say hello', loading: _sending, onPressed: _send),
         const SizedBox(height: 10),
         Text(
-          'Only the pastoral team sees this. We’ll never share it.',
+          'Only our church team sees this. We’ll never share it.',
           style: ChurchType.caption,
           textAlign: TextAlign.center,
         ),
