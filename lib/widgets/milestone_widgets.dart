@@ -37,15 +37,18 @@ String milestoneDate(DateTime d, {DateTime? now}) {
 /// A milestone as an ink stamp in the register: a double-ruled square in the
 /// accent, set a degree or so off true the way a hand-pressed stamp lands.
 class MilestoneSeal extends StatelessWidget {
-  const MilestoneSeal({super.key, required this.milestoneKey, this.size = 52});
+  const MilestoneSeal({super.key, required this.milestoneKey, this.size = 52, this.color});
 
   final String milestoneKey;
   final double size;
 
+  /// The ink; the palette's accent when not given (the year review sets its own).
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final face = _face(milestoneKey);
-    final ink = ChurchColors.accent;
+    final ink = color ?? ChurchColors.accent;
     // −1.5° to +1.5°, fixed per milestone so it doesn't wobble on rebuild.
     final angle = ((milestoneKey.codeUnits.fold<int>(0, (a, b) => a + b) % 7) - 3) * 0.0087;
     final scale = size / 52;

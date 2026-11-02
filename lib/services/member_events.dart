@@ -84,13 +84,92 @@ class BacentaJoin {
   final String message;
 }
 
+/// Sign-ups for one event occurrence, as this member sees them.
+@immutable
+class EventSignup {
+  const EventSignup({
+    required this.open,
+    this.closedBecause,
+    required this.going,
+    this.capacity,
+    this.spotsLeft,
+    required this.guestsMax,
+    this.question,
+    this.status,
+    required this.guests,
+    this.answer,
+    this.waitlistPosition,
+  });
+
+  factory EventSignup.fromJson(Map<String, dynamic> j) => EventSignup(
+        open: j['open'] == true,
+        closedBecause: j['closedBecause'] as String?,
+        going: (j['going'] as num?)?.toInt() ?? 0,
+        capacity: (j['capacity'] as num?)?.toInt(),
+        spotsLeft: (j['spotsLeft'] as num?)?.toInt(),
+        guestsMax: (j['guestsMax'] as num?)?.toInt() ?? 0,
+        question: (j['question'] as String?)?.trim().isEmpty == true ? null : j['question'] as String?,
+        status: j['status'] as String?,
+        guests: (j['guests'] as num?)?.toInt() ?? 0,
+        answer: j['answer'] as String?,
+        waitlistPosition: (j['waitlistPosition'] as num?)?.toInt(),
+      );
+
+  final bool open;
+
+  /// Why sign-ups are closed, in a sentence; null while open.
+  final String? closedBecause;
+
+  /// People with a place, guests included.
+  final int going;
+
+  /// Places in all; null for no limit.
+  final int? capacity;
+  final int? spotsLeft;
+
+  /// Guests each member may bring.
+  final int guestsMax;
+  final String? question;
+
+  /// GOING, WAITLIST, or null when not signed up.
+  final String? status;
+  final int guests;
+
+  /// Their answer to [question].
+  final String? answer;
+  final int? waitlistPosition;
+
+  bool get isGoing => status == 'GOING';
+  bool get isWaiting => status == 'WAITLIST';
+  bool get full => spotsLeft != null && spotsLeft! <= 0;
+
+  /// "12 going · 8 places left"
+  String get countLabel {
+    final parts = <String>[if (going > 0) '$going going'];
+    if (spotsLeft != null) {
+      parts.add(spotsLeft! <= 0 ? 'Full' : '$spotsLeft ${spotsLeft == 1 ? 'place' : 'places'} left');
+    }
+    return parts.isEmpty ? 'Be the first to sign up' : parts.join(' · ');
+  }
+}
+
 @immutable
 class MemberEventsFeed {
-  const MemberEventsFeed(this.events, this.meeting);
+  const MemberEventsFeed(this.events, this.meeting, [this.featured = const []]);
 
   /// Upcoming events in [ChurchApi.mapEventInstances] shape.
   final List<Map<String, dynamic>> events;
   final BacentaMeetingInfo? meeting;
+
+  /// The events the church is featuring in the Home banner, soonest first.
+  final List<Map<String, dynamic>> featured;
+
+  /// [events] picked out by the ids in the feed's `featured`, in that order.
+  static List<Map<String, dynamic>> pickFeatured(List<Map<String, dynamic>> events, Object? ids) {
+    if (ids is! List) return const [];
+    final byId = {for (final e in events) '${e['id']}': e};
+    return [for (final id in ids) ?byId['$id']];
+  }
 }
 
 /// `/member/events` and friends: the member's own view of events — everyone's,
@@ -102,6 +181,9 @@ class MemberEvents {
   /// start. Lists and the detail page read this so a bell set on one shows
   /// on the other.
   static final ValueNotifier<Map<String, int>> reminders = ValueNotifier(const {});
+
+  /// Sign-ups for occurrences that take them, by occurrence id.
+  static final ValueNotifier<Map<String, EventSignup>> signups = ValueNotifier(const {});
 
   /// An event a tapped notification asked to open; the home screen picks it up.
   static final ValueNotifier<String?> pendingEvent = ValueNotifier(null);
@@ -133,10 +215,19 @@ class MemberEvents {
     reminders.value = rem is Map
         ? {for (final e in rem.entries) '${e.key}': (e.value as num).toInt()}
         : const {};
+    final sign = map['signups'];
+    signups.value = sign is Map
+        ? {
+            for (final e in sign.entries)
+              if (e.value is Map) '${e.key}': EventSignup.fromJson(Map<String, dynamic>.from(e.value as Map)),
+          }
+        : const {};
     final meeting = map['bacentaMeeting'];
+    final events = ChurchApi.mapEventInstances(raw is List ? raw : const []);
     return MemberEventsFeed(
-      ChurchApi.mapEventInstances(raw is List ? raw : const []),
+      events,
       meeting is Map ? BacentaMeetingInfo.fromJson(Map<String, dynamic>.from(meeting)) : null,
+      MemberEventsFeed.pickFeatured(events, map['featured']),
     );
   }
 
@@ -148,6 +239,25 @@ class MemberEvents {
   static Future<void> clearReminder(String instanceId) async {
     await ChurchApi.memberEvents('$instanceId/reminder/delete');
     reminders.value = {...reminders.value}..remove(instanceId);
+  }
+
+  /// "I'm coming", or a change to guests or the answer.
+  static Future<EventSignup> signUp(String instanceId, {int guests = 0, String? answer}) async {
+    final map = await ChurchApi.memberEvents('${Uri.encodeComponent(instanceId)}/signup', {
+      'guests': guests,
+      if ((answer ?? '').trim().isNotEmpty) 'answer': answer!.trim(),
+    });
+    final signup = EventSignup.fromJson(map);
+    signups.value = {...signups.value, instanceId: signup};
+    return signup;
+  }
+
+  /// "Can't make it": gives the place to the next on the waiting list.
+  static Future<EventSignup> cancelSignup(String instanceId) async {
+    final map = await ChurchApi.memberEvents('${Uri.encodeComponent(instanceId)}/signup/cancel');
+    final signup = EventSignup.fromJson(map);
+    signups.value = {...signups.value, instanceId: signup};
+    return signup;
   }
 
   static Future<BacentaJoin> joinBacenta() async {

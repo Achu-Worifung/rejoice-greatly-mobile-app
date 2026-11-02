@@ -7,6 +7,7 @@ import '../components/sermon_card.dart';
 import '../components/upcoming_events_section.dart';
 import '../components/worship_with_us.dart';
 import '../pages/notifications_page.dart';
+import '../pages/rides_page.dart';
 import '../pages/sermon_detail_page.dart';
 import '../services/church_audio_player.dart';
 import '../services/church_api.dart';
@@ -21,8 +22,11 @@ import '../widgets/event_actions.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/skeletons.dart';
 import '../services/user_facing_error.dart';
+import 'comments.dart';
+import 'featured_events_banner.dart';
 import 'leader_card.dart';
 import 'milestone_widgets.dart';
+import 'year_review_card.dart';
 
 
 class DashboardPage extends StatefulWidget {
@@ -40,9 +44,12 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardEventsLoad {
-  _DashboardEventsLoad({required this.items, this.error, this.meeting});
+  _DashboardEventsLoad({required this.items, this.error, this.meeting, this.featured = const []});
   final List<Map<String, dynamic>> items;
   final String? error;
+
+  /// What the church is featuring in the banner at the top.
+  final List<Map<String, dynamic>> featured;
 
   /// The member's bacenta meeting, shown on Home only on the day it meets.
   final BacentaMeetingInfo? meeting;
@@ -125,6 +132,7 @@ class _DashboardPageState extends State<DashboardPage> {
       return _DashboardEventsLoad(
         items: feed.events.take(4).toList(),
         meeting: feed.meeting,
+        featured: feed.featured,
       );
     } catch (e) {
       return _DashboardEventsLoad(items: [], error: userFacingError(e));
@@ -264,6 +272,14 @@ class _DashboardPageState extends State<DashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Events the church wants people to notice.
+                  FutureBuilder<_DashboardEventsLoad>(
+                    future: _eventsFuture,
+                    builder: (context, snapshot) =>
+                        FeaturedEventsBanner(events: snapshot.data?.featured ?? const []),
+                  ),
+                  // December and January: their year, until they've looked.
+                  const YearReviewCard(),
                   // Only while there's a milestone they haven't seen yet.
                   const NewMilestoneCard(),
                   // Leaders only: their bacenta and what needs them.
@@ -287,6 +303,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       final startVerse = v['startVerse'];
                       final endVerse = v['endVerse'];
                       return VerseOfTheWeekCard(
+                        verseId: v['id']?.toString(),
                         data: {
                           'text': v['content']?.toString() ?? '',
                           'version': v['version']?.toString() ?? '',
@@ -401,6 +418,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     future: _eventsFuture,
                     builder: (context, snapshot) => WorshipWithUsCard(
                     events: snapshot.data?.items ?? const [],
+                    onNeedRide: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const RidesPage()),
+                    ),
                     data: {
                       'name': dotenv.env['CHURCH_NAME'] ?? 'REJOICE GREATLY PHX',
                       'address':
@@ -445,9 +465,15 @@ class _DashboardPageState extends State<DashboardPage> {
 // --- DASHBOARD COMPONENTS ---
 
 class VerseOfTheWeekCard extends StatelessWidget {
-  const VerseOfTheWeekCard({super.key, required this.data});
+  const VerseOfTheWeekCard({super.key, required this.data, this.verseId, this.commentsBackend = const CommentsBackend()});
 
   final Map<String, dynamic> data;
+
+  /// When set, members can like the verse and comment on it.
+  final String? verseId;
+
+  /// Stand-in for the comments API, for tests.
+  final CommentsBackend commentsBackend;
 
   @override
   Widget build(BuildContext context) {
@@ -485,6 +511,19 @@ class VerseOfTheWeekCard extends StatelessWidget {
               ),
             ],
           ),
+          if (verseId != null) ...[
+            const SizedBox(height: 10),
+            Divider(height: 1, color: ChurchColors.divider),
+            const SizedBox(height: 4),
+            Transform.translate(
+              offset: const Offset(-8, 0),
+              child: VerseReactions(
+                verseId: verseId!,
+                reference: data['reference'] as String? ?? 'Verse of the week',
+                backend: commentsBackend,
+              ),
+            ),
+          ],
         ],
       ),
     );

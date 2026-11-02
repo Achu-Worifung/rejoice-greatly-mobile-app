@@ -6,6 +6,7 @@ import '../services/church_audio_player.dart';
 import '../services/sermon_progress.dart';
 import '../theme/church_colors.dart';
 import '../theme/church_type.dart';
+import '../widgets/comments.dart';
 import '../widgets/detail_page_hero.dart';
 import '../widgets/dashboard_label_title.dart';
 import '../widgets/sermon_listen_controls.dart';
@@ -122,6 +123,7 @@ class _SermonDetailPageState extends State<SermonDetailPage> {
                   if (duration.isNotEmpty)
                     DetailInfoRow(icon: Icons.timelapse, text: 'Duration: $duration'),
                 ],
+                if (m['id'] != null) SermonComments(sermonId: '${m['id']}', title: title),
               ]),
             ),
           ),
