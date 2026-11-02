@@ -73,7 +73,7 @@ List<YearSlide> yearSlides(YearReview r) {
         foreground: _ink,
         accent: _cocoa,
         count: r.bacentaMeetings,
-        title: plural(r.bacentaMeetings, 'bacenta meeting', 'bacenta meetings'),
+        title: plural(r.bacentaMeetings, 'small group meeting', 'small group meetings'),
         lines: const ['Church is closer in a small circle.'],
       ),
     if (r.sermonsHeard > 0)

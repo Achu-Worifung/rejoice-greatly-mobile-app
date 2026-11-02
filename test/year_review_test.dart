@@ -30,7 +30,7 @@ void main() {
     expect(full.map((s) => s.title), [
       'Your year at Rejoice Greatly',
       'Sundays together',
-      'bacenta meetings',
+      'small group meetings',
       'sermons heard to the end',
       'times you prayed for someone',
       'Milestones this year',
