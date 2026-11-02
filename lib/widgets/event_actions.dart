@@ -217,7 +217,7 @@ class _BacentaMeetingCardState extends State<BacentaMeetingCard> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const ChurchEyebrow('Your bacenta'),
+                    const ChurchEyebrow('Your small group'),
                     const SizedBox(height: 4),
                     Text(m.name, style: ChurchType.title),
                   ],

@@ -2,6 +2,8 @@
 
 A new Flutter project.
 
+**Naming:** the app says "small group" and "ministry". In code, the API and JSON these keep their original names, `bacenta` and `basonta` (e.g. `LeaderBacentaPage`, `bacentaId`, `BASONTAS`).
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

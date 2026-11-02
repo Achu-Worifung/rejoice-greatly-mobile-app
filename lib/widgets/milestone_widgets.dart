@@ -20,7 +20,7 @@ import 'dashboard_label_title.dart';
   if (key.startsWith('SERMONS_') && count != null) return (number: '$count', icon: null, caption: 'Sermons');
   return switch (key) {
     'FIRST_SUNDAY' => (number: null, icon: Icons.door_front_door_outlined, caption: 'Welcome'),
-    'FIRST_BACENTA' => (number: null, icon: Icons.groups_2_outlined, caption: 'Bacenta'),
+    'FIRST_BACENTA' => (number: null, icon: Icons.groups_2_outlined, caption: 'Group'),
     'FULL_MONTH' => (number: null, icon: Icons.calendar_month_outlined, caption: 'A month'),
     'FIRST_SERMON' => (number: null, icon: Icons.headphones_outlined, caption: 'Sermon'),
     'SERIES' => (number: null, icon: Icons.auto_stories_outlined, caption: 'Series'),

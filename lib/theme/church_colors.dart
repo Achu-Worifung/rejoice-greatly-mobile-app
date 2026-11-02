@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'church_type.dart';
 
 /// One set of the app's colours. [light] is the home palette — white surface,
-/// warm cream cards, deep brown actions; [dark] is the same warmth after dark:
-/// a roasted near-black surface, cocoa cards and candlelit tan actions. Every
-/// text/surface pair in both meets WCAG AA.
+/// soft warm-grey cards, graphite actions; [dark] is the same after dark: a
+/// near-black surface, charcoal cards and off-white actions. Neutral on
+/// purpose, so any church can use the app: colour is kept for meaning (green
+/// for "you're in", red for errors and absences). Every text/surface pair in
+/// both meets WCAG AA.
 @immutable
 class ChurchPalette {
   const ChurchPalette({
@@ -55,41 +57,41 @@ class ChurchPalette {
   static const ChurchPalette light = ChurchPalette(
     brightness: Brightness.light,
     background: Color(0xFFFFFFFF),
-    card: Color(0xFFFFF7EB),
-    button: Color(0xFF633A02),
+    card: Color(0xFFF6F6F3),
+    button: Color(0xFF2B2B29),
     buttonText: Color(0xFFFFFFFF),
-    accent: Color(0xFF633A02),
+    accent: Color(0xFF2B2B29),
     bodyText: Color(0xFF1A1A1A),
-    muted: Color(0xFF6B5C4D),
-    divider: Color(0xFFE8DFD0),
+    muted: Color(0xFF5F5F5A),
+    divider: Color(0xFFE3E3DE),
     danger: Color(0xFFC62828),
     successSurface: Color(0xFFEAF6EC),
     successInk: Color(0xFF1B5E20),
     errorSurface: Color(0xFFFFF1EE),
     errorBorder: Color(0xFFE1B0A9),
     errorInk: Color(0xFF8A2C1F),
-    skeleton: Color(0xFFEDE4D6),
-    skeletonHighlight: Color(0xFFF8F2E8),
+    skeleton: Color(0xFFECECE8),
+    skeletonHighlight: Color(0xFFF7F7F5),
   );
 
   static const ChurchPalette dark = ChurchPalette(
     brightness: Brightness.dark,
-    background: Color(0xFF17130F),
-    card: Color(0xFF231C15),
-    button: Color(0xFFDDB988),
-    buttonText: Color(0xFF241505),
-    accent: Color(0xFFE4C49A),
-    bodyText: Color(0xFFF3ECE3),
-    muted: Color(0xFFB9A994),
-    divider: Color(0xFF3B3128),
+    background: Color(0xFF121212),
+    card: Color(0xFF1C1C1B),
+    button: Color(0xFFE6E6E2),
+    buttonText: Color(0xFF121212),
+    accent: Color(0xFFEDEDEA),
+    bodyText: Color(0xFFF2F2EF),
+    muted: Color(0xFFA8A8A2),
+    divider: Color(0xFF33332F),
     danger: Color(0xFFF2A097),
     successSurface: Color(0xFF1D2E1F),
     successInk: Color(0xFFA8D5AB),
     errorSurface: Color(0xFF3A201C),
     errorBorder: Color(0xFF6E3A33),
     errorInk: Color(0xFFF5BDB4),
-    skeleton: Color(0xFF2B231B),
-    skeletonHighlight: Color(0xFF3A3027),
+    skeleton: Color(0xFF262624),
+    skeletonHighlight: Color(0xFF33332F),
   );
 }
 
@@ -146,8 +148,8 @@ class ChurchColors {
   static const double cardRadius = ChurchRadius.lg;
   static BorderRadius borderRadiusCard = ChurchRadius.lgAll;
 
-  /// A card is a form slipped into the register: flat, cream, closed by a 1px
-  /// rule. No shadow — depth comes from the cream-on-white layering, and a
+  /// A card is a form slipped into the register: flat, soft grey, closed by a
+  /// 1px rule. No shadow — depth comes from the grey-on-white layering, and a
   /// [shadow] is only honoured when a caller genuinely needs a lifted sheet.
   static BoxDecoration cardDecoration({Color? color, List<BoxShadow>? shadow}) {
     return BoxDecoration(

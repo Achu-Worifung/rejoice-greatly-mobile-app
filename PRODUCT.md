@@ -30,8 +30,11 @@ Warm and welcoming — the feeling of being greeted at the door by name. The voi
 is gentle, human, and encouraging, never institutional or salesy. Three words:
 **warm, welcoming, unhurried.** The interface should feel like it was made by
 people who know you, not by a corporation. Reminders nudge; they never nag or
-shame. The existing cream-and-deep-brown palette (`lib/theme/church_colors.dart`)
-is the anchor for this warmth and should be preserved.
+shame. The palette (`lib/theme/church_colors.dart`) is
+neutral — graphite on white and soft warm-grey — so any church can use the app;
+it replaced cream-and-deep-brown at the church's request, alongside "small
+group" replacing bacenta. Warmth comes from the spacing, the serif and the
+copy, not a brand hue.
 
 ## Anti-references
 
